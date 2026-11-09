@@ -13,24 +13,61 @@ export default async function WorkPage({
   const work = await getWork(slug);
   if (!work) notFound();
   const chapters = await listChapters(work.id);
+  const first = chapters[0];
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-12">
-      <h1 className="mb-2 text-3xl font-bold">{work.title}</h1>
-      <p className="mb-6 text-sm muted">{work.author_name} · {work.words_total} слов · ★ {work.rating_avg}</p>
-      <p className="mb-8 whitespace-pre-line muted">{work.description}</p>
+    <main className="mx-auto max-w-5xl px-5 py-8">
+      <div className="card mb-8 p-5 sm:p-7">
+        <div className="flex flex-col gap-6 sm:flex-row">
+          <div className="cover relative h-[240px] w-[170px] shrink-0">
+            <span className="absolute left-0 top-0 h-full w-full bg-black/10" />
+            <span className="relative line-clamp-4">{work.title}</span>
+          </div>
 
-      <h2 className="mb-3 text-xl font-semibold">Sadržaj</h2>
-      <ol className="divide-y divide-line/60">
-        {chapters.map((c) => (
-          <li key={c.id} className="flex items-center gap-3 py-3">
-            <span className="w-10 text-sm muted">{c.number}.</span>
-            <Link href={`/${l}/read/${c.id}`} className="flex-1 hover:text-violet">{c.title || `Glava ${c.number}`}</Link>
-            {c.access !== 'free' ? <span className="text-xs text-sakura">🔒</span> : null}
-          </li>
-        ))}
-        {chapters.length === 0 ? <li className="py-3 muted">Još nema objavljenih glava.</li> : null}
-      </ol>
+          <div className="min-w-0 flex-1">
+            <h1 className="mb-2 text-2xl font-extrabold leading-tight sm:text-3xl">{work.title}</h1>
+            <div className="mb-4 flex flex-wrap items-center gap-3 text-sm muted">
+              <span>{work.author_name}</span>
+              <span>★ {work.rating_avg}</span>
+              <span>{work.words_total} reči</span>
+              <span>{chapters.length} glava</span>
+              {work.completion === 'completed' ? <span className="badge-hot">Završeno</span> : null}
+              {work.age_rating ? <span className="badge-hot">{work.age_rating}+</span> : null}
+            </div>
+
+            <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
+
+            <div className="flex flex-wrap gap-3">
+              {first ? (
+                <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj prvu glavu</Link>
+              ) : null}
+              <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <h2 className="font-bold">Sadržaj</h2>
+          <span className="text-sm muted">{chapters.length} glava</span>
+        </div>
+        <ol className="divide-y divide-line">
+          {chapters.map((c) => (
+            <li key={c.id}>
+              <Link href={`/${l}/read/${c.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-[#f2f6ff]">
+                <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
+                <span className="flex-1 text-sm">{c.title || `Glava ${c.number}`}</span>
+                {c.access !== 'free' ? <span className="badge-hot">🔒 Pretplatnici</span> : null}
+                <span className="text-xs muted">{c.word_count} reči</span>
+              </Link>
+            </li>
+          ))}
+          {chapters.length === 0 ? (
+            <li className="px-5 py-6 text-sm muted">Još nema objavljenih glava.</li>
+          ) : null}
+        </ol>
+      </div>
     </main>
   );
 }

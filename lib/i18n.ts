@@ -10,6 +10,7 @@ type Dict = Record<string, string>;
 
 const sr: Dict = {
   brand: 'Čitaonica',
+  nav_home: 'Početna',
   nav_catalog: 'Katalog',
   nav_library: 'Moja biblioteka',
   nav_login: 'Prijava',
@@ -35,6 +36,7 @@ const sr: Dict = {
 
 const en: Dict = {
   brand: 'Reader',
+  nav_home: 'Home',
   nav_catalog: 'Catalog',
   nav_library: 'My library',
   nav_login: 'Sign in',
@@ -60,6 +62,7 @@ const en: Dict = {
 
 const ru: Dict = {
   brand: 'Читалка',
+  nav_home: 'Главная',
   nav_catalog: 'Каталог',
   nav_library: 'Моя библиотека',
   nav_login: 'Вход',

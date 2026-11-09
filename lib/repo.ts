@@ -29,7 +29,7 @@ export async function listWorks(opts: { q?: string; limit?: number; offset?: num
               w.age_rating, w.completion, u.display_name AS author_name
          FROM works w JOIN users u ON u.id = w.author_id
         WHERE w.status = 'published'
-        ORDER BY w.published_at DESC NULLS LAST LIMIT $2 OFFSET $3`;
+        ORDER BY w.published_at DESC NULLS LAST LIMIT $1 OFFSET $2`;
   const params = q ? [like, limit, offset] : [limit, offset];
   return query<WorkCard>(sql, params);
 }

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { isLang, t, type Lang } from '@/lib/i18n';
+import { isLang, t, LANGS, type Lang } from '@/lib/i18n';
 
 export default async function LangLayout({
   children,
@@ -15,25 +15,52 @@ export default async function LangLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line/60">
-        <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-4">
-          <Link href={`/${l}`} className="text-lg font-bold tracking-tight">
-            <span className="text-violet">✦</span> {t(l, 'brand')}
+      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">
+          <Link href={`/${l}`} className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">✦</span>
+            <span className="hidden text-ink sm:inline">{t(l, 'brand')}</span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm muted">
-            <Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link>
-            <Link href={`/${l}/library`}>{t(l, 'nav_library')}</Link>
+
+          <nav className="hidden items-center gap-5 text-sm font-medium text-mist md:flex">
+            <Link href={`/${l}`} className="hover:text-brand">{t(l, 'nav_home')}</Link>
+            <Link href={`/${l}/catalog`} className="hover:text-brand">{t(l, 'nav_catalog')}</Link>
+            <Link href={`/${l}/library`} className="hover:text-brand">{t(l, 'nav_library')}</Link>
           </nav>
-          <div className="ml-auto flex items-center gap-2 text-sm">
+
+          <form action={`/${l}/catalog`} className="hidden flex-1 md:block">
+            <input className="input" name="q" placeholder={t(l, 'search_placeholder')} />
+          </form>
+
+          <div className="ml-auto flex items-center gap-1 md:ml-0">
+            {LANGS.map((code) => (
+              <Link
+                key={code}
+                href={`/${code}`}
+                className={`rounded px-2 py-1 text-xs font-bold uppercase ${
+                  code === l ? 'bg-brand text-white' : 'text-mist hover:text-brand'
+                }`}
+              >
+                {code}
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden items-center gap-2 sm:flex">
             <Link href={`/${l}/login`} className="btn btn-ghost">{t(l, 'nav_login')}</Link>
             <Link href={`/${l}/register`} className="btn btn-primary">{t(l, 'nav_register')}</Link>
           </div>
         </div>
       </header>
+
       {children}
-      <footer className="mt-20 border-t border-line/60">
-        <div className="mx-auto max-w-6xl px-5 py-8 text-sm muted">
-          © {new Date().getFullYear()} — sr · en · ru
+
+      <footer className="mt-16 border-t border-line bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-5 py-8 text-sm text-mist">
+          <span className="font-semibold text-ink">{t(l, 'brand')}</span>
+          <Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link>
+          <Link href={`/${l}/subscribe`}>Pretplata</Link>
+          <span className="ml-auto">© {new Date().getFullYear()}</span>
         </div>
       </footer>
     </div>
