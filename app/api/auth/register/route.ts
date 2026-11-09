@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, initSchema } from '@/lib/db';
 import { hashPassword, setSessionCookies } from '@/lib/auth';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
+import { randomUUID } from 'node:crypto';
 
 export async function POST(req: Request) {
   const rl = rateLimit(clientKey(req, 'register'), 5, 60 * 60_000);
@@ -24,6 +25,21 @@ export async function POST(req: Request) {
     [email, hash, name]
   );
   const u = rows[0];
+  const token = randomUUID();
+  await query(
+    `INSERT INTO email_tokens (user_id, token, expires_at)
+     VALUES ($1, $2, datetime('now', '+2 days'))`,
+    [u.id, token]
+  ).catch(async () => {
+    await query(`INSERT INTO email_tokens (user_id, token, expires_at) VALUES ($1,$2, now() + interval '2 days')`, [u.id, token]).catch(() => {});
+  });
+
   await setSessionCookies({ uid: u.id, email: u.email, role: u.role, name: u.display_name });
-  return NextResponse.json({ ok: true, user: { id: u.id, email: u.email, name: u.display_name, role: u.role } });
+  const verifyUrl = `/api/auth/verify?token=${token}`;
+  // Без почтового сервиса ссылка возвращается в ответе (режим разработки)
+  return NextResponse.json({
+    ok: true,
+    user: { id: u.id, email: u.email, name: u.display_name, role: u.role },
+    verifyUrl: process.env.SMTP_URL ? undefined : verifyUrl,
+  });
 }

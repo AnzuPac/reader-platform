@@ -312,3 +312,12 @@ INSERT INTO genres (slug, name_sr, name_en, name_ru) VALUES
   ('historical','Istorijski','Historical','Исторический'),
   ('slice','Slica života','Slice of life','Слайс оф лайф')
 ON CONFLICT (slug) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS email_tokens (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

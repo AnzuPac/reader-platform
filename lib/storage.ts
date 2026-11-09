@@ -16,8 +16,14 @@ export async function getQuota(userId: number): Promise<Quota> {
     [userId]
   );
   const plan = sub?.plan_code || 'free';
-  const limit = plan === 'reader_plus' ? READER_PLUS : plan === 'reader' ? READER : FREE;
+  const limit = planLimit(plan);
   return { used: Number(used?.storage_used ?? 0), limit, plan };
+}
+
+export function planLimit(plan: string): number {
+  if (plan === 'reader_plus') return READER_PLUS;
+  if (plan === 'reader') return READER;
+  return FREE;
 }
 
 export function formatBytes(n: number): string {

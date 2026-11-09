@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initSchema, query, one } from '@/lib/db';
 import { readSession } from '@/lib/auth';
+import { createCheckout } from '@/lib/payments';
 
 export async function POST(req: Request) {
   const s = await readSession();
@@ -17,12 +18,21 @@ export async function POST(req: Request) {
 
   const rows = await query<{ id: number }>(
     `INSERT INTO payments (user_id, amount_cents, currency, method, status, meta)
-     VALUES ($1,$2,$3,'transfer','pending',$4) RETURNING id`,
-    [s.uid, plan.price_cents, plan.currency, JSON.stringify({ planCode })]
+     VALUES ($1,$2,$3,$4,'pending',$5) RETURNING id`,
+    [s.uid, plan.price_cents, plan.currency, 'transfer', JSON.stringify({ planCode })]
   );
+  const paymentId = rows[0].id;
+
+  const origin = new URL(req.url).origin;
+  const checkout = await createCheckout({ planCode, email: s.email, origin, paymentId });
+
+  if (checkout.mode === 'stripe') {
+    await query(`UPDATE payments SET method = 'card' WHERE id = $1`, [paymentId]);
+    return NextResponse.json({ ok: true, paymentId, url: checkout.url });
+  }
   return NextResponse.json({
     ok: true,
-    paymentId: rows[0].id,
+    paymentId,
     instructions: 'Uplata se vrši na račun izdavača. Nakon uplate administrator aktivira pretplatu.',
   });
 }

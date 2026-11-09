@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
 import { getChapter, listChapters, query, one } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
+import { canReadChapter } from '@/lib/access';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
@@ -23,20 +24,24 @@ export default async function ReadPage({
   if (!ch) notFound();
 
   const session = await readSession();
-  let locked = false;
-  if (ch.access !== 'free') {
-    if (!session) locked = true;
-    else {
-      const ent = await one(
-        `SELECT 1 AS ok FROM entitlements WHERE user_id=$1 AND ((target_type='chapter' AND target_id=$2)
-            OR (target_type='work' AND target_id=$3))
-         UNION ALL
-         SELECT 1 AS ok FROM subscriptions WHERE user_id=$1 AND status='active' AND current_period_end > now() LIMIT 1`,
-        [session.uid, ch.id, ch.work_id]
-      );
-      locked = !ent;
-    }
+  let hasEntitlement = false;
+  let hasActiveSubscription = false;
+  if (session) {
+    const ent = await one(
+      `SELECT 1 AS ok FROM entitlements WHERE user_id=$1 AND ((target_type='chapter' AND target_id=$2)
+          OR (target_type='work' AND target_id=$3))`,
+      [session.uid, ch.id, ch.work_id]
+    );
+    hasEntitlement = !!ent;
+    const sub = await one(
+      `SELECT 1 AS ok FROM subscriptions WHERE user_id=$1 AND status='active' AND current_period_end > now() LIMIT 1`,
+      [session.uid]
+    );
+    hasActiveSubscription = !!sub;
   }
+  const locked = !canReadChapter({
+    access: ch.access, loggedIn: !!session, hasEntitlement, hasActiveSubscription,
+  });
 
   const chapters = await listChapters(ch.work_id);
   const idx = chapters.findIndex((c) => c.id === ch.id);

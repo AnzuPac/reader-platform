@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server';
+import { slugify } from '@/lib/slug';
 import { initSchema, query, one } from '@/lib/db';
 import { requireAuthor } from '@/lib/author';
 import { getWork } from '@/lib/repo';
 
 
-function translit(s: string): string {
-  const map: Record<string, string> = { 'š':'s','đ':'dj','č':'c','ć':'c','ž':'z','Š':'s','Đ':'dj','Č':'c','Ć':'c','Ž':'z' };
-  return s.replace(/[šđčćžŠĐČĆŽ]/g, (c) => map[c] || c);
-}
 
-function slugify(s: string): string {
-  s = translit(s);
-  return s.toLowerCase().replace(/[^a-z0-9šđčćž]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'work';
-}
 
 /** Мои произведения автора */
 export async function GET() {
