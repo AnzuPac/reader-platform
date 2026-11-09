@@ -297,3 +297,16 @@ INSERT INTO ad_slots (code, title) VALUES
   ('chapter_between', 'Читалка — между главами'),
   ('chapter_end', 'Читалка — конец главы')
 ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO genres (slug, name_sr, name_en, name_ru) VALUES
+  ('fantasy','Fantastika','Fantasy','Фэнтези'),
+  ('romance','Romantika','Romance','Романтика'),
+  ('scifi','Naučna fantastika','Sci-Fi','Фантастика'),
+  ('mystery','Misterija','Mystery','Детектив'),
+  ('drama','Drama','Drama','Драма'),
+  ('adventure','Avantura','Adventure','Приключения'),
+  ('horror','Horor','Horror','Хоррор'),
+  ('comedy','Komedija','Comedy','Комедия'),
+  ('historical','Istorijski','Historical','Исторический'),
+  ('slice','Slica života','Slice of life','Слайс оф лайф')
+ON CONFLICT (slug) DO NOTHING;

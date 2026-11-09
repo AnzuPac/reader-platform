@@ -13,24 +13,32 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
+export async function listWorks(opts: { q?: string; genre?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
+  const genre = (opts.genre || '').trim();
   const limit = Math.min(opts.limit ?? 24, 60);
   const offset = opts.offset ?? 0;
-  const like = `%${q.toLowerCase()}%`;
-  const sql = q
-    ? `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-              w.age_rating, w.completion, u.display_name AS author_name
-         FROM works w JOIN users u ON u.id = w.author_id
-        WHERE w.status = 'published' AND (lower(w.title) LIKE $1 OR lower(u.display_name) LIKE $1)
-        ORDER BY w.published_at DESC NULLS LAST LIMIT $2 OFFSET $3`
-    : `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-              w.age_rating, w.completion, u.display_name AS author_name
-         FROM works w JOIN users u ON u.id = w.author_id
-        WHERE w.status = 'published'
-        ORDER BY w.published_at DESC NULLS LAST LIMIT $1 OFFSET $2`;
-  const params = q ? [like, limit, offset] : [limit, offset];
+  const params: unknown[] = [];
+  const where: string[] = ["w.status = 'published'"];
+  if (q) {
+    params.push(`%${q.toLowerCase()}%`);
+    where.push(`(lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
+  }
+  if (genre) {
+    params.push(genre);
+    where.push(`EXISTS (SELECT 1 FROM work_genres wg JOIN genres g ON g.id = wg.genre_id
+                        WHERE wg.work_id = w.id AND g.slug = $${params.length})`);
+  }
+  params.push(limit);
+  const limIdx = params.length;
+  params.push(offset);
+  const offIdx = params.length;
+  const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
+                      w.age_rating, w.completion, u.display_name AS author_name
+                 FROM works w JOIN users u ON u.id = w.author_id
+                WHERE ${where.join(' AND ')}
+                ORDER BY w.published_at DESC NULLS LAST LIMIT $${limIdx} OFFSET $${offIdx}`;
   return query<WorkCard>(sql, params);
 }
 
@@ -107,4 +115,27 @@ export async function listLibrary(userId: number) {
       WHERE l.user_id = $1 AND w.status = 'published'
       ORDER BY l.created_at DESC`, [userId]
   );
+}
+
+export async function listGenres() {
+  await ensure();
+  return query<{ id: number; slug: string; name_sr: string; name_en: string; name_ru: string }>(
+    'SELECT id, slug, name_sr, name_en, name_ru FROM genres ORDER BY id'
+  );
+}
+
+export async function workGenres(workId: number) {
+  await ensure();
+  return query<{ slug: string; name_sr: string; name_en: string; name_ru: string }>(
+    `SELECT g.slug, g.name_sr, g.name_en, g.name_ru
+       FROM work_genres wg JOIN genres g ON g.id = wg.genre_id
+      WHERE wg.work_id = $1`, [workId]
+  );
+}
+
+export async function addWorkGenre(workId: number, genreSlug: string): Promise<void> {
+  await ensure();
+  const g = await one<{ id: number }>('SELECT id FROM genres WHERE slug = $1', [genreSlug]);
+  if (!g) return;
+  await query('INSERT INTO work_genres (work_id, genre_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [workId, g.id]);
 }

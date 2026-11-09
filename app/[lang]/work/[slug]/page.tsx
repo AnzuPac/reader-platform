@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
-import { getWork, listChapters, isInLibrary } from '@/lib/repo';
+import { getWork, listChapters, isInLibrary, workGenres } from '@/lib/repo';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
 
@@ -18,6 +18,7 @@ export default async function WorkPage({
   const session = await readSession();
   const inLib = session ? await isInLibrary(session.uid, work.id) : false;
   const first = chapters[0];
+  const genres = await workGenres(work.id);
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8">
@@ -39,6 +40,11 @@ export default async function WorkPage({
               {work.age_rating ? <span className="badge-hot">{work.age_rating}+</span> : null}
             </div>
 
+            <div className="mb-3 flex flex-wrap gap-2">
+              {genres.map((g) => (
+                <span key={g.slug} className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">{g.name_sr}</span>
+              ))}
+            </div>
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
             <div className="flex flex-wrap items-center gap-3">

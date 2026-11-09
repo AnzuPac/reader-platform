@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
-import { listWorks } from '@/lib/repo';
+import { listWorks, listGenres } from '@/lib/repo';
 import AdSlot from '@/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
@@ -11,22 +11,41 @@ type WorkRow = {
   age_rating: number; completion: string; author_name: string;
 };
 
+type Genre = { id: number; slug: string; name_sr: string; name_en: string; name_ru: string };
+
+function genreName(g: Genre, l: Lang) {
+  return l === 'en' ? g.name_en : l === 'ru' ? g.name_ru : g.name_sr;
+}
+
 export default async function CatalogPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; genre?: string }>;
 }) {
   const { lang } = await params;
-  const { q } = await searchParams;
+  const { q, genre } = await searchParams;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
 
   let works: WorkRow[] = [];
+  let genres: Genre[] = [];
   try {
-    works = (await listWorks({ q, limit: 36 })) as unknown as WorkRow[];
+    [works, genres] = await Promise.all([
+      listWorks({ q, genre, limit: 36 }) as unknown as Promise<WorkRow[]>,
+      listGenres() as unknown as Promise<Genre[]>,
+    ]);
   } catch {
     works = [];
   }
+
+  const qs = (extra: Record<string, string>) => {
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (genre) p.set('genre', genre);
+    Object.entries(extra).forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
+    const s = p.toString();
+    return s ? `?${s}` : '';
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
@@ -35,10 +54,24 @@ export default async function CatalogPage({
         <span className="text-sm muted">{works.length} dela</span>
       </div>
 
-      <form action={`/${l}/catalog`} className="mb-6 flex gap-2">
+      <form action={`/${l}/catalog`} className="mb-4 flex gap-2">
+        {genre ? <input type="hidden" name="genre" value={genre} /> : null}
         <input className="input" name="q" defaultValue={q || ''} placeholder={t(l, 'search_placeholder')} />
         <button className="btn btn-primary">Traži</button>
       </form>
+
+      <div className="mb-7 flex flex-wrap gap-2">
+        <Link href={`/${l}/catalog${qs({ genre: '' })}`}
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${!genre ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'}`}>
+          Sve
+        </Link>
+        {genres.map((g) => (
+          <Link key={g.id} href={`/${l}/catalog${qs({ genre: g.slug })}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${genre === g.slug ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'}`}>
+            {genreName(g, l)}
+          </Link>
+        ))}
+      </div>
 
       {works.length === 0 ? (
         <div className="card p-8 text-center muted">{t(l, 'catalog_empty')}</div>
@@ -47,7 +80,6 @@ export default async function CatalogPage({
           {works.map((w, i) => (
             <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
               <div className="cover cover-sm relative">
-                <span className="absolute left-0 top-0 h-full w-full bg-black/10" />
                 <span className="relative line-clamp-3">{w.title}</span>
                 {i < 3 ? <span className="badge-rank">TOP {i + 1}</span> : null}
               </div>
