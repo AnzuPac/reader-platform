@@ -12,10 +12,15 @@ let sqlite: any = null;
 let pgPool: any = null;
 let ready = false;
 
-function toSqlite(sql: string): string {
-  return sql
+function toSqlite(sql: string, params: unknown[]): { sql: string; params: unknown[] } {
+  const out: unknown[] = [];
+  const converted = sql
     .replace(/\bnow\(\)/gi, 'CURRENT_TIMESTAMP')
-    .replace(/\$\d+/g, () => '?');
+    .replace(/\$(\d+)/g, (_m, n: string) => {
+      out.push(params[Number(n) - 1]);
+      return '?';
+    });
+  return { sql: converted, params: out };
 }
 
 async function initSqlite() {
@@ -56,8 +61,9 @@ export async function query<T = Row>(sql: string, params: unknown[] = []): Promi
     const res = await db.query(sql, params);
     return res.rows as T[];
   }
-  const stmt = db.prepare(toSqlite(sql));
-  const rows = stmt.all(...(params as never[]));
+  const conv = toSqlite(sql, params);
+  const stmt = db.prepare(conv.sql);
+  const rows = stmt.all(...(conv.params as never[]));
   return rows as T[];
 }
 
