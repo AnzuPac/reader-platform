@@ -28,7 +28,7 @@ a { color: inherit; text-decoration: none; }
 .badge-hot { background:rgba(244,114,182,.16); color:#f9a8d4; font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; }
 .badge-rank { position:absolute; top:8px; left:8px; background:linear-gradient(135deg,#8b5cf6,#f472b6); color:#fff; font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; z-index:2; }
 
-.prose-reader { font-family: Georgia, 'Times New Roman', serif; font-size:var(--reader-size,18px); line-height:var(--reader-lh,1.9); color:var(--reader-fg,#e4ddf2); }
+.prose-reader { font-family: var(--reader-font, Georgia, 'Times New Roman', serif); font-size:var(--reader-size,18px); line-height:var(--reader-lh,1.9); color:var(--reader-fg,#e4ddf2); }
 .reader-surface { background:var(--reader-bg,transparent); border-radius:12px; }
 .reader-surface .prose-reader p { margin-bottom:var(--reader-gap,1em); }
 .section-title { font-size:20px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }

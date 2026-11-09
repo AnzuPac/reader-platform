@@ -13,6 +13,19 @@ export default function WorkSettings({
   const [age, setAge] = useState(initialAge);
   const [completion, setCompletion] = useState(initialCompletion);
   const [msg, setMsg] = useState('');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+
+  async function uploadCover(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('workSlug', workSlug);
+    fd.append('file', file);
+    const r = await fetch('/api/author/cover', { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? 'Обложка загружена' : 'Ошибка обложки: ' + (j.error || r.status));
+    e.target.value = '';
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +69,10 @@ export default function WorkSettings({
           </select>
         </label>
         <button className="btn btn-primary">Сохранить</button>
+        <label className="btn btn-ghost cursor-pointer">
+          Обложка
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadCover} />
+        </label>
         {msg ? <span className="text-hot">{msg}</span> : null}
       </div>
     </form>

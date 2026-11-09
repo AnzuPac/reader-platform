@@ -9,11 +9,18 @@ const THEMES: Record<Theme, { bg: string; fg: string; label: string }> = {
   sepia: { bg: '#f4ecd8', fg: '#3a3226', label: 'Сепия' },
 };
 
-type Prefs = { size: number; lh: number; theme: Theme };
+const FONTS = [
+  { label: 'Georgia', value: "Georgia, 'Times New Roman', serif" },
+  { label: 'Inter', value: 'Inter, system-ui, sans-serif' },
+  { label: 'Times', value: "'Times New Roman', serif" },
+  { label: 'Verdana', value: 'Verdana, sans-serif' },
+];
+
+type Prefs = { size: number; lh: number; theme: Theme; font: string };
 
 export default function ReaderSettings() {
   const [open, setOpen] = useState(false);
-  const [prefs, setPrefs] = useState<Prefs>({ size: 18, lh: 1.9, theme: 'dark' });
+  const [prefs, setPrefs] = useState<Prefs>({ size: 18, lh: 1.9, theme: 'dark', font: FONTS[0].value });
 
   function apply(p: Prefs) {
     const t = THEMES[p.theme];
@@ -22,6 +29,7 @@ export default function ReaderSettings() {
     root.style.setProperty('--reader-lh', String(p.lh));
     root.style.setProperty('--reader-bg', t.bg);
     root.style.setProperty('--reader-fg', t.fg);
+    root.style.setProperty('--reader-font', p.font || FONTS[0].value);
   }
 
   useEffect(() => {
@@ -32,7 +40,7 @@ export default function ReaderSettings() {
         setPrefs(p);
         apply(p);
       } else {
-        apply({ size: 18, lh: 1.9, theme: 'dark' });
+        apply({ size: 18, lh: 1.9, theme: 'dark', font: FONTS[0].value });
       }
     } catch {}
   }, []);
@@ -66,6 +74,17 @@ export default function ReaderSettings() {
               <span className="w-8 text-center">{prefs.lh}</span>
               <button className="btn btn-ghost px-2 py-0.5" onClick={() => update({ lh: Math.min(2.4, +(prefs.lh + 0.1).toFixed(1)) })}>+</button>
             </div>
+          </div>
+
+          <div className="mb-1 text-sm muted">Шрифт</div>
+          <div className="mb-3 flex flex-wrap gap-1">
+            {FONTS.map((f) => (
+              <button key={f.label} onClick={() => update({ font: f.value })}
+                style={{ fontFamily: f.value }}
+                className={`rounded px-2 py-1 text-xs font-semibold ${prefs.font === f.value ? 'bg-brand text-white' : 'border border-line text-mist'}`}>
+                {f.label}
+              </button>
+            ))}
           </div>
 
           <div className="mb-1 text-sm muted">Тема</div>
