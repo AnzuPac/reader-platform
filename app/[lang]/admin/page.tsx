@@ -20,6 +20,10 @@ export default function AdminPage() {
   const [content, setContent] = useState('');
   const [access, setAccess] = useState('free');
 
+  // обложка
+  const [coverSlug, setCoverSlug] = useState('');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+
   useEffect(() => {
     const saved = localStorage.getItem('admin_token') || '';
     setToken(saved);
@@ -51,6 +55,19 @@ export default function AdminPage() {
     setMsg('Произведение создано: ' + j.work.slug);
     setTitle(''); setDesc(''); setAge(0);
     await load();
+  }
+
+  async function uploadCover(e: React.FormEvent) {
+    e.preventDefault();
+    if (!coverSlug || !coverFile) { setMsg('Выбери произведение и файл'); return; }
+    const fd = new FormData();
+    fd.append('workSlug', coverSlug);
+    fd.append('file', coverFile);
+    const r = await fetch('/api/admin/cover', { method: 'POST', headers: { 'x-admin-token': token }, body: fd });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
+    setMsg('Обложка загружена: ' + j.cover);
+    setCoverFile(null);
   }
 
   async function createChapter(e: React.FormEvent) {
@@ -93,6 +110,17 @@ export default function AdminPage() {
           ))}
         </div>
         <button className="btn btn-primary">Создать</button>
+      </form>
+
+      <form onSubmit={uploadCover} className="card mb-6 space-y-3 p-4">
+        <h2 className="font-semibold">Обложка произведения</h2>
+        <select className="input" value={coverSlug} onChange={(e) => setCoverSlug(e.target.value)}>
+          <option value="">— выбери произведение —</option>
+          {works.map((w) => <option key={w.id} value={w.slug}>{w.title}</option>)}
+        </select>
+        <input className="input" type="file" accept="image/png,image/jpeg,image/webp"
+               onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} />
+        <button className="btn btn-primary">Загрузить обложку</button>
       </form>
 
       <form onSubmit={createChapter} className="card mb-6 space-y-3 p-4">

@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { listWorks, listGenres } from '@/lib/repo';
 import AdSlot from '@/components/AdSlot';
+import { WorkCover } from '@/lib/cover';
 
 export const dynamic = 'force-dynamic';
 
 type WorkRow = {
   id: number; slug: string; title: string; description: string;
   rating_avg: string; words_total: number; views_total: number;
-  age_rating: number; completion: string; author_name: string;
+  age_rating: number; completion: string; author_name: string; cover_path: string | null;
 };
 
 type Genre = { id: number; slug: string; name_sr: string; name_en: string; name_ru: string };
@@ -79,8 +80,8 @@ export default async function CatalogPage({
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {works.map((w, i) => (
             <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
-              <div className="cover cover-sm relative">
-                <span className="relative line-clamp-3">{w.title}</span>
+              <div className="relative">
+                <WorkCover title={w.title} cover={(w as any).cover_path} />
                 {i < 3 ? <span className="badge-rank">TOP {i + 1}</span> : null}
               </div>
               <div className="mt-2 flex items-start gap-1">

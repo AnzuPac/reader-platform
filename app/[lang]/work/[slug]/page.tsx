@@ -4,6 +4,7 @@ import { isLang, type Lang } from '@/lib/i18n';
 import { getWork, listChapters, isInLibrary, workGenres } from '@/lib/repo';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
+import { WorkCover } from '@/lib/cover';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +25,8 @@ export default async function WorkPage({
     <main className="mx-auto max-w-5xl px-5 py-8">
       <div className="card mb-8 p-5 sm:p-7">
         <div className="flex flex-col gap-6 sm:flex-row">
-          <div className="cover relative h-[240px] w-[170px] shrink-0">
-            <span className="absolute left-0 top-0 h-full w-full bg-black/10" />
-            <span className="relative line-clamp-4">{work.title}</span>
+          <div className="w-[170px] shrink-0">
+            <WorkCover title={work.title} cover={work.cover_path} size="cover-lg" />
           </div>
 
           <div className="min-w-0 flex-1">

@@ -1,7 +1,7 @@
 import { query, one, initSchema } from './db';
 
 export type WorkCard = {
-  id: number; slug: string; title: string; description: string;
+  id: number; slug: string; title: string; description: string; cover_path: string | null;
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string;
 };
@@ -35,7 +35,7 @@ export async function listWorks(opts: { q?: string; genre?: string; limit?: numb
   params.push(offset);
   const offIdx = params.length;
   const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-                      w.age_rating, w.completion, u.display_name AS author_name
+                      w.age_rating, w.completion, w.cover_path, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id
                 WHERE ${where.join(' AND ')}
                 ORDER BY w.published_at DESC NULLS LAST LIMIT $${limIdx} OFFSET $${offIdx}`;
@@ -46,7 +46,7 @@ export async function getWork(slug: string): Promise<WorkCard | null> {
   await ensure();
   return one<WorkCard>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );
@@ -108,7 +108,7 @@ export async function listLibrary(userId: number) {
   await ensure();
   return query<WorkCard & { added_at: string }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, u.display_name AS author_name, l.created_at AS added_at
+            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name, l.created_at AS added_at
        FROM library_items l
        JOIN works w ON w.id = l.work_id
        JOIN users u ON u.id = w.author_id
