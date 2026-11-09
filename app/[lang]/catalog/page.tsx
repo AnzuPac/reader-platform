@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { listWorks } from '@/lib/repo';
+import AdSlot from '@/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,7 @@ export default async function CatalogPage({
           ))}
         </div>
       )}
+      <AdSlot slot="catalog_bottom" />
     </main>
   );
 }

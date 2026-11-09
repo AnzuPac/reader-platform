@@ -4,6 +4,7 @@ import { isLang, type Lang } from '@/lib/i18n';
 import { getChapter, listChapters, query, one } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
 import ReaderClient from '@/components/ReaderClient';
+import AdSlot from '@/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,8 @@ export default async function ReadPage({
           {ch.content}
         </article>
       )}
+
+      <AdSlot slot="chapter_end" />
 
       <ReaderClient chapterId={ch.id} workId={ch.work_id} />
 
