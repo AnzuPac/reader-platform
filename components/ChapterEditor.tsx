@@ -26,6 +26,8 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+  const fontRef = useRef<HTMLInputElement>(null);
+  const [fontName, setFontName] = useState('');
   const imageRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
@@ -111,6 +113,22 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     await loadChapters();
   }
 
+  async function uploadFont(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true); setMsg('Загружаю шрифт…');
+    const fd = new FormData();
+    fd.append('workSlug', workSlug);
+    fd.append('family', fontName || 'Custom');
+    fd.append('file', file);
+    const r = await fetch('/api/author/font', { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setMsg('Ошибка шрифта: ' + (j.error || r.status)); return; }
+    setMsg(`Шрифт «${j.family}» загружен и применён к произведению`);
+    e.target.value = '';
+  }
+
   async function save() {
     if (!editor) return;
     setBusy(true); setMsg('');
@@ -177,11 +195,16 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
           <EditorContent editor={editor} />
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button className="btn btn-primary" onClick={save} disabled={busy}>Сохранить главу</button>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
           <input ref={importRef} type="file" accept=".docx,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />
+          <input ref={fontRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={uploadFont} />
+          <div className="flex items-center gap-2">
+            <input className="input max-w-[150px]" placeholder="Имя шрифта" value={fontName} onChange={(e) => setFontName(e.target.value)} />
+            <button className="btn btn-ghost" onClick={() => fontRef.current?.click()} disabled={busy}>Свой шрифт</button>
+          </div>
           <span className="text-sm muted">{editor ? editor.storage.characterCount?.words?.() ?? '' : ''}</span>
         </div>
         {msg ? <p className="mt-2 text-sm text-hot">{msg}</p> : null}

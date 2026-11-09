@@ -51,6 +51,8 @@ CREATE TABLE works (
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
   cover_path        TEXT,
+  font_family       TEXT,
+  font_path         TEXT,
   words_total       INTEGER NOT NULL DEFAULT 0,
   ratings_count     INTEGER NOT NULL DEFAULT 0,
   rating_avg        NUMERIC(3,2) NOT NULL DEFAULT 0,

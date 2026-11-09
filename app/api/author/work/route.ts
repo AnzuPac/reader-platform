@@ -20,8 +20,11 @@ export async function GET() {
   if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   await initSchema();
   const works = await query(
-    `SELECT id, slug, title, status, completion, words_total, cover_path, updated_at
-       FROM works WHERE author_id = $1 ORDER BY updated_at DESC`, [s.uid]
+    `SELECT w.id, w.slug, w.title, w.status, w.completion, w.words_total, w.cover_path, w.updated_at,
+            w.views_total,
+            (SELECT CAST(COUNT(*) AS INTEGER) FROM chapters c WHERE c.work_id = w.id AND c.status = 'published') AS chapters,
+            (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p WHERE p.work_id = w.id) AS readers
+       FROM works w WHERE w.author_id = $1 ORDER BY w.updated_at DESC`, [s.uid]
   );
   return NextResponse.json({ works });
 }

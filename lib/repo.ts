@@ -65,9 +65,10 @@ export async function getChapter(id: number) {
   return one<{
     id: number; work_id: number; number: number; title: string; content: string;
     access: string; word_count: number; work_slug: string; work_title: string;
+    font_family: string | null; font_path: string | null;
   }>(
     `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.word_count,
-            w.slug AS work_slug, w.title AS work_title
+            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1 AND c.status = 'published'`, [id]
   );

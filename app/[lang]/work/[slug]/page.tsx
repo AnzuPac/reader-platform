@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
 import { getWork, listChapters, isInLibrary, workGenres } from '@/lib/repo';
+import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
 import { WorkCover } from '@/lib/cover';
@@ -15,6 +16,7 @@ export default async function WorkPage({
   const l = (isLang(lang) ? lang : 'sr') as Lang;
   const work = await getWork(slug);
   if (!work) notFound();
+  await query('UPDATE works SET views_total = views_total + 1 WHERE id = $1', [work.id]);
   const chapters = await listChapters(work.id);
   const session = await readSession();
   const inLib = session ? await isInLibrary(session.uid, work.id) : false;

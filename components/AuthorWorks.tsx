@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-type Work = { id: number; slug: string; title: string; status: string; words_total: number; updated_at: string };
+type Work = { id: number; slug: string; title: string; status: string; words_total: number; updated_at: string; views_total: number; chapters: number; readers: number };
 
 export default function AuthorWorks({ lang }: { lang: string }) {
   const [works, setWorks] = useState<Work[]>([]);
@@ -47,7 +47,8 @@ export default function AuthorWorks({ lang }: { lang: string }) {
           {works.map((w) => (
             <li key={w.id} className="flex items-center gap-3 px-5 py-3">
               <span className="flex-1 font-medium">{w.title}</span>
-              <span className="text-xs muted">{w.words_total} слов · {w.status}</span>
+              <span className="text-xs muted">{w.chapters} гл · {w.words_total} слов · 👁 {w.views_total} · 👤 {w.readers}</span>
+              <span className="text-xs muted">{w.status}</span>
               <Link href={`/${lang}/author/${w.slug}`} className="btn btn-ghost">Редактор</Link>
             </li>
           ))}

@@ -49,6 +49,13 @@ export default async function ReadPage({
       </div>
       <h1 className="mb-8 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1>
 
+      {ch.font_path && ch.font_family ? (
+        <style dangerouslySetInnerHTML={{ __html: `
+          @font-face { font-family: '${ch.font_family}'; src: url('${ch.font_path}'); font-display: swap; }
+          .reader-surface .prose-reader { font-family: '${ch.font_family}', Georgia, serif; }
+        ` }} />
+      ) : null}
+
       {locked ? (
         <div className="card p-6">
           <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava je za pretplatnike</h2>

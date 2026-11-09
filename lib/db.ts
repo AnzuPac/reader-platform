@@ -23,6 +23,14 @@ function toSqlite(sql: string, params: unknown[]): { sql: string; params: unknow
   return { sql: converted, params: out };
 }
 
+async function migrateSqlite(db: any) {
+  const alters = [
+    'ALTER TABLE works ADD COLUMN font_family TEXT',
+    'ALTER TABLE works ADD COLUMN font_path TEXT',
+  ];
+  for (const sql of alters) { try { db.exec(sql); } catch {} }
+}
+
 async function initSqlite() {
   if (sqlite) return sqlite;
   const { DatabaseSync } = await import('node:sqlite');
@@ -32,6 +40,7 @@ async function initSqlite() {
   db.exec('PRAGMA journal_mode = WAL;');
   const schema = readFileSync(path.join(process.cwd(), 'db', 'schema.sqlite.sql'), 'utf8');
   db.exec(schema);
+  await migrateSqlite(db);
   sqlite = db;
   return db;
 }
