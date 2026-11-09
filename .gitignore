@@ -1,7 +1,12 @@
 node_modules/
 .next/
+out/
+data/
+backups/
+public/uploads/
+*.log
 .env
 .env.local
-*.log
-data/
-uploads/
+*.bak-*
+*.bak
+tsconfig.tsbuildinfo
