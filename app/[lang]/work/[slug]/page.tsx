@@ -6,6 +6,8 @@ import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
 import { WorkCover } from '@/lib/cover';
+import RatingStars from '@/components/RatingStars';
+import Comments from '@/components/Comments';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +37,7 @@ export default async function WorkPage({
             <h1 className="mb-2 text-2xl font-extrabold leading-tight sm:text-3xl">{work.title}</h1>
             <div className="mb-4 flex flex-wrap items-center gap-3 text-sm muted">
               <span>{work.author_name}</span>
-              <span>★ {work.rating_avg}</span>
+              <RatingStars workId={work.id} initialAvg={String(work.rating_avg)} />
               <span>{work.words_total} reči</span>
               <span>{chapters.length} glava</span>
               {work.completion === 'completed' ? <span className="badge-hot">Završeno</span> : null}
@@ -81,6 +83,8 @@ export default async function WorkPage({
           ) : null}
         </ol>
       </div>
+
+      <Comments workId={work.id} />
     </main>
   );
 }

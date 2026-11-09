@@ -4,6 +4,7 @@ import { isLang, type Lang } from '@/lib/i18n';
 import { requireAuthor } from '@/lib/author';
 import { getAuthorWork } from '@/lib/repo';
 import ChapterEditor from '@/components/ChapterEditor';
+import GlossaryEditor from '@/components/GlossaryEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function AuthorWorkPage({
         <span className="text-sm">{work.title}</span>
       </div>
       <ChapterEditor workSlug={slug} />
+      <GlossaryEditor workSlug={slug} />
     </main>
   );
 }
