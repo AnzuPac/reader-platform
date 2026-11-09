@@ -13,10 +13,11 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; genre?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
+export async function listWorks(opts: { q?: string; genre?: string; type?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
   const genre = (opts.genre || '').trim();
+  const wtype = (opts.type || '').trim();
   const limit = Math.min(opts.limit ?? 24, 60);
   const offset = opts.offset ?? 0;
   const params: unknown[] = [];
@@ -24,6 +25,10 @@ export async function listWorks(opts: { q?: string; genre?: string; limit?: numb
   if (q) {
     params.push(`%${q.toLowerCase()}%`);
     where.push(`(lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
+  }
+  if (wtype === 'novel' || wtype === 'comic') {
+    params.push(wtype);
+    where.push(`w.type = $${params.length}`);
   }
   if (genre) {
     params.push(genre);
@@ -65,10 +70,10 @@ export async function getChapter(id: number) {
   return one<{
     id: number; work_id: number; number: number; title: string; content: string;
     access: string; word_count: number; work_slug: string; work_title: string;
-    font_family: string | null; font_path: string | null;
+    font_family: string | null; font_path: string | null; work_type: string;
   }>(
     `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.word_count,
-            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path
+            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1 AND c.status = 'published'`, [id]
   );
@@ -143,8 +148,8 @@ export async function addWorkGenre(workId: number, genreSlug: string): Promise<v
 
 export async function getAuthorWork(slug: string, authorId: number) {
   await ensure();
-  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string }>(
-    'SELECT id, slug, title, description, status, cover_path, age_rating, completion FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
+  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string; type: string }>(
+    'SELECT id, slug, title, description, status, cover_path, age_rating, completion, type FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
   );
 }
 

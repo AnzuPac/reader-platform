@@ -8,6 +8,7 @@ import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
 import ChapterBody from '@/components/ChapterBody';
 import Comments from '@/components/Comments';
+import ComicReader from '@/components/ComicReader';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,7 @@ export default async function ReadPage({
           <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
         </div>
       ) : (
-        <ChapterBody chapterId={ch.id} initialHtml={ch.content} />
+        ch.work_type === 'comic' ? <ComicReader chapterId={ch.id} /> : <ChapterBody chapterId={ch.id} initialHtml={ch.content} />
       )}
 
       <AdSlot slot="chapter_end" />

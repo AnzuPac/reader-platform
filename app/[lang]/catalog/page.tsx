@@ -22,17 +22,17 @@ export default async function CatalogPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ q?: string; genre?: string }>;
+  searchParams: Promise<{ q?: string; genre?: string; type?: string }>;
 }) {
   const { lang } = await params;
-  const { q, genre } = await searchParams;
+  const { q, genre, type } = await searchParams;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
 
   let works: WorkRow[] = [];
   let genres: Genre[] = [];
   try {
     [works, genres] = await Promise.all([
-      listWorks({ q, genre, limit: 36 }) as unknown as Promise<WorkRow[]>,
+      listWorks({ q, genre, type, limit: 36 }) as unknown as Promise<WorkRow[]>,
       listGenres() as unknown as Promise<Genre[]>,
     ]);
   } catch {
@@ -43,6 +43,7 @@ export default async function CatalogPage({
     const p = new URLSearchParams();
     if (q) p.set('q', q);
     if (genre) p.set('genre', genre);
+    if (type) p.set('type', type);
     Object.entries(extra).forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
     const s = p.toString();
     return s ? `?${s}` : '';
@@ -50,25 +51,53 @@ export default async function CatalogPage({
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">{t(l, 'catalog_title')}</h1>
         <span className="text-sm muted">{works.length} dela</span>
       </div>
 
       <form action={`/${l}/catalog`} className="mb-4 flex gap-2">
         {genre ? <input type="hidden" name="genre" value={genre} /> : null}
+        {type ? <input type="hidden" name="type" value={type} /> : null}
         <input className="input" name="q" defaultValue={q || ''} placeholder={t(l, 'search_placeholder')} />
         <button className="btn btn-primary">Traži</button>
       </form>
 
+      <div className="mb-3 flex gap-2">
+        {[
+          { key: '', label: 'Sve' },
+          { key: 'novel', label: 'Romani' },
+          { key: 'comic', label: 'Stripovi' },
+        ].map((tab) => (
+          <Link
+            key={tab.key || 'all'}
+            href={`/${l}/catalog${qs({ type: tab.key })}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              (type || '') === tab.key ? 'bg-hot text-white' : 'border border-line text-mist hover:text-ink'
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
       <div className="mb-7 flex flex-wrap gap-2">
-        <Link href={`/${l}/catalog${qs({ genre: '' })}`}
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${!genre ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'}`}>
+        <Link
+          href={`/${l}/catalog${qs({ genre: '' })}`}
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            !genre ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'
+          }`}
+        >
           Sve
         </Link>
         {genres.map((g) => (
-          <Link key={g.id} href={`/${l}/catalog${qs({ genre: g.slug })}`}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${genre === g.slug ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'}`}>
+          <Link
+            key={g.id}
+            href={`/${l}/catalog${qs({ genre: g.slug })}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              genre === g.slug ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'
+            }`}
+          >
             {genreName(g, l)}
           </Link>
         ))}
@@ -81,7 +110,7 @@ export default async function CatalogPage({
           {works.map((w, i) => (
             <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
               <div className="relative">
-                <WorkCover title={w.title} cover={(w as any).cover_path} />
+                <WorkCover title={w.title} cover={w.cover_path} />
                 {i < 3 ? <span className="badge-rank">TOP {i + 1}</span> : null}
               </div>
               <div className="mt-2 flex items-start gap-1">
@@ -91,7 +120,7 @@ export default async function CatalogPage({
               <div className="line-clamp-1 text-xs muted">{w.author_name}</div>
               <div className="mt-1 flex items-center gap-2 text-xs muted">
                 <span>★ {w.rating_avg}</span>
-                <span>{w.words_total} reči</span>
+                <span>{w.words_total}</span>
                 {w.completion === 'completed' ? <span className="text-brand">Završeno</span> : null}
               </div>
             </Link>

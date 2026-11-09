@@ -20,7 +20,7 @@ export async function GET() {
   if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   await initSchema();
   const works = await query(
-    `SELECT w.id, w.slug, w.title, w.status, w.completion, w.words_total, w.cover_path, w.updated_at,
+    `SELECT w.id, w.slug, w.title, w.type, w.status, w.completion, w.words_total, w.cover_path, w.updated_at,
             w.views_total,
             (SELECT CAST(COUNT(*) AS INTEGER) FROM chapters c WHERE c.work_id = w.id AND c.status = 'published') AS chapters,
             (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p WHERE p.work_id = w.id) AS readers
@@ -50,10 +50,11 @@ export async function POST(req: Request) {
   }
 
   const slug = slugify(title);
+  const wtype = b?.type === 'comic' ? 'comic' : 'novel';
   const rows = await query<{ id: number; slug: string }>(
-    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description)
-     VALUES ($1,$2,'sr','draft',$3,$4,$5,$6) RETURNING id, slug`,
-    [slug, s.uid, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || '')]
+    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description, type)
+     VALUES ($1,$2,'sr','draft',$3,$4,$5,$6,$7) RETURNING id, slug`,
+    [slug, s.uid, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || ''), wtype]
   );
   return NextResponse.json({ ok: true, work: rows[0] });
 }

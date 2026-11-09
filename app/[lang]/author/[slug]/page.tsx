@@ -6,6 +6,7 @@ import { getAuthorWork } from '@/lib/repo';
 import ChapterEditor from '@/components/ChapterEditor';
 import GlossaryEditor from '@/components/GlossaryEditor';
 import WorkSettings from '@/components/WorkSettings';
+import PagesUploader from '@/components/PagesUploader';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,8 @@ export default async function AuthorWorkPage({
       </div>
       <WorkSettings workSlug={slug} initialTitle={work.title} initialDescription={work.description || ''} initialAge={work.age_rating || 0} initialCompletion={work.completion || 'ongoing'} />
       <ChapterEditor workSlug={slug} />
-      <GlossaryEditor workSlug={slug} />
+      {work.type === 'comic' ? <PagesUploader workSlug={slug} /> : null}
+      {work.type !== 'comic' ? <GlossaryEditor workSlug={slug} /> : null}
     </main>
   );
 }
