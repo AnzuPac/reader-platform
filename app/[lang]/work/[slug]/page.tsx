@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
-import { getWork, listChapters } from '@/lib/repo';
+import { getWork, listChapters, isInLibrary } from '@/lib/repo';
+import { readSession } from '@/lib/auth';
+import LibraryButton from '@/components/LibraryButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +15,8 @@ export default async function WorkPage({
   const work = await getWork(slug);
   if (!work) notFound();
   const chapters = await listChapters(work.id);
+  const session = await readSession();
+  const inLib = session ? await isInLibrary(session.uid, work.id) : false;
   const first = chapters[0];
 
   return (
@@ -37,10 +41,11 @@ export default async function WorkPage({
 
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {first ? (
                 <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj prvu glavu</Link>
               ) : null}
+              <LibraryButton workId={work.id} initial={inLib} />
               <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>
             </div>
           </div>

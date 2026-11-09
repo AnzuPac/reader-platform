@@ -76,3 +76,35 @@ export async function saveProgress(userId: number, workId: number, chapterId: nu
     [userId, workId, chapterId, position, percent]
   );
 }
+
+export async function isInLibrary(userId: number, workId: number): Promise<boolean> {
+  await ensure();
+  const rows = await query<{ ok: number }>(
+    'SELECT 1 AS ok FROM library_items WHERE user_id = $1 AND work_id = $2', [userId, workId]
+  );
+  return rows.length > 0;
+}
+
+export async function toggleLibrary(userId: number, workId: number): Promise<boolean> {
+  await ensure();
+  const exists = await isInLibrary(userId, workId);
+  if (exists) {
+    await query('DELETE FROM library_items WHERE user_id = $1 AND work_id = $2', [userId, workId]);
+    return false;
+  }
+  await query('INSERT INTO library_items (user_id, work_id) VALUES ($1,$2)', [userId, workId]);
+  return true;
+}
+
+export async function listLibrary(userId: number) {
+  await ensure();
+  return query<WorkCard & { added_at: string }>(
+    `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
+            w.age_rating, w.completion, u.display_name AS author_name, l.created_at AS added_at
+       FROM library_items l
+       JOIN works w ON w.id = l.work_id
+       JOIN users u ON u.id = w.author_id
+      WHERE l.user_id = $1 AND w.status = 'published'
+      ORDER BY l.created_at DESC`, [userId]
+  );
+}
