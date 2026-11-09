@@ -6,6 +6,7 @@ import { readSession } from '@/lib/auth';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
+import ChapterBody from '@/components/ChapterBody';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,11 +64,7 @@ export default async function ReadPage({
           <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
         </div>
       ) : (
-        <div className="reader-surface px-1 py-2 sm:px-6 sm:py-5">
-          <article className="prose-reader whitespace-pre-line">
-            {ch.content}
-          </article>
-        </div>
+        <ChapterBody chapterId={ch.id} initialHtml={ch.content} />
       )}
 
       <AdSlot slot="chapter_end" />
