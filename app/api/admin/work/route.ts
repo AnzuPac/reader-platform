@@ -23,3 +23,13 @@ export async function POST(req: Request) {
   );
   return NextResponse.json({ ok: true, work: rows[0] });
 }
+
+export async function GET(req: Request) {
+  if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  await initSchema();
+  const rows = await query(
+    `SELECT id, slug, title, description, status, completion, age_rating, words_total, published_at
+       FROM works ORDER BY id DESC LIMIT 100`
+  );
+  return NextResponse.json({ works: rows });
+}
