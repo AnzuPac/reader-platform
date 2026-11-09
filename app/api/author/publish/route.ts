@@ -26,7 +26,12 @@ export async function POST(req: Request) {
   if (publish) {
     const cnt = await one<{ n: number }>("SELECT CAST(COUNT(*) AS INTEGER) AS n FROM chapters WHERE work_id = $1 AND status = 'published'", [work.id]);
     if (cnt && cnt.n > 0) {
-      await query("UPDATE works SET status = 'published', published_at = COALESCE(published_at, now()) WHERE id = $1", [work.id]);
+      const cur = await one<{ status: string }>('SELECT status FROM works WHERE id = $1', [work.id]);
+      if (cur?.status === 'published') {
+        await query("UPDATE works SET published_at = COALESCE(published_at, now()) WHERE id = $1", [work.id]);
+      } else {
+        await query("UPDATE works SET status = 'review', updated_at = now() WHERE id = $1", [work.id]);
+      }
     }
   }
   const ch = await query('SELECT number, status FROM chapters WHERE work_id = $1 ORDER BY number', [work.id]);
