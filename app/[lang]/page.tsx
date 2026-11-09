@@ -36,12 +36,12 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
       {/* hero */}
-      <section className="mb-10 overflow-hidden rounded-2xl bg-gradient-to-r from-[#12224a] via-[#2f6fed] to-[#7a3b9c] px-7 py-10 text-white sm:px-10 sm:py-14">
+      <section className="mb-10 overflow-hidden rounded-2xl border border-[#3a2c56] bg-gradient-to-br from-[#1b1330] via-[#2d1a4d] to-[#3a1f5c] px-7 py-10 text-white sm:px-10 sm:py-14">
         <div className="max-w-xl">
           <h1 className="mb-3 text-3xl font-extrabold leading-tight sm:text-4xl">{t(l, 'hero_title')}</h1>
           <p className="mb-6 text-sm leading-relaxed text-white/80 sm:text-base">{t(l, 'hero_sub')}</p>
           <div className="flex flex-wrap gap-3">
-            <Link href={`/${l}/catalog`} className="btn bg-white text-[#12224a] hover:bg-white/90">
+            <Link href={`/${l}/catalog`} className="btn bg-white text-[#2d1a4d] hover:bg-white/90">
               {t(l, 'cta_read')}
             </Link>
             <Link href={`/${l}/subscribe`} className="btn border border-white/40 text-white hover:bg-white/10">

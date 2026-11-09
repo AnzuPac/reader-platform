@@ -5,11 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#1b1f27',
-        brand: '#2f6fed',
-        line: '#e8eaf0',
-        mist: '#6b7280',
-        hot: '#e8590c',
+        ink: '#ece7f6',
+        brand: '#8b5cf6',
+        line: '#2c2340',
+        mist: '#a99fc4',
+        hot: '#f472b6',
+        panel: '#1a1428',
+        deep: '#120e1c',
       },
     },
   },
