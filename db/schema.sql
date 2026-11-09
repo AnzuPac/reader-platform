@@ -4,7 +4,7 @@
 -- === Пользователи ===
 CREATE TABLE users (
   id              BIGSERIAL PRIMARY KEY,
-  email           CITEXT UNIQUE NOT NULL,
+  email           TEXT UNIQUE NOT NULL,
   password_hash   TEXT,                          -- NULL, если вход только через OAuth
   display_name    TEXT NOT NULL,
   role            TEXT NOT NULL DEFAULT 'reader'
@@ -15,6 +15,8 @@ CREATE TABLE users (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen_at    TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));
 
 CREATE TABLE oauth_accounts (
   id           BIGSERIAL PRIMARY KEY,
