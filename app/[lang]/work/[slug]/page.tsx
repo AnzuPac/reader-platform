@@ -11,6 +11,22 @@ import Comments from '@/components/Comments';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ lang: string; slug: string }> }) {
+  const { slug } = await params;
+  const w = await getWork(slug).catch(() => null);
+  if (!w) return { title: 'Nije pronađeno' };
+  return {
+    title: `${w.title} — ${w.author_name}`,
+    description: (w.description || '').slice(0, 160),
+    openGraph: {
+      title: w.title,
+      description: (w.description || '').slice(0, 160),
+      images: w.cover_path ? [w.cover_path] : undefined,
+      type: 'book',
+    },
+  };
+}
+
 export default async function WorkPage({
   params,
 }: { params: Promise<{ lang: string; slug: string }> }) {
