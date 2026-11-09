@@ -13,11 +13,12 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; genre?: string; type?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
+export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
   const genre = (opts.genre || '').trim();
   const wtype = (opts.type || '').trim();
+  const sort = (opts.sort || 'new').trim();
   const limit = Math.min(opts.limit ?? 24, 60);
   const offset = opts.offset ?? 0;
   const params: unknown[] = [];
@@ -39,11 +40,16 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
   const limIdx = params.length;
   params.push(offset);
   const offIdx = params.length;
+  const order =
+    sort === 'rating' ? 'w.rating_avg DESC, w.ratings_count DESC' :
+    sort === 'views' ? 'w.views_total DESC' :
+    sort === 'words' ? 'w.words_total DESC' :
+    'w.published_at DESC NULLS LAST';
   const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
                       w.age_rating, w.completion, w.cover_path, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id
                 WHERE ${where.join(' AND ')}
-                ORDER BY w.published_at DESC NULLS LAST LIMIT $${limIdx} OFFSET $${offIdx}`;
+                ORDER BY ${order} LIMIT $${limIdx} OFFSET $${offIdx}`;
   return query<WorkCard>(sql, params);
 }
 

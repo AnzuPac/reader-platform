@@ -55,6 +55,22 @@ export default async function ReadPage({
         <span>·</span>
         <span>Glava {ch.number}</span>
       </div>
+      <details className="card mb-6 px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold">Sadržaj · {chapters.length} glava</summary>
+        <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto text-sm">
+          {chapters.map((c) => (
+            <li key={c.id}>
+              <Link href={`/${l}/read/${c.id}`}
+                className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-[#221a35] ${c.id === ch.id ? 'text-brand' : 'text-mist'}`}>
+                <span className="w-8">{c.number}.</span>
+                <span className="flex-1">{c.title || `Glava ${c.number}`}</span>
+                {c.access !== 'free' ? <span className="text-xs">🔒</span> : null}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </details>
+
       <h1 className="mb-8 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1>
 
       {ch.font_path && ch.font_family ? (
