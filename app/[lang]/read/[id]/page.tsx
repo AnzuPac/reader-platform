@@ -7,6 +7,7 @@ import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
 import ChapterBody from '@/components/ChapterBody';
+import Comments from '@/components/Comments';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,7 @@ export default async function ReadPage({
       <AdSlot slot="chapter_end" />
 
       <ReaderClient chapterId={ch.id} workId={ch.work_id} />
+      <Comments workId={ch.work_id} chapterId={ch.id} />
       <ReaderSettings />
 
       <nav className="mt-12 flex items-center justify-between text-sm">

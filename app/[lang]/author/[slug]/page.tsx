@@ -5,6 +5,7 @@ import { requireAuthor } from '@/lib/author';
 import { getAuthorWork } from '@/lib/repo';
 import ChapterEditor from '@/components/ChapterEditor';
 import GlossaryEditor from '@/components/GlossaryEditor';
+import WorkSettings from '@/components/WorkSettings';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function AuthorWorkPage({
         <span className="text-sm muted">·</span>
         <span className="text-sm">{work.title}</span>
       </div>
+      <WorkSettings workSlug={slug} initialTitle={work.title} initialDescription={work.description || ''} initialAge={work.age_rating || 0} initialCompletion={work.completion || 'ongoing'} />
       <ChapterEditor workSlug={slug} />
       <GlossaryEditor workSlug={slug} />
     </main>

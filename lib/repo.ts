@@ -143,8 +143,8 @@ export async function addWorkGenre(workId: number, genreSlug: string): Promise<v
 
 export async function getAuthorWork(slug: string, authorId: number) {
   await ensure();
-  return one<{ id: number; slug: string; title: string; status: string; cover_path: string | null }>(
-    'SELECT id, slug, title, status, cover_path FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
+  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string }>(
+    'SELECT id, slug, title, description, status, cover_path, age_rating, completion FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
   );
 }
 
