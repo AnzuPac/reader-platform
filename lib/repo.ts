@@ -47,11 +47,11 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
   return query<WorkCard>(sql, params);
 }
 
-export async function getWork(slug: string): Promise<WorkCard | null> {
+export async function getWork(slug: string): Promise<(WorkCard & { type: string }) | null> {
   await ensure();
-  return one<WorkCard>(
+  return one<WorkCard & { type: string }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, w.type, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );

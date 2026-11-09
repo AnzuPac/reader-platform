@@ -54,7 +54,7 @@ export default async function WorkPage({
             <div className="mb-4 flex flex-wrap items-center gap-3 text-sm muted">
               <span>{work.author_name}</span>
               <RatingStars workId={work.id} initialAvg={String(work.rating_avg)} />
-              <span>{work.words_total} reči</span>
+              <span>{work.words_total} {work.type === 'comic' ? 'stranica' : 'reči'}</span>
               <span>{chapters.length} glava</span>
               {work.completion === 'completed' ? <span className="badge-hot">Završeno</span> : null}
               {work.age_rating ? <span className="badge-hot">{work.age_rating}+</span> : null}
@@ -90,7 +90,7 @@ export default async function WorkPage({
                 <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
                 <span className="flex-1 text-sm">{c.title || `Glava ${c.number}`}</span>
                 {c.access !== 'free' ? <span className="badge-hot">🔒 Pretplatnici</span> : null}
-                <span className="text-xs muted">{c.word_count} reči</span>
+                <span className="text-xs muted">{c.word_count} {work.type === 'comic' ? 'str.' : 'reči'}</span>
               </Link>
             </li>
           ))}
