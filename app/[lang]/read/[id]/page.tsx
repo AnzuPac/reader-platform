@@ -5,6 +5,7 @@ import { getChapter, listChapters, query, one } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
+import ReaderSettings from '@/components/ReaderSettings';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,14 +56,17 @@ export default async function ReadPage({
           <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
         </div>
       ) : (
-        <article className="prose-reader whitespace-pre-line text-[17px] leading-8">
-          {ch.content}
-        </article>
+        <div className="reader-surface px-1 py-2 sm:px-6 sm:py-5">
+          <article className="prose-reader whitespace-pre-line">
+            {ch.content}
+          </article>
+        </div>
       )}
 
       <AdSlot slot="chapter_end" />
 
       <ReaderClient chapterId={ch.id} workId={ch.work_id} />
+      <ReaderSettings />
 
       <nav className="mt-12 flex items-center justify-between text-sm">
         {prev ? <Link className="btn btn-ghost" href={`/${l}/read/${prev.id}`}>← Glava {prev.number}</Link> : <span />}

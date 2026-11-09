@@ -146,3 +146,16 @@ export async function getAuthorWork(slug: string, authorId: number) {
     'SELECT id, slug, title, status, cover_path FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
   );
 }
+
+export async function getContinueReading(userId: number) {
+  await ensure();
+  return one<{ work_slug: string; work_title: string; chapter_id: number; chapter_title: string; number: number; percent: number }>(
+    `SELECT w.slug AS work_slug, w.title AS work_title, c.id AS chapter_id,
+            c.title AS chapter_title, c.number, p.percent
+       FROM reading_progress p
+       JOIN works w ON w.id = p.work_id
+       JOIN chapters c ON c.id = p.chapter_id
+      WHERE p.user_id = $1 AND w.status = 'published'
+      ORDER BY p.updated_at DESC LIMIT 1`, [userId]
+  );
+}

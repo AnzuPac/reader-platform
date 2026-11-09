@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
-import { listWorks } from '@/lib/repo';
+import { listWorks, getContinueReading } from '@/lib/repo';
+import { readSession } from '@/lib/auth';
 import AdSlot from '@/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,8 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   } catch {
     works = [];
   }
+  const session = await readSession();
+  const cont = session ? await getContinueReading(session.uid) : null;
   const popular = works.slice(0, 3);
   const fresh = works.slice(3, 12);
 
@@ -50,6 +53,19 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           </div>
         </div>
       </section>
+
+      {cont ? (
+        <section className="mb-8">
+          <Link href={`/${l}/read/${cont.chapter_id}`} className="card flex items-center gap-4 p-4 transition hover:border-brand">
+            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand/20 text-xl">📖</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs muted">Nastavi čitanje · {cont.percent}%</div>
+              <div className="line-clamp-1 font-semibold">{cont.work_title} — {cont.chapter_title || `Glava ${cont.number}`}</div>
+            </div>
+            <span className="btn btn-primary">Nastavi</span>
+          </Link>
+        </section>
+      ) : null}
 
       {/* popular */}
       <section className="mb-10">

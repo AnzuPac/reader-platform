@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
-import { listLibrary } from '@/lib/repo';
+import { listLibrary, getContinueReading } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +32,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ lang: 
   }
 
   const items = (await listLibrary(session.uid)) as unknown as LibItem[];
+  const cont = await getContinueReading(session.uid);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
@@ -39,6 +40,17 @@ export default async function LibraryPage({ params }: { params: Promise<{ lang: 
         <h1 className="text-2xl font-bold">{t(l, 'nav_library')}</h1>
         <span className="text-sm muted">{items.length}</span>
       </div>
+
+      {cont ? (
+        <Link href={`/${l}/read/${cont.chapter_id}`} className="card mb-6 flex items-center gap-4 p-4 hover:border-brand">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/20 text-lg">📖</span>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs muted">Nastavi čitanje · {cont.percent}%</div>
+            <div className="line-clamp-1 font-semibold">{cont.work_title} — {cont.chapter_title || `Glava ${cont.number}`}</div>
+          </div>
+          <span className="btn btn-primary">Nastavi</span>
+        </Link>
+      ) : null}
 
       {items.length === 0 ? (
         <div className="card p-8 text-center muted">
