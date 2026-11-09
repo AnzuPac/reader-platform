@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reader
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: reader
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reader"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://reader:change-me@db:5432/reader
+      SITE_URL: https://example.com
+      JWT_SECRET: change-me-to-a-long-random-string-32chars
+      ADMIN_TOKEN: change-me-admin-token
+      OLLAMA_URL: http://host.docker.internal:11434
+    ports:
+      - "3020:3020"
+    volumes:
+      - uploads:/app/public/uploads
+      - storage:/app/data/storage
+
+volumes:
+  pgdata:
+  uploads:
+  storage:
