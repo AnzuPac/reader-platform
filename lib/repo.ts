@@ -139,3 +139,10 @@ export async function addWorkGenre(workId: number, genreSlug: string): Promise<v
   if (!g) return;
   await query('INSERT INTO work_genres (work_id, genre_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [workId, g.id]);
 }
+
+export async function getAuthorWork(slug: string, authorId: number) {
+  await ensure();
+  return one<{ id: number; slug: string; title: string; status: string; cover_path: string | null }>(
+    'SELECT id, slug, title, status, cover_path FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
+  );
+}
