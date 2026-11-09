@@ -26,6 +26,7 @@ export default async function LangLayout({
             <Link href={`/${l}`} className="hover:text-brand">{t(l, 'nav_home')}</Link>
             <Link href={`/${l}/catalog`} className="hover:text-brand">{t(l, 'nav_catalog')}</Link>
             <Link href={`/${l}/library`} className="hover:text-brand">{t(l, 'nav_library')}</Link>
+            <Link href={`/${l}/storage`} className="hover:text-brand">Prostor</Link>
           </nav>
 
           <form action={`/${l}/catalog`} className="hidden flex-1 md:block">

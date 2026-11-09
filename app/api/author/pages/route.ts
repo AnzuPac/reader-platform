@@ -58,3 +58,41 @@ export async function POST(req: Request) {
   await query('UPDATE chapters SET word_count = $2 WHERE id = $1', [chapterId, cnt?.n ?? 0]);
   return NextResponse.json({ ok: true, chapterId, pages: saved.length, total: cnt?.n ?? 0 });
 }
+
+/** Список страниц главы для управления. */
+export async function GET(req: Request) {
+  const s = await requireAuthor();
+  if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const url = new URL(req.url);
+  const slug = url.searchParams.get('work') || '';
+  const number = Number(url.searchParams.get('number'));
+  await initSchema();
+  const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
+  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  const ch = await one<{ id: number }>('SELECT id FROM chapters WHERE work_id = $1 AND number = $2', [work.id, number]);
+  if (!ch) return NextResponse.json({ pages: [] });
+  const pages = await query('SELECT id, page_no, file_path FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [ch.id]);
+  return NextResponse.json({ pages, chapterId: ch.id });
+}
+
+/** Удаление страницы с перенумерацией. */
+export async function DELETE(req: Request) {
+  const s = await requireAuthor();
+  if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const url = new URL(req.url);
+  const id = Number(url.searchParams.get('id'));
+  if (!id) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
+  await initSchema();
+  const row = await one<{ chapter_id: number; page_no: number }>(
+    `SELECT p.chapter_id, p.page_no FROM chapter_pages p
+       JOIN chapters c ON c.id = p.chapter_id
+       JOIN works w ON w.id = c.work_id
+      WHERE p.id = $1 AND w.author_id = $2`, [id, s.uid]
+  );
+  if (!row) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  await query('DELETE FROM chapter_pages WHERE id = $1', [id]);
+  await query('UPDATE chapter_pages SET page_no = page_no - 1 WHERE chapter_id = $1 AND page_no > $2', [row.chapter_id, row.page_no]);
+  const cnt = await one<{ n: number }>('SELECT CAST(COUNT(*) AS INTEGER) AS n FROM chapter_pages WHERE chapter_id = $1', [row.chapter_id]);
+  await query('UPDATE chapters SET word_count = $2 WHERE id = $1', [row.chapter_id, cnt?.n ?? 0]);
+  return NextResponse.json({ ok: true, total: cnt?.n ?? 0 });
+}
