@@ -103,7 +103,11 @@ export default async function WorkPage({
               <Link href={`/${l}/read/${c.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-[#f2f6ff]">
                 <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
                 <span className="flex-1 text-sm">{c.title || `Glava ${c.number}`}</span>
-                {c.access !== 'free' ? <span className="badge-hot">🔒 Pretplatnici</span> : null}
+                {c.access === 'paid' ? (
+                  <span className="badge-hot">🔒 Kupovina</span>
+                ) : c.access !== 'free' ? (
+                  <span className="badge-hot">🔒 Pretplatnici</span>
+                ) : null}
                 <span className="text-xs muted">{c.word_count} {work.type === 'comic' ? 'str.' : 'reči'}</span>
               </Link>
             </li>
