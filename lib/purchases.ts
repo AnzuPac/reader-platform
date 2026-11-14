@@ -65,9 +65,56 @@ export async function chapterPrice(chapterId: number): Promise<Price | null> {
     'SELECT id, work_id, number, title, access, price_cents, status FROM chapters WHERE id = $1',
     [chapterId]
   );
-  if (!ch || ch.access !== 'paid' || ch.price_cents <= 0) return null;
-  const bp = await workPrice(ch.work_id);
-  return { amount_cents: ch.price_cents, currency: bp?.currency || 'EUR' };
+  if (!ch || ch.access !== 'paid') return null;
+  return effectiveChapterPrice(ch);
+}
+
+/**
+ * Действующая цена главы: chapter_prices (если задана и активна), иначе
+ * chapters.price_cents — историческое поле, оставленное для совместимости.
+ * Валюта — из chapter_prices, иначе валюта книги, иначе EUR.
+ */
+export async function effectiveChapterPrice(ch: {
+  id: number; work_id: number; price_cents: number;
+}): Promise<Price | null> {
+  const cp = await one<{ amount_cents: number; currency: string }>(
+    'SELECT amount_cents, currency FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
+    [ch.id]
+  );
+  const amount = Math.trunc(Number(cp ? cp.amount_cents : ch.price_cents) || 0);
+  if (amount <= 0) return null;
+  const currency = cp?.currency || (await workPrice(ch.work_id))?.currency || 'EUR';
+  return { amount_cents: amount, currency };
+}
+
+/** Задать цену главы (кабинет автора/издателя). Идемпотентно. */
+export async function setChapterPrice(
+  chapterId: number,
+  amountCents: number,
+  currency?: string,
+  active = true
+): Promise<{ ok: boolean; error?: 'invalid_amount' | 'invalid_currency' | 'not_found' }> {
+  const amount = Math.trunc(Number(amountCents));
+  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: 'invalid_amount' };
+  const ch = await one<{ id: number; work_id: number }>('SELECT id, work_id FROM chapters WHERE id = $1', [chapterId]);
+  if (!ch) return { ok: false, error: 'not_found' };
+
+  const fallback = (await workPrice(ch.work_id))?.currency || 'EUR';
+  const cur = String(currency || fallback).toUpperCase().slice(0, 3);
+  if (!/^[A-Z]{3}$/.test(cur)) return { ok: false, error: 'invalid_currency' };
+
+  await query(
+    `INSERT INTO chapter_prices (chapter_id, amount_cents, currency, active)
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (chapter_id) DO UPDATE SET
+       amount_cents = EXCLUDED.amount_cents,
+       currency = EXCLUDED.currency,
+       active = EXCLUDED.active,
+       updated_at = now()`,
+    [chapterId, amount, cur, active ? 1 : 0]
+  );
+  await query('UPDATE chapters SET price_cents = $2 WHERE id = $1', [chapterId, amount]);
+  return { ok: true };
 }
 
 export async function resolveTarget(input: { workId?: number | null; chapterId?: number | null }): Promise<
@@ -83,19 +130,20 @@ export async function resolveTarget(input: { workId?: number | null; chapterId?:
       [chapterId]
     );
     if (!ch || ch.status !== 'published') return { ok: false, error: 'chapter_not_found' };
-    if (ch.access !== 'paid' || ch.price_cents <= 0) return { ok: false, error: 'not_for_sale' };
+    if (ch.access !== 'paid') return { ok: false, error: 'not_for_sale' };
+    const price = await effectiveChapterPrice(ch);
+    if (!price) return { ok: false, error: 'not_for_sale' };
     const w = await one<WorkRow>(
       'SELECT id, slug, title, status, type, publisher_id, author_id FROM works WHERE id = $1', [ch.work_id]
     );
     if (!w || w.status !== 'published') return { ok: false, error: 'work_not_found' };
-    const bp = await workPrice(w.id);
     return {
       ok: true,
       target: {
         workId: w.id,
         chapterId: ch.id,
-        amount_cents: ch.price_cents,
-        currency: bp?.currency || 'EUR',
+        amount_cents: price.amount_cents,
+        currency: price.currency,
         title: `${w.title} — ${ch.title || `Glava ${ch.number}`}`,
         slug: w.slug,
       },

@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
 import { getChapter, listChapters } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
-import { chapterGate, workPrice } from '@/lib/purchases';
+import { chapterGate, workPrice, effectiveChapterPrice } from '@/lib/purchases';
+import { one } from '@/lib/db';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
@@ -11,8 +12,10 @@ import ChapterBody from '@/components/ChapterBody';
 import Comments from '@/components/Comments';
 import ComicReader from '@/components/ComicReader';
 import BuyButton from '@/components/BuyButton';
+import DonateButton from '@/components/DonateButton';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ReadPage({
   params,
@@ -28,7 +31,12 @@ export default async function ReadPage({
   const gate = await chapterGate({ id: ch.id, work_id: ch.work_id, access: ch.access }, session);
   const locked = !gate.allowed;
   const bookPrice = ch.access === 'paid' ? await workPrice(ch.work_id) : null;
-  const chapterPriceCents = ch.access === 'paid' ? ch.price_cents : 0;
+  const chapterPrice = ch.access === 'paid'
+    ? await effectiveChapterPrice({ id: ch.id, work_id: ch.work_id, price_cents: ch.price_cents })
+    : null;
+  const chapterPriceCents = chapterPrice?.amount_cents ?? 0;
+  const authorRow = await one<{ author_id: number }>('SELECT author_id FROM works WHERE id = $1', [ch.work_id]);
+  const canDonate = !!session && authorRow?.author_id !== session.uid;
 
   const chapters = await listChapters(ch.work_id);
   const idx = chapters.findIndex((c) => c.id === ch.id);
@@ -80,7 +88,7 @@ export default async function ReadPage({
                   <BuyButton
                     chapterId={ch.id}
                     priceCents={chapterPriceCents}
-                    currency={bookPrice?.currency || 'EUR'}
+                    currency={chapterPrice?.currency || bookPrice?.currency || 'EUR'}
                     lang={l}
                     label="Kupi glavu"
                   />
@@ -114,8 +122,31 @@ export default async function ReadPage({
           )}
         </div>
       ) : (
-        ch.work_type === 'comic' ? <ComicReader chapterId={ch.id} /> : <ChapterBody chapterId={ch.id} initialHtml={ch.content} />
+        ch.work_type === 'comic' ? (
+          <ComicReader
+            chapterId={ch.id}
+            workId={ch.work_id}
+            workSlug={ch.work_slug}
+            priceCents={chapterPriceCents}
+            currency={chapterPrice?.currency || bookPrice?.currency || 'EUR'}
+            lang={l}
+          />
+        ) : (
+          <ChapterBody
+            chapterId={ch.id}
+            initialHtml={ch.access === 'free' ? ch.content : ''}
+            protected={ch.access !== 'free'}
+            fetchOnMount={ch.access !== 'free'}
+          />
+        )
       )}
+
+      {!locked && canDonate ? (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <DonateButton workId={ch.work_id} chapterId={ch.id} authorName={ch.work_title} lang={l} />
+          <span className="text-xs muted">Podrška ide autoru, ne platformi.</span>
+        </div>
+      ) : null}
 
       <AdSlot slot="chapter_end" />
 

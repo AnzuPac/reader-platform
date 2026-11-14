@@ -1,10 +1,26 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import BuyButton from './BuyButton';
 
 type Page = { page_no: number; file_path: string };
 
-export default function ComicReader({ chapterId }: { chapterId: number }) {
+export default function ComicReader({
+  chapterId,
+  workId,
+  workSlug,
+  priceCents = 0,
+  currency = 'EUR',
+  lang = 'sr',
+}: {
+  chapterId: number;
+  workId?: number;
+  workSlug?: string;
+  priceCents?: number;
+  currency?: string;
+  lang?: string;
+}) {
   const [pages, setPages] = useState<Page[]>([]);
+  const [locked, setLocked] = useState(false);
   const [mode, setMode] = useState<'scroll' | 'single'>('scroll');
   const [idx, setIdx] = useState(0);
   const [width, setWidth] = useState(100);
@@ -15,8 +31,15 @@ export default function ComicReader({ chapterId }: { chapterId: number }) {
 
   useEffect(() => {
     fetch(`/api/pages?chapter=${chapterId}`)
-      .then((r) => r.json())
-      .then((j) => setPages(j.pages || []))
+      .then(async (r) => {
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.locked) {
+          setLocked(true);
+          setPages([]);
+          return;
+        }
+        setPages(j.pages || []);
+      })
       .catch(() => setPages([]))
       .finally(() => setLoading(false));
   }, [chapterId]);
@@ -59,6 +82,24 @@ export default function ComicReader({ chapterId }: { chapterId: number }) {
   function onTouchEnd() { pinch.current = null; }
 
   if (loading) return <div className="py-16 text-center muted">Učitavam stranice…</div>;
+  if (locked) {
+    return (
+      <div className="card p-6">
+        <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava se kupuje</h2>
+        <p className="muted mb-4">Kupi glavu ili celu knjigu — pristup ostaje tvoj zauvek.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          {priceCents > 0 ? (
+            <BuyButton chapterId={chapterId} priceCents={priceCents} currency={currency} lang={lang} label="Kupi glavu" />
+          ) : null}
+          {workId ? (
+            <a className="btn btn-ghost" href={workSlug ? `/${lang}/work/${workSlug}` : `/${lang}/catalog`}>
+              Nazad na delo
+            </a>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   if (!pages.length) return <div className="card p-6 text-center muted">Za ovu glavu još nema stranica.</div>;
 
   const style = { transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform .15s ease' };

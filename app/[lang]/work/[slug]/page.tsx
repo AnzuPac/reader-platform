@@ -9,7 +9,8 @@ import BuyButton from '@/components/BuyButton';
 import { WorkCover } from '@/lib/cover';
 import RatingStars from '@/components/RatingStars';
 import Comments from '@/components/Comments';
-import { workPrice, hasWorkAccess, hasActiveSubscription } from '@/lib/purchases';
+import DonateButton from '@/components/DonateButton';
+import { workPrice, hasWorkAccess, hasActiveSubscription, effectiveChapterPrice } from '@/lib/purchases';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,19 @@ export default async function WorkPage({
   const price = await workPrice(work.id);
   const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
+  const canDonate = !!session && session.uid !== work.author_id;
+
+  // Для комиксов у платных глав показываем цену прямо в содержании.
+  const chapterPrices = new Map<number, { amount_cents: number; currency: string } | null>();
+  if (work.type === 'comic' && !owned) {
+    await Promise.all(
+      chapters
+        .filter((c) => c.access === 'paid')
+        .map(async (c) => {
+          chapterPrices.set(c.id, await effectiveChapterPrice({ id: c.id, work_id: work.id, price_cents: c.price_cents }));
+        })
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8">
@@ -86,6 +100,7 @@ export default async function WorkPage({
                 </span>
               ) : null}
               <LibraryButton workId={work.id} initial={inLib} />
+              {canDonate ? <DonateButton workId={work.id} authorName={work.author_name} lang={l} /> : null}
               <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>
             </div>
           </div>
@@ -100,16 +115,34 @@ export default async function WorkPage({
         <ol className="divide-y divide-line">
           {chapters.map((c) => (
             <li key={c.id}>
-              <Link href={`/${l}/read/${c.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-[#f2f6ff]">
-                <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
-                <span className="flex-1 text-sm">{c.title || `Glava ${c.number}`}</span>
-                {c.access === 'paid' ? (
+              {work.type === 'comic' && c.access === 'paid' && !owned && chapterPrices.get(c.id) ? (
+                <div className="flex flex-wrap items-center gap-3 px-5 py-3">
+                  <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
+                  <Link href={`/${l}/read/${c.id}`} className="min-w-0 flex-1 truncate text-sm hover:text-brand">
+                    {c.title || `Glava ${c.number}`}
+                  </Link>
                   <span className="badge-hot">🔒 Kupovina</span>
-                ) : c.access !== 'free' ? (
-                  <span className="badge-hot">🔒 Pretplatnici</span>
-                ) : null}
-                <span className="text-xs muted">{c.word_count} {work.type === 'comic' ? 'str.' : 'reči'}</span>
-              </Link>
+                  <BuyButton
+                    chapterId={c.id}
+                    priceCents={chapterPrices.get(c.id)!.amount_cents}
+                    currency={chapterPrices.get(c.id)!.currency}
+                    lang={l}
+                    label="Kupi glavu"
+                  />
+                  <span className="text-xs muted">{c.word_count} str.</span>
+                </div>
+              ) : (
+                <Link href={`/${l}/read/${c.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-[#f2f6ff]">
+                  <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
+                  <span className="flex-1 text-sm">{c.title || `Glava ${c.number}`}</span>
+                  {c.access === 'paid' ? (
+                    <span className="badge-hot">🔒 Kupovina</span>
+                  ) : c.access !== 'free' ? (
+                    <span className="badge-hot">🔒 Pretplatnici</span>
+                  ) : null}
+                  <span className="text-xs muted">{c.word_count} {work.type === 'comic' ? 'str.' : 'reči'}</span>
+                </Link>
+              )}
             </li>
           ))}
           {chapters.length === 0 ? (

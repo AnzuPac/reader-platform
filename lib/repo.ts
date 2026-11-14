@@ -7,7 +7,8 @@ export type WorkCard = {
 };
 
 export type ChapterRow = {
-  id: number; number: number; title: string; access: string; word_count: number; published_at: string | null;
+  id: number; number: number; title: string; access: string; price_cents: number;
+  word_count: number; published_at: string | null;
 };
 
 let ready = false;
@@ -53,11 +54,11 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
   return query<WorkCard>(sql, params);
 }
 
-export async function getWork(slug: string): Promise<(WorkCard & { type: string }) | null> {
+export async function getWork(slug: string): Promise<(WorkCard & { type: string; author_id: number }) | null> {
   await ensure();
-  return one<WorkCard & { type: string }>(
+  return one<WorkCard & { type: string; author_id: number }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, w.type, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, w.type, w.author_id, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );
@@ -66,7 +67,7 @@ export async function getWork(slug: string): Promise<(WorkCard & { type: string 
 export async function listChapters(workId: number): Promise<ChapterRow[]> {
   await ensure();
   return query<ChapterRow>(
-    `SELECT id, number, title, access, word_count, published_at
+    `SELECT id, number, title, access, price_cents, word_count, published_at
        FROM chapters WHERE work_id = $1 AND status = 'published' ORDER BY number`, [workId]
   );
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import DOMPurify from 'isomorphic-dompurify';
 import { initSchema, query, one } from '@/lib/db';
 import { requireAuthor } from '@/lib/author';
+import { setChapterPrice } from '@/lib/purchases';
 
 function plainText(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
      RETURNING id, number`,
     [work.id, number, String(b?.title || `Glava ${number}`), clean, words, access]
   );
+  if (access === 'paid' && b?.priceCents != null) {
+    await setChapterPrice(rows[0].id, Number(b.priceCents), b?.currency ? String(b.currency) : undefined);
+  }
   await query('UPDATE works SET words_total = (SELECT COALESCE(SUM(word_count),0) FROM chapters WHERE work_id=$1) WHERE id=$1', [work.id]);
   return NextResponse.json({ ok: true, chapter: rows[0], words });
 }
