@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
-import { getChapter, listChapters, query, one } from '@/lib/repo-extra';
+import { getChapter, listChapters } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
-import { canReadChapter } from '@/lib/access';
+import { chapterGate, workPrice } from '@/lib/purchases';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
 import ChapterBody from '@/components/ChapterBody';
 import Comments from '@/components/Comments';
 import ComicReader from '@/components/ComicReader';
+import BuyButton from '@/components/BuyButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,24 +25,10 @@ export default async function ReadPage({
   if (!ch) notFound();
 
   const session = await readSession();
-  let hasEntitlement = false;
-  let hasActiveSubscription = false;
-  if (session) {
-    const ent = await one(
-      `SELECT 1 AS ok FROM entitlements WHERE user_id=$1 AND ((target_type='chapter' AND target_id=$2)
-          OR (target_type='work' AND target_id=$3))`,
-      [session.uid, ch.id, ch.work_id]
-    );
-    hasEntitlement = !!ent;
-    const sub = await one(
-      `SELECT 1 AS ok FROM subscriptions WHERE user_id=$1 AND status='active' AND current_period_end > now() LIMIT 1`,
-      [session.uid]
-    );
-    hasActiveSubscription = !!sub;
-  }
-  const locked = !canReadChapter({
-    access: ch.access, loggedIn: !!session, hasEntitlement, hasActiveSubscription,
-  });
+  const gate = await chapterGate({ id: ch.id, work_id: ch.work_id, access: ch.access }, session);
+  const locked = !gate.allowed;
+  const bookPrice = ch.access === 'paid' ? await workPrice(ch.work_id) : null;
+  const chapterPriceCents = ch.access === 'paid' ? ch.price_cents : 0;
 
   const chapters = await listChapters(ch.work_id);
   const idx = chapters.findIndex((c) => c.id === ch.id);
@@ -82,9 +69,49 @@ export default async function ReadPage({
 
       {locked ? (
         <div className="card p-6">
-          <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava je za pretplatnike</h2>
-          <p className="muted">Pretplati se da nastaviš čitanje. Prve glave su uvek besplatne.</p>
-          <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
+          {gate.reason === 'payment_required' ? (
+            <>
+              <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava se kupuje</h2>
+              <p className="muted mb-4">
+                Kupi glavu ili celu knjigu — pristup ostaje tvoj zauvek.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                {chapterPriceCents > 0 ? (
+                  <BuyButton
+                    chapterId={ch.id}
+                    priceCents={chapterPriceCents}
+                    currency={bookPrice?.currency || 'EUR'}
+                    lang={l}
+                    label="Kupi glavu"
+                  />
+                ) : null}
+                {bookPrice ? (
+                  <BuyButton
+                    workId={ch.work_id}
+                    priceCents={bookPrice.amount_cents}
+                    currency={bookPrice.currency}
+                    lang={l}
+                    label="Kupi celu knjigu"
+                  />
+                ) : null}
+                {session ? null : (
+                  <Link href={`/${l}/login`} className="btn btn-ghost">Prijava</Link>
+                )}
+              </div>
+            </>
+          ) : gate.reason === 'login_required' ? (
+            <>
+              <h2 className="mb-2 text-lg font-semibold">🔒 Prijavi se da nastaviš</h2>
+              <p className="muted mb-4">Ova glava je dostupna prijavljenim čitaocima.</p>
+              <Link href={`/${l}/login`} className="btn btn-primary inline-flex">Prijava</Link>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava je za pretplatnike</h2>
+              <p className="muted">Pretplati se da nastaviš čitanje. Prve glave su uvek besplatne.</p>
+              <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
+            </>
+          )}
         </div>
       ) : (
         ch.work_type === 'comic' ? <ComicReader chapterId={ch.id} /> : <ChapterBody chapterId={ch.id} initialHtml={ch.content} />

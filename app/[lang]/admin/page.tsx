@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 
 type Work = { id: number; slug: string; title: string; status: string; words_total: number; author?: string };
 type Payment = { id: number; amount_cents: number; currency: string; status: string; user: string; email: string; meta: string };
+type Purchase = {
+  id: number; amount_cents: number; currency: string; status: string; provider: string;
+  user: string; email: string; work: string | null; chapter: string | null; chapter_number: number | null;
+};
 type Comment = { id: number; body: string; status: string; author: string; work: string; created_at: string };
 
 export default function AdminPage() {
@@ -10,9 +14,10 @@ export default function AdminPage() {
   const [works, setWorks] = useState<Work[]>([]);
   const [review, setReview] = useState<Work[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [msg, setMsg] = useState('');
-  const [tab, setTab] = useState<'review' | 'payments' | 'comments' | 'content'>('review');
+  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'comments' | 'content'>('review');
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -36,15 +41,17 @@ export default function AdminPage() {
   }
 
   async function loadAll(tk = token) {
-    const [w, rv, pay, cm] = await Promise.all([
+    const [w, rv, pay, buys, cm] = await Promise.all([
       fetch('/api/admin/work', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/works?status=review', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/payments?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/admin/purchases?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/comment', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
     ]);
     setWorks(w.works || []);
     setReview(rv.works || []);
     setPayments(pay.payments || []);
+    setPurchases(buys.purchases || []);
     setComments(cm.comments || []);
   }
 
@@ -63,6 +70,12 @@ export default function AdminPage() {
   async function confirmPayment(id: number) {
     const r = await fetch('/api/admin/payment', { method: 'POST', headers: headers(), body: JSON.stringify({ paymentId: id }) });
     setMsg(r.ok ? 'Оплата подтверждена, подписка выдана' : 'Ошибка подтверждения');
+    await loadAll();
+  }
+
+  async function confirmPurchase(id: number) {
+    const r = await fetch('/api/admin/purchases', { method: 'POST', headers: headers(), body: JSON.stringify({ purchaseId: id, action: 'confirm' }) });
+    setMsg(r.ok ? 'Покупка подтверждена, доступ выдан' : 'Ошибка подтверждения покупки');
     await loadAll();
   }
 
@@ -122,6 +135,7 @@ export default function AdminPage() {
       <div className="mb-5 flex flex-wrap gap-2">
         <Tab id="review" label="На проверке" count={review.length} />
         <Tab id="payments" label="Оплаты" count={payments.length} />
+        <Tab id="purchases" label="Покупки" count={purchases.length} />
         <Tab id="comments" label="Комментарии" count={comments.length} />
         <Tab id="content" label="Контент" />
       </div>
@@ -153,6 +167,26 @@ export default function AdminPage() {
               </li>
             ))}
             {payments.length === 0 ? <li className="px-4 py-4 text-sm muted">Нет ожидающих оплат</li> : null}
+          </ul>
+        </div>
+      ) : null}
+
+      {tab === 'purchases' ? (
+        <div className="card overflow-hidden">
+          <ul className="divide-y divide-line">
+            {purchases.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <span className="flex-1">
+                  #{p.id} · {p.user} ({p.email})
+                  <span className="block text-xs muted">
+                    {p.work || '—'}{p.chapter ? ` · ${p.chapter} (гл. ${p.chapter_number})` : ' · вся книга'} · {p.provider}
+                  </span>
+                </span>
+                <span className="text-sm">{(p.amount_cents / 100).toFixed(2)} {p.currency}</span>
+                <button className="btn btn-primary" onClick={() => confirmPurchase(p.id)}>Подтвердить</button>
+              </li>
+            ))}
+            {purchases.length === 0 ? <li className="px-4 py-4 text-sm muted">Нет ожидающих покупок</li> : null}
           </ul>
         </div>
       ) : null}

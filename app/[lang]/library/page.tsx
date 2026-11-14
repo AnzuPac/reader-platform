@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
 import { listLibrary, getContinueReading } from '@/lib/repo';
+import { listPurchasedWorks } from '@/lib/purchases';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ lang: 
 
   const items = (await listLibrary(session.uid)) as unknown as LibItem[];
   const cont = await getContinueReading(session.uid);
+  const purchased = await listPurchasedWorks(session.uid);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
@@ -50,6 +52,29 @@ export default async function LibraryPage({ params }: { params: Promise<{ lang: 
           </div>
           <span className="btn btn-primary">Nastavi</span>
         </Link>
+      ) : null}
+
+      {purchased.length > 0 ? (
+        <section className="mb-8">
+          <div className="mb-3 flex items-center gap-3">
+            <h2 className="text-xl font-bold">Kupljeno</h2>
+            <span className="text-sm muted">{purchased.length}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            {purchased.map((w) => (
+              <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
+                <div className="cover cover-sm relative">
+                  <span className="relative line-clamp-3">{w.title}</span>
+                  <span className="absolute right-1 top-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {w.chapter_only ? 'GLAVA' : 'KNJIGA'}
+                  </span>
+                </div>
+                <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
+                <div className="text-xs muted">{w.author_name}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {items.length === 0 ? (

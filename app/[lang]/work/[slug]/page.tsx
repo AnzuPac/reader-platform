@@ -5,9 +5,11 @@ import { getWork, listChapters, isInLibrary, workGenres } from '@/lib/repo';
 import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
+import BuyButton from '@/components/BuyButton';
 import { WorkCover } from '@/lib/cover';
 import RatingStars from '@/components/RatingStars';
 import Comments from '@/components/Comments';
+import { workPrice, hasWorkAccess, hasActiveSubscription } from '@/lib/purchases';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +42,9 @@ export default async function WorkPage({
   const inLib = session ? await isInLibrary(session.uid, work.id) : false;
   const first = chapters[0];
   const genres = await workGenres(work.id);
+  const price = await workPrice(work.id);
+  const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
+  const subscribed = session ? await hasActiveSubscription(session.uid) : false;
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8">
@@ -68,8 +73,17 @@ export default async function WorkPage({
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
             <div className="flex flex-wrap items-center gap-3">
-              {first ? (
+              {owned ? (
+                first ? <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj</Link> : null
+              ) : price && !subscribed ? (
+                <BuyButton workId={work.id} priceCents={price.amount_cents} currency={price.currency} lang={l} label="Kupi" />
+              ) : first ? (
                 <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj prvu glavu</Link>
+              ) : null}
+              {!owned && price ? (
+                <span className="text-sm muted">
+                  {(price.amount_cents / 100).toFixed(2)} {price.currency} · trajni pristup
+                </span>
               ) : null}
               <LibraryButton workId={work.id} initial={inLib} />
               <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>

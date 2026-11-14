@@ -61,6 +61,7 @@ export default async function LangLayout({
           <span className="font-semibold text-ink">{t(l, 'brand')}</span>
           <Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link>
           <Link href={`/${l}/subscribe`}>Pretplata</Link>
+          <Link href={`/${l}/publisher`}>Za izdavače</Link>
           <span className="ml-auto">© {new Date().getFullYear()}</span>
         </div>
       </footer>
