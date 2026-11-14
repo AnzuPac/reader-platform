@@ -395,3 +395,71 @@ CREATE TABLE IF NOT EXISTS email_tokens (
   used_at    TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- === Фаза 2–4: донаты, цены глав, лиды издательств, устройства ===
+
+CREATE TABLE IF NOT EXISTS chapter_prices (
+  chapter_id   BIGINT NOT NULL UNIQUE REFERENCES chapters(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS donations (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  work_id      BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  chapter_id   BIGINT REFERENCES chapters(id) ON DELETE SET NULL,
+  author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents BETWEEN 100 AND 100000),
+  fee_cents    INTEGER NOT NULL DEFAULT 0 CHECK (fee_cents >= 0),
+  author_cents INTEGER NOT NULL DEFAULT 0 CHECK (author_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  message      TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','refunded')),
+  provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
+  external_id  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS donations_work_idx ON donations(work_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS donations_author_idx ON donations(author_id, status);
+CREATE INDEX IF NOT EXISTS donations_user_idx ON donations(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS donations_external_idx ON donations(external_id) WHERE external_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS author_payouts (
+  id           BIGSERIAL PRIMARY KEY,
+  author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS author_payouts_author_idx ON author_payouts(author_id, status);
+
+CREATE TABLE IF NOT EXISTS publisher_leads (
+  id         BIGSERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  company    TEXT NOT NULL DEFAULT '',
+  email      TEXT NOT NULL,
+  phone      TEXT NOT NULL DEFAULT '',
+  message    TEXT NOT NULL DEFAULT '',
+  status     TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','won','lost')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS publisher_leads_created_idx ON publisher_leads(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS content_devices (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device_hash   TEXT NOT NULL,
+  user_agent    TEXT NOT NULL DEFAULT '',
+  ip_hash       TEXT NOT NULL DEFAULT '',
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, device_hash)
+);
+CREATE INDEX IF NOT EXISTS content_devices_user_idx ON content_devices(user_id, last_seen_at DESC);

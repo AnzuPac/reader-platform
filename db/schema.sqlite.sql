@@ -399,3 +399,77 @@ CREATE TABLE IF NOT EXISTS email_tokens (
   used_at    TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- === Фаза 2–4: донаты, цены глав, лиды издательств, устройства ===
+
+-- Цена одной главы (комиксы). Если строки нет — берётся chapters.price_cents.
+CREATE TABLE IF NOT EXISTS chapter_prices (
+  chapter_id   BIGINT NOT NULL UNIQUE REFERENCES chapters(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  active       INTEGER NOT NULL DEFAULT 1,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Донаты авторам (фанфики и комиксы). Комиссия и доля автора фиксируются
+-- в момент создания заявки, чтобы смена тарифа не пересчитывала историю.
+CREATE TABLE IF NOT EXISTS donations (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  work_id      BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  chapter_id   BIGINT REFERENCES chapters(id) ON DELETE SET NULL,
+  author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents BETWEEN 100 AND 100000),
+  fee_cents    INTEGER NOT NULL DEFAULT 0 CHECK (fee_cents >= 0),
+  author_cents INTEGER NOT NULL DEFAULT 0 CHECK (author_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  message      TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','refunded')),
+  provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
+  external_id  TEXT,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at      TEXT
+);
+CREATE INDEX IF NOT EXISTS donations_work_idx ON donations(work_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS donations_author_idx ON donations(author_id, status);
+CREATE INDEX IF NOT EXISTS donations_user_idx ON donations(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS donations_external_idx ON donations(external_id) WHERE external_id IS NOT NULL;
+
+-- Заявки автора на выплату. Баланс = оплаченные донаты − заявки (pending/paid).
+CREATE TABLE IF NOT EXISTS author_payouts (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at      TEXT
+);
+CREATE INDEX IF NOT EXISTS author_payouts_author_idx ON author_payouts(author_id, status);
+
+-- Лиды со страницы для издателей.
+CREATE TABLE IF NOT EXISTS publisher_leads (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  company    TEXT NOT NULL DEFAULT '',
+  email      TEXT NOT NULL,
+  phone      TEXT NOT NULL DEFAULT '',
+  message    TEXT NOT NULL DEFAULT '',
+  status     TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','won','lost')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS publisher_leads_created_idx ON publisher_leads(created_at DESC);
+
+-- Устройства читателя: мягкий лимит на платный контент (3 устройства).
+CREATE TABLE IF NOT EXISTS content_devices (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device_hash   TEXT NOT NULL,
+  user_agent    TEXT NOT NULL DEFAULT '',
+  ip_hash       TEXT NOT NULL DEFAULT '',
+  first_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_seen_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, device_hash)
+);
+CREATE INDEX IF NOT EXISTS content_devices_user_idx ON content_devices(user_id, last_seen_at DESC);
