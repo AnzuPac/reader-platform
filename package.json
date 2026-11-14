@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run test && npm run build",
-    "backup": "bash scripts/backup.sh"
+    "backup": "bash scripts/backup.sh",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.2.17",
