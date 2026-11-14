@@ -27,8 +27,16 @@ async function migrateSqlite(db: any) {
   const alters = [
     'ALTER TABLE works ADD COLUMN font_family TEXT',
     'ALTER TABLE works ADD COLUMN font_path TEXT',
+    'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
+}
+
+async function migratePg(db: any) {
+  const alters = [
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS publisher_id BIGINT REFERENCES publishers(id) ON DELETE SET NULL',
+  ];
+  for (const sql of alters) { try { await db.query(sql); } catch {} }
 }
 
 async function initSqlite() {
@@ -51,6 +59,7 @@ async function initPg() {
   pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
   const schema = readFileSync(path.join(process.cwd(), 'db', 'schema.sql'), 'utf8');
   await pgPool.query(schema);
+  await migratePg(pgPool);
   return pgPool;
 }
 

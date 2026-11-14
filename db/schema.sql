@@ -37,11 +37,31 @@ CREATE TABLE refresh_tokens (
 );
 CREATE INDEX refresh_tokens_user_idx ON refresh_tokens(user_id);
 
+-- === Издательства ===
+CREATE TABLE IF NOT EXISTS publishers (
+  id             BIGSERIAL PRIMARY KEY,
+  name           TEXT NOT NULL,
+  slug           TEXT UNIQUE NOT NULL,
+  contact_email  TEXT NOT NULL DEFAULT '',
+  commission_pct SMALLINT NOT NULL DEFAULT 30 CHECK (commission_pct BETWEEN 0 AND 100),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS publisher_members (
+  publisher_id BIGINT NOT NULL REFERENCES publishers(id) ON DELETE CASCADE,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role         TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner','manager','member')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (publisher_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS publisher_members_user_idx ON publisher_members(user_id);
+
 -- === Каталог ===
 CREATE TABLE works (
   id                BIGSERIAL PRIMARY KEY,
   slug              TEXT UNIQUE NOT NULL,
   author_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  publisher_id      BIGINT REFERENCES publishers(id) ON DELETE SET NULL,
   type              TEXT NOT NULL DEFAULT 'novel' CHECK (type IN ('novel','comic')),
   original_language TEXT NOT NULL CHECK (original_language IN ('sr','en','ru')),
   status            TEXT NOT NULL DEFAULT 'draft'
@@ -64,6 +84,7 @@ CREATE TABLE works (
 CREATE INDEX works_published_idx ON works(status, published_at DESC);
 CREATE INDEX works_author_idx ON works(author_id);
 CREATE INDEX works_type_idx ON works(type);
+CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id);
 
 CREATE TABLE work_translations (
   work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
@@ -252,6 +273,60 @@ CREATE TABLE payments (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   paid_at      TIMESTAMPTZ
 );
+
+-- === Покупки книг и глав (Фаза 1) ===
+CREATE TABLE IF NOT EXISTS book_prices (
+  work_id      BIGINT NOT NULL UNIQUE REFERENCES works(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  active       SMALLINT NOT NULL DEFAULT 1,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  work_id      BIGINT REFERENCES works(id) ON DELETE CASCADE,
+  chapter_id   BIGINT REFERENCES chapters(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  currency     TEXT NOT NULL DEFAULT 'EUR',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','refunded')),
+  provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
+  external_id  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at      TIMESTAMPTZ,
+  CHECK (work_id IS NOT NULL OR chapter_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS purchases_user_idx ON purchases(user_id, status);
+CREATE INDEX IF NOT EXISTS purchases_work_idx ON purchases(work_id, status);
+CREATE INDEX IF NOT EXISTS purchases_chapter_idx ON purchases(chapter_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS purchases_unique_active
+  ON purchases (user_id, COALESCE(work_id, 0), COALESCE(chapter_id, 0))
+  WHERE status IN ('pending','paid');
+
+CREATE TABLE IF NOT EXISTS royalty_ledger (
+  id               BIGSERIAL PRIMARY KEY,
+  publisher_id     BIGINT NOT NULL REFERENCES publishers(id) ON DELETE CASCADE,
+  work_id          BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  purchase_id      BIGINT NOT NULL UNIQUE REFERENCES purchases(id) ON DELETE CASCADE,
+  amount_cents     INTEGER NOT NULL,
+  commission_cents INTEGER NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'accrued' CHECK (status IN ('accrued','paid')),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS royalty_publisher_idx ON royalty_ledger(publisher_id, status);
+CREATE INDEX IF NOT EXISTS royalty_work_idx ON royalty_ledger(work_id);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  id           BIGSERIAL PRIMARY KEY,
+  publisher_id BIGINT NOT NULL REFERENCES publishers(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS payouts_publisher_idx ON payouts(publisher_id, status);
 
 -- === Реклама ===
 CREATE TABLE ad_slots (
