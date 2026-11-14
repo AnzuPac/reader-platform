@@ -30,6 +30,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
+  try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
 }
 
 async function migratePg(db: any) {

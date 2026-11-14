@@ -84,7 +84,6 @@ CREATE TABLE works (
 CREATE INDEX works_published_idx ON works(status, published_at DESC);
 CREATE INDEX works_author_idx ON works(author_id);
 CREATE INDEX works_type_idx ON works(type);
-CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id);
 
 CREATE TABLE work_translations (
   work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
