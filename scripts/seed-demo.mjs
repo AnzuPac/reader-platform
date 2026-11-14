@@ -182,6 +182,8 @@ async function main() {
   const authorId = await upsertUser('demo.author@example.com', 'Ana Stanković', 'author');
   // Демо-админ для показа /admin/publishers (ADMIN_TOKEN остаётся отдельным ключом).
   const adminId = await upsertUser('demo.admin@example.com', 'Demo Admin', 'admin');
+  // Чистый аккаунт без покупок — для живой демонстрации оплаты на сцене.
+  await upsertUser('demo.buyer@example.com', 'Demo Kupac', 'reader');
 
   const publisherId = await upsertPublisher('Demo Izdavaštvo', 'demo-izdavastvo', 'demo.publisher@example.com', 25);
   await q(
@@ -273,6 +275,7 @@ async function main() {
     { uloga: 'Izdavač (vlasnik)', login: 'demo.publisher@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/publisher — izveštaj, cene, honorari' },
     { uloga: 'Autor', login: 'demo.author@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/author — dela, donacije, isplate' },
     { uloga: 'Admin (stranica)', login: 'demo.admin@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/admin/publishers' },
+    { uloga: 'Novi kupac', login: 'demo.buyer@example.com', lozinka: PASSWORD, 'šta gledati': 'živa kupovina knjige bez istorije' },
   ]);
   console.log('Admin token za /admin/publishers: ADMIN_TOKEN iz .env (podrazumevano dev-admin-token)\n');
   console.log('Linkovi za proveru:');

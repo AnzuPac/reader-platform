@@ -8,6 +8,10 @@ type Purchase = {
   user: string; email: string; work: string | null; chapter: string | null; chapter_number: number | null;
 };
 type Comment = { id: number; body: string; status: string; author: string; work: string; created_at: string };
+type Donation = {
+  id: number; amount_cents: number; author_cents: number; fee_cents: number; currency: string;
+  status: string; message: string; user: string; email: string; author: string; work: string;
+};
 
 export default function AdminPage() {
   const [token, setToken] = useState('');
@@ -16,8 +20,9 @@ export default function AdminPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [donations, setDonations] = useState<Donation[]>([]);
   const [msg, setMsg] = useState('');
-  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'comments' | 'content'>('review');
+  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'donations' | 'comments' | 'content'>('review');
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -41,18 +46,20 @@ export default function AdminPage() {
   }
 
   async function loadAll(tk = token) {
-    const [w, rv, pay, buys, cm] = await Promise.all([
+    const [w, rv, pay, buys, cm, dn] = await Promise.all([
       fetch('/api/admin/work', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/works?status=review', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/payments?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/purchases?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/comment', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/admin/donation?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
     ]);
     setWorks(w.works || []);
     setReview(rv.works || []);
     setPayments(pay.payments || []);
     setPurchases(buys.purchases || []);
     setComments(cm.comments || []);
+    setDonations(dn.donations || []);
   }
 
   async function saveToken() {
@@ -76,6 +83,13 @@ export default function AdminPage() {
   async function confirmPurchase(id: number) {
     const r = await fetch('/api/admin/purchases', { method: 'POST', headers: headers(), body: JSON.stringify({ purchaseId: id, action: 'confirm' }) });
     setMsg(r.ok ? 'Покупка подтверждена, доступ выдан' : 'Ошибка подтверждения покупки');
+    await loadAll();
+  }
+
+  async function confirmDonation(id: number) {
+    const r = await fetch('/api/admin/donation', { method: 'POST', headers: headers(), body: JSON.stringify({ donationId: id }) });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'EUR'}` : 'Ошибка подтверждения доната');
     await loadAll();
   }
 
@@ -125,6 +139,9 @@ export default function AdminPage() {
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
       <h1 className="mb-5 text-2xl font-bold">Админка</h1>
+      <p className="mb-4 text-sm muted">
+        <a className="text-brand hover:underline" href="/sr/admin/publishers">Издательства и заявки →</a>
+      </p>
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">
         <input className="input max-w-xs" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен доступа" />
@@ -136,6 +153,7 @@ export default function AdminPage() {
         <Tab id="review" label="На проверке" count={review.length} />
         <Tab id="payments" label="Оплаты" count={payments.length} />
         <Tab id="purchases" label="Покупки" count={purchases.length} />
+        <Tab id="donations" label="Донаты" count={donations.length} />
         <Tab id="comments" label="Комментарии" count={comments.length} />
         <Tab id="content" label="Контент" />
       </div>
@@ -187,6 +205,24 @@ export default function AdminPage() {
               </li>
             ))}
             {purchases.length === 0 ? <li className="px-4 py-4 text-sm muted">Нет ожидающих покупок</li> : null}
+          </ul>
+        </div>
+      ) : null}
+
+      {tab === 'donations' ? (
+        <div className="card overflow-hidden">
+          <ul className="divide-y divide-line">
+            {donations.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <span className="flex-1">
+                  #{d.id} · {d.user} → {d.author}
+                  <span className="block text-xs muted">{d.work} · {d.message || 'без сообщения'}</span>
+                </span>
+                <span className="text-sm">{(d.amount_cents / 100).toFixed(2)} {d.currency}</span>
+                <button className="btn btn-primary" onClick={() => confirmDonation(d.id)}>Подтвердить</button>
+              </li>
+            ))}
+            {donations.length === 0 ? <li className="px-4 py-4 text-sm muted">Нет ожидающих донатов</li> : null}
           </ul>
         </div>
       ) : null}
