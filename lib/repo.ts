@@ -75,10 +75,10 @@ export async function getChapter(id: number) {
   await ensure();
   return one<{
     id: number; work_id: number; number: number; title: string; content: string;
-    access: string; word_count: number; work_slug: string; work_title: string;
+    access: string; price_cents: number; word_count: number; work_slug: string; work_title: string;
     font_family: string | null; font_path: string | null; work_type: string;
   }>(
-    `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.word_count,
+    `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.price_cents, c.word_count,
             w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1 AND c.status = 'published'`, [id]

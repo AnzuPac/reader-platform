@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initSchema, query } from '@/lib/db';
 import { stripeEnabled } from '@/lib/payments';
+import { markPurchasePaid } from '@/lib/purchases';
 
 export const runtime = 'nodejs';
 
@@ -24,6 +25,15 @@ export async function POST(req: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+
+    // Разовая покупка книги/главы: доступ навсегда + роялти издателю.
+    const purchaseId = Number(session?.metadata?.purchaseId);
+    if (purchaseId) {
+      await initSchema();
+      const res = await markPurchasePaid(purchaseId, String(session?.id || ''));
+      return NextResponse.json({ received: true, purchase: res.ok, already: res.ok ? res.already : false });
+    }
+
     const paymentId = Number(session?.metadata?.paymentId);
     const planCode = String(session?.metadata?.planCode || 'reader');
     if (paymentId) {
