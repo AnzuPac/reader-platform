@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Lang = 'sr' | 'en' | 'ru';
 
@@ -9,20 +9,63 @@ export default function ChapterBody({
   chapterId,
   initialHtml,
   originalLang = 'sr',
+  protected: isProtected = false,
+  fetchOnMount = false,
 }: {
   chapterId: number;
   initialHtml: string;
   originalLang?: Lang;
+  protected?: boolean;
+  fetchOnMount?: boolean;
 }) {
   const [content, setContent] = useState(initialHtml);
+  const [originContent, setOriginContent] = useState(initialHtml);
   const [lang, setLang] = useState<Lang>(originalLang);
   const [busy, setBusy] = useState<Lang | null>(null);
   const [note, setNote] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>(fetchOnMount ? 'loading' : 'idle');
+  const [errorText, setErrorText] = useState('');
+
+  useEffect(() => {
+    if (!fetchOnMount) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/chapter/text?chapter=${chapterId}`, { cache: 'no-store' });
+        const j = await r.json().catch(() => ({}));
+        if (!alive) return;
+        if (r.status === 429) {
+          setStatus('error');
+          setErrorText('Previše zahteva za tekst. Sačekaj minut i pokušaj ponovo.');
+          return;
+        }
+        if (r.status === 403 && j.error === 'device_limit') {
+          setStatus('error');
+          setErrorText(String(j.message || 'Dostigli ste limit od 3 uređaja za plaćeni sadržaj.'));
+          return;
+        }
+        if (!r.ok) {
+          setStatus('error');
+          setErrorText(j.error === 'locked' ? 'Ova glava više nije dostupna. Osveži stranicu.' : 'Tekst nije moguće učitati.');
+          return;
+        }
+        setContent(String(j.content || ''));
+        setOriginContent(String(j.content || ''));
+        setStatus('idle');
+      } catch {
+        if (alive) {
+          setStatus('error');
+          setErrorText('Greška u mreži.');
+        }
+      }
+    })();
+    return () => { alive = false; };
+  }, [chapterId, fetchOnMount]);
 
   async function switchTo(target: Lang) {
     if (target === lang) return;
     if (target === originalLang) {
-      setContent(initialHtml);
+      setContent(originContent);
       setLang(target);
       setNote('');
       return;
@@ -47,6 +90,18 @@ export default function ChapterBody({
     }
   }
 
+  if (status === 'loading') {
+    return <div className="py-16 text-center muted">Učitavam tekst…</div>;
+  }
+  if (status === 'error') {
+    return (
+      <div className="card p-6">
+        <h2 className="mb-2 text-lg font-semibold">🔒 Tekst nije dostupan</h2>
+        <p className="muted">{errorText}</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
@@ -66,7 +121,13 @@ export default function ChapterBody({
         {note ? <span className="rounded bg-brand/15 px-2 py-1 text-brand">{note}</span> : null}
       </div>
 
-      <div className="reader-surface px-1 py-2 sm:px-6 sm:py-5">
+      <div
+        className={`reader-surface px-1 py-2 sm:px-6 sm:py-5 ${isProtected ? 'paid-text' : ''}`}
+        onCopy={isProtected ? (e) => e.preventDefault() : undefined}
+        onCut={isProtected ? (e) => e.preventDefault() : undefined}
+        onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
+        onDragStart={isProtected ? (e) => e.preventDefault() : undefined}
+      >
         <article className="prose-reader whitespace-pre-line" dangerouslySetInnerHTML={{ __html: content }} />
       </div>
     </>

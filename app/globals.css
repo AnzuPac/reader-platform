@@ -33,4 +33,13 @@ a { color: inherit; text-decoration: none; }
 .reader-surface .prose-reader p { margin-bottom:var(--reader-gap,1em); }
 .section-title { font-size:20px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
 
+/* Платный текст: выделение и копирование отключены, доступность сохранена
+   (текст остаётся в DOM и читается скринридерами). */
+.paid-text, .paid-text * {
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+}
+.paid-text ::selection, .paid-text::selection { background:transparent; }
+.paid-text img { pointer-events:none; }
+
 ::selection { background:rgba(139,92,246,.45); }
