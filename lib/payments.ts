@@ -61,3 +61,35 @@ export async function createPurchaseCheckout(opts: {
   });
   return { mode: 'stripe', url: session.url as string };
 }
+
+/** Донат автору: Stripe Checkout в режиме payment. */
+export async function createDonationCheckout(opts: {
+  donationId: number;
+  amountCents: number;
+  currency: string;
+  title: string;
+  email: string;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<CheckoutResult> {
+  if (!stripeEnabled() || opts.amountCents <= 0) return { mode: 'manual' };
+
+  const { default: Stripe } = await import('stripe');
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: opts.currency.toLowerCase(),
+        unit_amount: opts.amountCents,
+        product_data: { name: opts.title },
+      },
+    }],
+    customer_email: opts.email,
+    success_url: opts.successUrl,
+    cancel_url: opts.cancelUrl,
+    metadata: { donationId: String(opts.donationId), kind: 'donation' },
+  });
+  return { mode: 'stripe', url: session.url as string };
+}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
 import { requireAuthor } from '@/lib/author';
 import AuthorWorks from '@/components/AuthorWorks';
+import AuthorDonations from '@/components/AuthorDonations';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ export default async function AuthorPage({ params }: { params: Promise<{ lang: s
     <main className="mx-auto max-w-4xl px-5 py-10">
       <h1 className="mb-6 text-2xl font-bold">Кабинет автора</h1>
       <AuthorWorks lang={l} />
+      <div className="mt-8">
+        <AuthorDonations />
+      </div>
     </main>
   );
 }

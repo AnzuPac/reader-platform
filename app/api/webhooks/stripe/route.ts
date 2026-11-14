@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initSchema, query } from '@/lib/db';
 import { stripeEnabled } from '@/lib/payments';
 import { markPurchasePaid } from '@/lib/purchases';
+import { markDonationPaid } from '@/lib/donations';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +33,14 @@ export async function POST(req: Request) {
       await initSchema();
       const res = await markPurchasePaid(purchaseId, String(session?.id || ''));
       return NextResponse.json({ received: true, purchase: res.ok, already: res.ok ? res.already : false });
+    }
+
+    // Донат автору: подтверждение оплаты и начисление доли автора.
+    const donationId = Number(session?.metadata?.donationId);
+    if (donationId) {
+      await initSchema();
+      const res = await markDonationPaid(donationId, String(session?.id || ''));
+      return NextResponse.json({ received: true, donation: res.ok, already: res.ok ? res.already : false });
     }
 
     const paymentId = Number(session?.metadata?.paymentId);
