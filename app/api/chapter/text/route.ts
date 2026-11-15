@@ -5,6 +5,8 @@ import { chapterGate } from '@/lib/purchases';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 import { encodeWatermark } from '@/lib/watermark';
 import { registerContentDevice } from '@/lib/devices';
+import { TRANSLIT_ALLOWED_SQL, flag } from '@/lib/search';
+import { toScript, type Script } from '@/lib/translit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,9 +18,16 @@ const NO_STORE = { 'Cache-Control': 'no-store, private, max-age=0' };
  *
  * Для платного/премиум-контента: проверка доступа, мягкий лимит устройств,
  * водяной знак с user_id и жёсткий rate limit (60 запросов текста в минуту).
+ *
+ * ?script=lat|cir — транслитерация сербского текста (ТЗ 4.6). Разрешена только
+ * там, где правообладатель не против (works.translit_allowed); водяной знак
+ * накладывается уже после транслитерации.
  */
 export async function GET(req: Request) {
-  const chapterId = Number(new URL(req.url).searchParams.get('chapter'));
+  const url = new URL(req.url);
+  const chapterId = Number(url.searchParams.get('chapter'));
+  const scriptParam = url.searchParams.get('script');
+  const script: Script | null = scriptParam === 'lat' || scriptParam === 'cir' ? scriptParam : null;
   if (!Number.isFinite(chapterId) || chapterId <= 0) {
     return NextResponse.json({ error: 'bad_input' }, { status: 400, headers: NO_STORE });
   }
@@ -36,6 +45,18 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'locked', reason: gate.reason }, { status: 403, headers: NO_STORE });
   }
 
+  if (script) {
+    const w = await one<{ allowed: unknown }>(
+      `SELECT ${TRANSLIT_ALLOWED_SQL} AS allowed FROM works w WHERE w.id = $1`, [ch.work_id]
+    );
+    if (!w || !flag(w.allowed)) {
+      return NextResponse.json(
+        { error: 'translit_not_allowed', message: 'Prava na prenos pisma za ovo delo nisu dozvoljena.' },
+        { status: 403, headers: NO_STORE }
+      );
+    }
+  }
+
   const rl = rateLimit(`chapter-text:${session?.uid ?? clientKey(req, 'anon')}`, 60, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
@@ -44,7 +65,7 @@ export async function GET(req: Request) {
     );
   }
 
-  let content = ch.content;
+  let content = script ? toScript(ch.content, script) : ch.content;
   if (ch.access !== 'free') {
     if (!session) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401, headers: NO_STORE });
@@ -66,7 +87,7 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json(
-    { content, title: ch.title, protected: ch.access !== 'free' },
+    { content, title: ch.title, protected: ch.access !== 'free', script },
     { headers: NO_STORE }
   );
 }

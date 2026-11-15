@@ -138,6 +138,8 @@ export default async function ReadPage({
             initialHtml={ch.access === 'free' ? ch.content : ''}
             protected={ch.access !== 'free'}
             fetchOnMount={ch.access !== 'free'}
+            translitAllowed={Number(ch.translit_allowed) === 1}
+            paragraphCommentsEnabled={Number(ch.paragraph_comments_enabled) === 1}
           />
         )
       )}

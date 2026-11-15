@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 
 type Lang = 'sr' | 'en' | 'ru';
+type Script = 'lat' | 'cir';
 
 const LABEL: Record<Lang, string> = { sr: 'SR', en: 'EN', ru: 'RU' };
 
@@ -11,20 +12,27 @@ export default function ChapterBody({
   originalLang = 'sr',
   protected: isProtected = false,
   fetchOnMount = false,
+  translitAllowed = false,
+  paragraphCommentsEnabled = false,
 }: {
   chapterId: number;
   initialHtml: string;
   originalLang?: Lang;
   protected?: boolean;
   fetchOnMount?: boolean;
+  translitAllowed?: boolean;
+  paragraphCommentsEnabled?: boolean;
 }) {
   const [content, setContent] = useState(initialHtml);
   const [originContent, setOriginContent] = useState(initialHtml);
   const [lang, setLang] = useState<Lang>(originalLang);
+  const [script, setScript] = useState<Script | null>(null);
   const [busy, setBusy] = useState<Lang | null>(null);
+  const [scriptBusy, setScriptBusy] = useState<Script | null>(null);
   const [note, setNote] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>(fetchOnMount ? 'loading' : 'idle');
   const [errorText, setErrorText] = useState('');
+  const [translitDenied, setTranslitDenied] = useState(false);
 
   useEffect(() => {
     if (!fetchOnMount) return;
@@ -67,6 +75,7 @@ export default function ChapterBody({
     if (target === originalLang) {
       setContent(originContent);
       setLang(target);
+      setScript(null);
       setNote('');
       return;
     }
@@ -82,11 +91,37 @@ export default function ChapterBody({
       if (!r.ok) { setNote('Перевод не удался: ' + (j.error || r.status)); return; }
       setContent(j.content);
       setLang(target);
+      setScript(null);
       setNote(j.cached ? 'Перевод из кэша' : 'Переведено ИИ');
     } catch {
       setNote('Перевод не удался');
     } finally {
       setBusy(null);
+    }
+  }
+
+  /** Транслитерация выполняется на сервере: текст выдаётся уже в нужном письме. */
+  async function switchScript(target: Script) {
+    if (target === script) return;
+    setScriptBusy(target);
+    setNote('');
+    try {
+      const r = await fetch(`/api/chapter/text?chapter=${chapterId}&script=${target}`, { cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 403 && j.error === 'translit_not_allowed') {
+        setTranslitDenied(true);
+        setNote('Prava na prenos pisma nisu dozvoljena za ovo delo.');
+        return;
+      }
+      if (!r.ok) { setNote('Prenos pisma nije uspeo.'); return; }
+      setContent(String(j.content || ''));
+      setScript(target);
+      setLang(originalLang);
+      setNote(target === 'lat' ? 'Pismo: latinica' : 'Pismo: ćirilica');
+    } catch {
+      setNote('Prenos pisma nije uspeo.');
+    } finally {
+      setScriptBusy(null);
     }
   }
 
@@ -118,6 +153,32 @@ export default function ChapterBody({
             {busy === code ? '…' : LABEL[code]}
           </button>
         ))}
+
+        {translitAllowed && !translitDenied ? (
+          <>
+            <span className="ml-2 muted">Pismo:</span>
+            <button
+              onClick={() => switchScript('cir')}
+              disabled={scriptBusy !== null || lang !== originalLang}
+              className={`rounded px-2.5 py-1 font-bold ${
+                script === 'cir' ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'
+              }`}
+              title="Ćirilica"
+            >
+              {scriptBusy === 'cir' ? '…' : 'Ћир'}
+            </button>
+            <button
+              onClick={() => switchScript('lat')}
+              disabled={scriptBusy !== null || lang !== originalLang}
+              className={`rounded px-2.5 py-1 font-bold ${
+                script === 'lat' ? 'bg-brand text-white' : 'border border-line text-mist hover:text-ink'
+              }`}
+              title="Latinica"
+            >
+              {scriptBusy === 'lat' ? '…' : 'Lat'}
+            </button>
+          </>
+        ) : null}
         {note ? <span className="rounded bg-brand/15 px-2 py-1 text-brand">{note}</span> : null}
       </div>
 
@@ -130,6 +191,7 @@ export default function ChapterBody({
       >
         <article className="prose-reader whitespace-pre-line" dangerouslySetInnerHTML={{ __html: content }} />
       </div>
+      {paragraphCommentsEnabled ? null : null}
     </>
   );
 }
