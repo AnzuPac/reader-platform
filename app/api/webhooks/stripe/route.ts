@@ -3,6 +3,8 @@ import { initSchema, query } from '@/lib/db';
 import { stripeEnabled } from '@/lib/payments';
 import { markPurchasePaid } from '@/lib/purchases';
 import { markDonationPaid } from '@/lib/donations';
+import { markCoinOrderPaid } from '@/lib/coins';
+import { activateSubscription } from '@/lib/subscriptions';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +29,14 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
+    // Пакет монет: начисление в кошелёк.
+    const coinOrderId = Number(session?.metadata?.coinOrderId);
+    if (coinOrderId) {
+      await initSchema();
+      const res = await markCoinOrderPaid(coinOrderId, String(session?.id || ''));
+      return NextResponse.json({ received: true, coins: res.ok, already: res.ok ? res.already : false });
+    }
+
     // Разовая покупка книги/главы: доступ навсегда + роялти издателю.
     const purchaseId = Number(session?.metadata?.purchaseId);
     if (purchaseId) {
@@ -44,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     const paymentId = Number(session?.metadata?.paymentId);
-    const planCode = String(session?.metadata?.planCode || 'reader');
+    const planCode = String(session?.metadata?.planCode || 'month');
     if (paymentId) {
       await initSchema();
       const pay = await query<{ user_id: number; status: string }>(
@@ -52,11 +62,7 @@ export async function POST(req: Request) {
       );
       if (pay.length && pay[0].status !== 'paid') {
         await query("UPDATE payments SET status = 'paid', paid_at = now() WHERE id = $1", [paymentId]);
-        await query(
-          `INSERT INTO subscriptions (user_id, plan_code, status, current_period_start, current_period_end)
-           VALUES ($1,$2,'active',now(), datetime('now','+30 days'))`,
-          [pay[0].user_id, planCode]
-        );
+        await activateSubscription(pay[0].user_id, planCode);
       }
     }
   }

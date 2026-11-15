@@ -82,7 +82,7 @@ export default function AdminPublishersPage() {
       method: 'POST', headers: headers(), body: JSON.stringify(body),
     }).then((x) => x.json()).catch(() => ({}));
     if (r.ok) {
-      setMsg(`Произведение привязано${r.priceCents != null ? `, цена ${(r.priceCents / 100).toFixed(2)} EUR` : ''}`);
+      setMsg(`Произведение привязано${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
       await loadAll();
     } else setMsg(`Ошибка: ${r.error || 'не удалось'}`);
   }
@@ -173,7 +173,7 @@ export default function AdminPublishersPage() {
             <option value="">— без издательства —</option>
             {publishers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <input className="input" type="number" min={0} step="0.01" placeholder="Цена книги, EUR (пусто — не менять)"
+          <input className="input" type="number" min={0} step="0.01" placeholder="Цена книги, RSD (пусто — не менять)"
             value={priceEur} onChange={(e) => setPriceEur(e.target.value)} />
           <button className="btn btn-primary">Привязать</button>
         </form>

@@ -41,6 +41,7 @@ async function migrateSqlite(db: any) {
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
   // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
   try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try { db.exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {
     db.exec('UPDATE chapter_prices SET coins = CAST(ROUND(amount_cents / 100.0) AS INTEGER) WHERE coins = 0 AND amount_cents > 0');
     db.exec('UPDATE chapter_prices SET amount_cents = coins * 100 WHERE coins > 0');
@@ -61,6 +62,7 @@ async function migratePg(db: any) {
   ];
   for (const sql of alters) { try { await db.query(sql); } catch {} }
   try { await db.query("UPDATE plans SET active = FALSE WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try { await db.query("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {
     await db.query('UPDATE chapter_prices SET coins = ROUND(amount_cents / 100.0) WHERE coins = 0 AND amount_cents > 0');
     await db.query('UPDATE chapter_prices SET amount_cents = coins * 100 WHERE coins > 0');

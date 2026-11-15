@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS publishers (
   name           TEXT NOT NULL,
   slug           TEXT UNIQUE NOT NULL,
   contact_email  TEXT NOT NULL DEFAULT '',
-  commission_pct INTEGER NOT NULL DEFAULT 30 CHECK (commission_pct BETWEEN 0 AND 100),
+  commission_pct INTEGER NOT NULL DEFAULT 50 CHECK (commission_pct BETWEEN 0 AND 100),
   created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -324,7 +324,7 @@ export async function startPurchase(
 export type CoinPurchaseResult =
   | { ok: true; purchaseId: number; coins: number; balance: number; already: boolean }
   | { ok: false; error: 'not_found' | 'not_for_sale' | 'consent_required'
-      | 'insufficient_coins' | 'monthly_limit_exceeded' | 'login_required' };
+      | 'insufficient_coins' | 'monthly_limit_exceeded' | 'login_required' | 'purchase_failed' };
 
 /**
  * Покупка главы за монеты — единственный путь для глав.
@@ -392,7 +392,7 @@ export async function purchaseChapterWithCoins(
       return { ok: true as const, purchaseId, coins: price.coins, balance: debit.balance, already: false };
     });
   } catch {
-    return { ok: false, error: 'insufficient_coins' };
+    return { ok: false, error: 'purchase_failed' };
   }
 }
 

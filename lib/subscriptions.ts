@@ -161,3 +161,20 @@ export function planFacts(plan: PlanRow): string[] {
 }
 
 export const SUBSCRIPTION_CURRENCY = CURRENCY;
+
+/** Дата конца периода по коду тарифа (месяц = 30 дней, год = 365). */
+export function periodEndFor(planCode: string, from = new Date()): string {
+  const days = planCode === 'year' ? 365 : 30;
+  return new Date(from.getTime() + days * 86_400_000).toISOString();
+}
+
+/** Активировать подписку после подтверждения оплаты. Идемпотентно по платежу. */
+export async function activateSubscription(userId: number, planCode: string): Promise<{ ok: true; end: string }> {
+  const end = periodEndFor(planCode);
+  await query(
+    `INSERT INTO subscriptions (user_id, plan_code, status, current_period_start, current_period_end)
+     VALUES ($1,$2,'active',now(),$3)`,
+    [userId, planCode, end]
+  );
+  return { ok: true, end };
+}

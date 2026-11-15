@@ -12,6 +12,8 @@ import ChapterBody from '@/components/ChapterBody';
 import Comments from '@/components/Comments';
 import ComicReader from '@/components/ComicReader';
 import BuyButton from '@/components/BuyButton';
+import ChapterBuyButton from '@/components/ChapterBuyButton';
+import { coinsWithRsd } from '@/lib/money';
 import DonateButton from '@/components/DonateButton';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +37,7 @@ export default async function ReadPage({
     ? await effectiveChapterPrice({ id: ch.id, work_id: ch.work_id, price_cents: ch.price_cents })
     : null;
   const chapterPriceCents = chapterPrice?.amount_cents ?? 0;
+  const chapterCoins = chapterPrice?.coins ?? 0;
   const authorRow = await one<{ author_id: number }>('SELECT author_id FROM works WHERE id = $1', [ch.work_id]);
   const canDonate = !!session && authorRow?.author_id !== session.uid;
 
@@ -81,15 +84,14 @@ export default async function ReadPage({
             <>
               <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava se kupuje</h2>
               <p className="muted mb-4">
-                Kupi glavu ili celu knjigu — pristup ostaje tvoj zauvek.
+                Kupi glavu za novčiće ili celu knjigu u dinarima — pristup ostaje tvoj zauvek.
               </p>
               <div className="flex flex-wrap items-center gap-3">
-                {chapterPriceCents > 0 ? (
-                  <BuyButton
+                {chapterCoins > 0 ? (
+                  <ChapterBuyButton
                     chapterId={ch.id}
-                    priceCents={chapterPriceCents}
-                    currency={chapterPrice?.currency || bookPrice?.currency || 'EUR'}
-                    lang={l}
+                    coins={chapterCoins}
+                    priceLabel={coinsWithRsd(chapterCoins)}
                     label="Kupi glavu"
                   />
                 ) : null}
@@ -127,8 +129,7 @@ export default async function ReadPage({
             chapterId={ch.id}
             workId={ch.work_id}
             workSlug={ch.work_slug}
-            priceCents={chapterPriceCents}
-            currency={chapterPrice?.currency || bookPrice?.currency || 'EUR'}
+            coins={chapterCoins}
             lang={l}
           />
         ) : (

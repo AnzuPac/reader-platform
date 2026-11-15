@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { initSchema, query, one } from '@/lib/db';
 import { adminTokenOk } from '@/lib/admin';
 import { markPurchasePaid } from '@/lib/purchases';
+import { markCoinOrderPaid } from '@/lib/coins';
+import { activateSubscription } from '@/lib/subscriptions';
 
 /**
  * Подтверждение ручной оплаты.
@@ -13,8 +15,18 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => null);
   const purchaseId = Number(b?.purchaseId);
   const paymentId = Number(b?.paymentId);
+  const coinOrderId = Number(b?.coinOrderId);
 
   await initSchema();
+
+  if (coinOrderId) {
+    const res = await markCoinOrderPaid(coinOrderId, b?.externalId ? String(b.externalId) : null);
+    if (!res.ok) {
+      const status = res.error === 'not_found' ? 404 : 409;
+      return NextResponse.json({ error: res.error }, { status });
+    }
+    return NextResponse.json({ ok: true, already: res.already, coinOrderId, coins: res.coins, balance: res.balance });
+  }
 
   if (purchaseId) {
     const res = await markPurchasePaid(purchaseId, b?.externalId ? String(b.externalId) : null);
@@ -34,13 +46,9 @@ export async function POST(req: Request) {
   if (pay.status === 'paid') return NextResponse.json({ ok: true, already: true });
 
   const meta = JSON.parse(pay.meta || '{}') as { planCode?: string };
-  const planCode = meta.planCode || 'reader';
+  const planCode = meta.planCode || 'month';
 
   await query("UPDATE payments SET status='paid', paid_at=now() WHERE id=$1", [paymentId]);
-  await query(
-    `INSERT INTO subscriptions (user_id, plan_code, status, current_period_start, current_period_end)
-     VALUES ($1,$2,'active',now(), datetime('now','+30 days'))`,
-    [pay.user_id, planCode]
-  );
-  return NextResponse.json({ ok: true, plan: planCode });
+  const activated = await activateSubscription(pay.user_id, planCode);
+  return NextResponse.json({ ok: true, plan: planCode, active_until: activated.end });
 }

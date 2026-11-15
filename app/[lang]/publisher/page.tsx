@@ -13,7 +13,9 @@ import PayoutForm from '@/components/PayoutForm';
 export const dynamic = 'force-dynamic';
 
 function money(cents: number, currency: string): string {
-  return `${(cents / 100).toFixed(2)} ${currency}`;
+  void currency; // отчёт всегда в RSD
+  const n = Math.trunc(cents || 0);
+  return n % 100 === 0 ? `${n / 100} RSD` : `${(n / 100).toFixed(2).replace('.', ',')} RSD`;
 }
 
 export default async function PublisherPage({
@@ -103,7 +105,7 @@ export default async function PublisherPage({
         <div className="mr-auto">
           <h1 className="text-2xl font-bold">{publisher.name}</h1>
           <p className="text-sm muted">
-            Provizija platforme: {publisher.commission_pct}% · kontakt: {publisher.contact_email || '—'}
+            Provizija platforme: {publisher.commission_pct}% (podrazumevano 50%) · tvoj deo: {100 - publisher.commission_pct}% · kontakt: {publisher.contact_email || '—'}
           </p>
         </div>
         {isAdmin && all.length > 1 ? (
@@ -197,7 +199,7 @@ export default async function PublisherPage({
           {payouts.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center gap-3 py-2">
               <span className="muted">#{p.id}</span>
-              <span className="flex-1">{(p.amount_cents / 100).toFixed(2)}</span>
+              <span className="flex-1">{money(p.amount_cents, 'RSD')}</span>
               <span className={p.status === 'paid' ? 'text-brand' : 'badge-hot'}>{p.status}</span>
               <span className="text-xs muted">{String(p.created_at).slice(0, 10)}</span>
             </li>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initSchema } from '@/lib/db';
 import { readSession } from '@/lib/auth';
-import { startPurchase, attachCheckoutSession } from '@/lib/purchases';
+import { startPurchase, attachCheckoutSession, purchaseChapterWithCoins } from '@/lib/purchases';
 import { createPurchaseCheckout, stripeEnabled } from '@/lib/payments';
 import { rateLimit } from '@/lib/ratelimit';
 
@@ -33,6 +33,28 @@ export async function POST(req: Request) {
   }
 
   await initSchema();
+
+  // Главы продаются только за монеты (ТЗ 4.8): явное согласие обязательно,
+  // автопокупка выключена, лимит месяца проверяется в purchaseChapterWithCoins.
+  if (chapterId) {
+    const buy = await purchaseChapterWithCoins(s.uid, chapterId, { consent: Boolean(b?.consent) });
+    if (!buy.ok) {
+      const status = buy.error === 'consent_required' ? 400
+        : buy.error === 'insufficient_coins' || buy.error === 'monthly_limit_exceeded' ? 402
+        : buy.error === 'purchase_failed' ? 409
+        : 404;
+      return NextResponse.json({ error: buy.error }, { status });
+    }
+    return NextResponse.json({
+      ok: true,
+      mode: 'coins',
+      purchaseId: buy.purchaseId,
+      coins: buy.coins,
+      balance: buy.balance,
+      already: buy.already,
+    });
+  }
+
   const res = await startPurchase(
     s.uid,
     { workId, chapterId },

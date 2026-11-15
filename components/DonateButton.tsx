@@ -17,7 +17,7 @@ export default function DonateButton({
   authorName?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState('5');
+  const [amount, setAmount] = useState('500');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -33,10 +33,10 @@ export default function DonateButton({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const eur = Number(String(amount).replace(',', '.'));
-    const cents = Math.round(eur * 100);
+    const rsd = Number(String(amount).replace(',', '.'));
+    const cents = Math.round(rsd * 100);
     if (!Number.isFinite(cents) || cents < 100 || cents > 100000) {
-      setNote('Iznos mora biti između 1 i 1000 EUR.');
+      setNote('Iznos mora biti između 1 i 1000 RSD.');
       return;
     }
     if (message.length > 300) {
@@ -58,7 +58,7 @@ export default function DonateButton({
       }
       if (!r.ok) {
         if (j.error === 'self_donation') setNote('Ne možeš donirati sam sebi.');
-        else if (j.error === 'invalid_amount') setNote('Iznos mora biti između 1 i 1000 EUR.');
+        else if (j.error === 'invalid_amount') setNote('Iznos mora biti između 1 i 1000 RSD.');
         else if (j.error === 'message_too_long') setNote('Poruka je predugačka.');
         else if (j.error === 'work_not_found') setNote('Delo nije pronađeno.');
         else setNote('DONACIJA NIJE POSLATA. Pokušaj ponovo.');
@@ -96,7 +96,7 @@ export default function DonateButton({
               <div>
                 <h2 id="donate-title" className="text-lg font-bold">Podrži autora</h2>
                 <p className="text-sm muted">
-                  {authorName ? `${authorName} · ` : ''}90% ide autoru, 10% platformi.
+                  {authorName ? `${authorName} · ` : ''}100% ide autoru — platforma ne uzima procenat na donacije.
                 </p>
               </div>
               <button type="button" className="text-sm muted hover:text-ink" onClick={reset} aria-label="Zatvori">✕</button>
@@ -110,16 +110,16 @@ export default function DonateButton({
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div>
-                  <span className="mb-1 block text-xs font-semibold muted">Iznos (EUR)</span>
+                  <span className="mb-1 block text-xs font-semibold muted">Iznos (RSD)</span>
                   <div className="mb-2 flex gap-2">
-                    {['2', '5', '10'].map((v) => (
+                    {['200', '500', '1000'].map((v) => (
                       <button
                         type="button"
                         key={v}
                         onClick={() => setAmount(v)}
                         className={`rounded px-3 py-1 text-sm ${amount === v ? 'bg-brand text-white' : 'border border-line text-mist'}`}
                       >
-                        {v} €
+                        {v} RSD
                       </button>
                     ))}
                   </div>
@@ -128,7 +128,7 @@ export default function DonateButton({
                     inputMode="decimal"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    aria-label="Iznos donacije u evrima"
+                    aria-label="Iznos donacije u dinarima"
                   />
                 </div>
 

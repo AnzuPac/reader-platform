@@ -48,7 +48,7 @@ export async function POST(req: Request) {
          currency = excluded.currency,
          active = 1,
          updated_at = CURRENT_TIMESTAMP`,
-      [work.id, priceCents, String(b?.currency || 'EUR').toUpperCase().slice(0, 3)]
+      [work.id, priceCents, String(b?.currency || 'RSD').toUpperCase().slice(0, 3)]
     );
   }
 

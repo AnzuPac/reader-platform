@@ -89,7 +89,7 @@ export default function AdminPage() {
   async function confirmDonation(id: number) {
     const r = await fetch('/api/admin/donation', { method: 'POST', headers: headers(), body: JSON.stringify({ donationId: id }) });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'EUR'}` : 'Ошибка подтверждения доната');
+    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'RSD'}` : 'Ошибка подтверждения доната');
     await loadAll();
   }
 

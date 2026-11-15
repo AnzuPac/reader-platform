@@ -10,7 +10,9 @@ import { WorkCover } from '@/lib/cover';
 import RatingStars from '@/components/RatingStars';
 import Comments from '@/components/Comments';
 import DonateButton from '@/components/DonateButton';
-import { workPrice, hasWorkAccess, hasActiveSubscription, effectiveChapterPrice } from '@/lib/purchases';
+import ChapterBuyButton from '@/components/ChapterBuyButton';
+import { workPrice, hasWorkAccess, hasActiveSubscription, effectiveChapterPrice, chapterPriceSummary } from '@/lib/purchases';
+import { formatRsd, coinsWithRsd } from '@/lib/money';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,9 +50,9 @@ export default async function WorkPage({
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
   const canDonate = !!session && session.uid !== work.author_id;
 
-  // Для комиксов у платных глав показываем цену прямо в содержании.
-  const chapterPrices = new Map<number, { amount_cents: number; currency: string } | null>();
-  if (work.type === 'comic' && !owned) {
+  // Все платные главы: цена в монетах и потолок «вся книга не дороже N RSD».
+  const chapterPrices = new Map<number, { coins: number; amount_cents: number; currency: string } | null>();
+  if (!owned) {
     await Promise.all(
       chapters
         .filter((c) => c.access === 'paid')
@@ -59,6 +61,11 @@ export default async function WorkPage({
         })
     );
   }
+  const paidCoins = [...chapterPrices.values()].filter(Boolean).map((v) => v!.coins);
+  const minCoins = paidCoins.length ? Math.min(...paidCoins) : 0;
+  const maxCoins = paidCoins.length ? Math.max(...paidCoins) : 0;
+  const cap = await chapterPriceSummary(work.id);
+  const bookRsd = price ? formatRsd(price.amount_cents) : null;
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8">
@@ -86,18 +93,38 @@ export default async function WorkPage({
             </div>
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
+            <div className="mb-4 rounded-lg border border-line p-3 text-sm">
+              <div className="mb-1 font-semibold">Cena</div>
+              <ul className="space-y-1">
+                <li>
+                  <span className="badge-hot">U pretplati</span>{' '}
+                  <Link href={`/${l}/subscribe`} className="underline">mesečno 699 RSD — bez ograničenja</Link>
+                </li>
+                {bookRsd ? (
+                  <li>Kupi zauvek — <strong>{bookRsd}</strong> · trajni pristup, ostaje posle uklanjanja iz kataloga</li>
+                ) : null}
+                {minCoins > 0 ? (
+                  <li>
+                    Glave:{' '}
+                    <strong>{minCoins === maxCoins ? `${minCoins} novčića` : `${minCoins}–${maxCoins} novčića`}</strong>{' '}
+                    ({minCoins === maxCoins ? `${minCoins} RSD` : `${minCoins}–${maxCoins} RSD`}) po glavi
+                    {bookRsd ? `, cela knjiga ne više od ${bookRsd}` : ''}
+                  </li>
+                ) : null}
+                {canDonate ? <li>Podrži autora — dobrovoljni donat, bez obaveze</li> : null}
+              </ul>
+            </div>
+
             <div className="flex flex-wrap items-center gap-3">
               {owned ? (
                 first ? <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj</Link> : null
               ) : price && !subscribed ? (
-                <BuyButton workId={work.id} priceCents={price.amount_cents} currency={price.currency} lang={l} label="Kupi" />
+                <BuyButton workId={work.id} priceCents={price.amount_cents} currency={price.currency} lang={l} label="Kupi zauvek" />
               ) : first ? (
                 <Link href={`/${l}/read/${first.id}`} className="btn btn-primary">Čitaj prvu glavu</Link>
               ) : null}
               {!owned && price ? (
-                <span className="text-sm muted">
-                  {(price.amount_cents / 100).toFixed(2)} {price.currency} · trajni pristup
-                </span>
+                <span className="text-sm muted">{bookRsd} · trajni pristup</span>
               ) : null}
               <LibraryButton workId={work.id} initial={inLib} />
               {canDonate ? <DonateButton workId={work.id} authorName={work.author_name} lang={l} /> : null}
@@ -115,21 +142,20 @@ export default async function WorkPage({
         <ol className="divide-y divide-line">
           {chapters.map((c) => (
             <li key={c.id}>
-              {work.type === 'comic' && c.access === 'paid' && !owned && chapterPrices.get(c.id) ? (
+              {c.access === 'paid' && !owned && chapterPrices.get(c.id) ? (
                 <div className="flex flex-wrap items-center gap-3 px-5 py-3">
                   <span className="w-9 shrink-0 text-sm muted">{c.number}</span>
                   <Link href={`/${l}/read/${c.id}`} className="min-w-0 flex-1 truncate text-sm hover:text-brand">
                     {c.title || `Glava ${c.number}`}
                   </Link>
                   <span className="badge-hot">🔒 Kupovina</span>
-                  <BuyButton
+                  <ChapterBuyButton
                     chapterId={c.id}
-                    priceCents={chapterPrices.get(c.id)!.amount_cents}
-                    currency={chapterPrices.get(c.id)!.currency}
-                    lang={l}
+                    coins={chapterPrices.get(c.id)!.coins}
+                    priceLabel={coinsWithRsd(chapterPrices.get(c.id)!.coins)}
                     label="Kupi glavu"
                   />
-                  <span className="text-xs muted">{c.word_count} str.</span>
+                  <span className="text-xs muted">{c.word_count} {work.type === 'comic' ? 'str.' : 'reči'}</span>
                 </div>
               ) : (
                 <Link href={`/${l}/read/${c.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-[#f2f6ff]">

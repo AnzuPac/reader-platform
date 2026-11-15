@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     'SELECT code, price_cents, currency, period FROM plans WHERE code = $1 AND active = 1', [planCode]
   );
   if (!plan) return NextResponse.json({ error: 'plan_not_found' }, { status: 404 });
+  if (plan.price_cents <= 0) return NextResponse.json({ error: 'plan_not_purchasable' }, { status: 400 });
 
   const rows = await query<{ id: number }>(
     `INSERT INTO payments (user_id, amount_cents, currency, method, status, meta)

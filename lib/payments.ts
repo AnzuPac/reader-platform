@@ -93,3 +93,34 @@ export async function createDonationCheckout(opts: {
   });
   return { mode: 'stripe', url: session.url as string };
 }
+
+/** Покупка пакета монет: Stripe Checkout (payment) или ручное подтверждение. */
+export async function createCoinCheckout(opts: {
+  orderId: number;
+  priceRsd: number;
+  coins: number;
+  email: string;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<CheckoutResult> {
+  if (!stripeEnabled() || opts.priceRsd <= 0) return { mode: 'manual' };
+
+  const { default: Stripe } = await import('stripe');
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: 'rsd',
+        unit_amount: opts.priceRsd * 100,
+        product_data: { name: `${opts.coins} novčića` },
+      },
+    }],
+    customer_email: opts.email,
+    success_url: opts.successUrl,
+    cancel_url: opts.cancelUrl,
+    metadata: { coinOrderId: String(opts.orderId), kind: 'coins' },
+  });
+  return { mode: 'stripe', url: session.url as string };
+}

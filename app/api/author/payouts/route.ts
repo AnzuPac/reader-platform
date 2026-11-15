@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const b = await req.json().catch(() => null);
   await initSchema();
-  const res = await requestAuthorPayout(s.uid, String(b?.currency || 'EUR'));
+  const res = await requestAuthorPayout(s.uid, String(b?.currency || 'RSD'));
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
   return NextResponse.json(res);
 }

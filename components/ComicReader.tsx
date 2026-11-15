@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import BuyButton from './BuyButton';
+import ChapterBuyButton from './ChapterBuyButton';
+import { coinsWithRsd } from '@/lib/money';
 
 type Page = { page_no: number; file_path: string };
 
@@ -8,15 +9,13 @@ export default function ComicReader({
   chapterId,
   workId,
   workSlug,
-  priceCents = 0,
-  currency = 'EUR',
+  coins = 0,
   lang = 'sr',
 }: {
   chapterId: number;
   workId?: number;
   workSlug?: string;
-  priceCents?: number;
-  currency?: string;
+  coins?: number;
   lang?: string;
 }) {
   const [pages, setPages] = useState<Page[]>([]);
@@ -88,8 +87,8 @@ export default function ComicReader({
         <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava se kupuje</h2>
         <p className="muted mb-4">Kupi glavu ili celu knjigu — pristup ostaje tvoj zauvek.</p>
         <div className="flex flex-wrap items-center gap-3">
-          {priceCents > 0 ? (
-            <BuyButton chapterId={chapterId} priceCents={priceCents} currency={currency} lang={lang} label="Kupi glavu" />
+          {coins > 0 ? (
+            <ChapterBuyButton chapterId={chapterId} coins={coins} priceLabel={coinsWithRsd(coins)} label="Kupi glavu" />
           ) : null}
           {workId ? (
             <a className="btn btn-ghost" href={workSlug ? `/${lang}/work/${workSlug}` : `/${lang}/catalog`}>

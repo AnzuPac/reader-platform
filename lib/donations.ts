@@ -262,8 +262,8 @@ export type PayoutRequestResult =
   | { ok: true; payoutId: number; amount_cents: number; currency: string }
   | { ok: false; error: 'nothing_to_pay' | 'invalid_currency' };
 
-export async function requestAuthorPayout(authorId: number, currency = 'EUR'): Promise<PayoutRequestResult> {
-  const cur = String(currency || 'EUR').toUpperCase().slice(0, 3);
+export async function requestAuthorPayout(authorId: number, currency = 'RSD'): Promise<PayoutRequestResult> {
+  const cur = String(currency || 'RSD').toUpperCase().slice(0, 3);
   if (!/^[A-Z]{3}$/.test(cur)) return { ok: false, error: 'invalid_currency' };
 
   const summary = await authorDonationSummary(authorId, 1);
