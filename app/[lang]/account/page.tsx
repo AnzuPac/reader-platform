@@ -3,7 +3,9 @@ import { requireAuthor } from '@/lib/author';
 import { readSession } from '@/lib/auth';
 import AccountForm from '@/components/AccountForm';
 import WalletPanel from '@/components/WalletPanel';
+import AccountDangerZone from '@/components/AccountDangerZone';
 import { ensureWallet, listCoinPackages, listWalletHistory, getEconomySettings } from '@/lib/coins';
+import { one } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +17,7 @@ function plain<T>(value: T): T {
 export default async function AccountPage() {
   const s = await readSession();
   if (!s) notFound();
+  const localeRow = await one<{ locale: string }>('SELECT locale FROM users WHERE id = $1', [s.uid]);
   await ensureWallet(s.uid);
   const [balance, packages, history, settings] = await Promise.all([
     ensureWallet(s.uid),
@@ -36,6 +39,7 @@ export default async function AccountPage() {
           }}
         />
       </div>
+      <AccountDangerZone lang={localeRow?.locale || 'sr'} />
     </main>
   );
 }

@@ -8,11 +8,11 @@ export async function exportAccount(uid: number) {
   );
   const purchases = await query('SELECT id, work_id, chapter_id, amount_cents, coins, status, created_at FROM purchases WHERE user_id = $1 ORDER BY id', [uid]);
   const donations = await query('SELECT id, work_id, chapter_id, amount_cents, message, status, created_at FROM donations WHERE user_id = $1 ORDER BY id', [uid]);
-  const library = await query('SELECT work_id, status, added_at FROM library_items WHERE user_id = $1 ORDER BY added_at', [uid]);
+  const library = await query('SELECT work_id, created_at FROM library_items WHERE user_id = $1 ORDER BY created_at', [uid]);
   const comments = await query('SELECT id, chapter_id, body, created_at FROM comments WHERE user_id = $1 ORDER BY id', [uid]);
   const wallet = await one('SELECT balance_coins FROM wallets WHERE user_id = $1', [uid]);
   const coinTx = await query('SELECT delta, kind, ref_id, created_at FROM coin_transactions WHERE user_id = $1 ORDER BY id', [uid]);
-  const subscriptions = await query('SELECT plan_code, status, started_at, ends_at FROM subscriptions WHERE user_id = $1 ORDER BY id', [uid]);
+  const subscriptions = await query('SELECT plan_code, status, current_period_start AS started_at, current_period_end AS ends_at FROM subscriptions WHERE user_id = $1 ORDER BY id', [uid]);
   return { exported_at: new Date().toISOString(), user, purchases, donations, library, comments, wallet, coin_transactions: coinTx, subscriptions };
 }
 
