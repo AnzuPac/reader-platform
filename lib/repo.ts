@@ -4,7 +4,7 @@ import { query, one, initSchema } from './db';
 export type WorkCard = {
   id: number; slug: string; title: string; description: string; cover_path: string | null;
   rating_avg: string; words_total: number; views_total: number;
-  age_rating: number; completion: string; author_name: string;
+  age_rating: number; completion: string; author_name: string; type?: string; kind?: string;
 };
 
 export type ChapterRow = {
@@ -15,7 +15,7 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number; classic?: boolean } = {}): Promise<WorkCard[]> {
+export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number; classic?: boolean; fanfic?: boolean } = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
   const genre = (opts.genre || '').trim();
@@ -31,6 +31,8 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
     where.push(`(w.search_norm LIKE $${params.length} OR lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
   }
   if (opts.classic) where.push('w.is_classic = 1');
+  if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
+  if (opts.fanfic === false) where.push("w.kind = 'original'");
   if (wtype === 'novel' || wtype === 'comic') {
     params.push(wtype);
     where.push(`w.type = $${params.length}`);
@@ -61,7 +63,7 @@ export async function getWork(slug: string): Promise<(WorkCard & { type: string;
   await ensure();
   return one<WorkCard & { type: string; author_id: number }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, w.type, w.author_id, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, w.type, w.kind, w.author_id, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );

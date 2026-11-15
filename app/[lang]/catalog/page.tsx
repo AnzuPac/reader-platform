@@ -7,6 +7,7 @@ import { WorkCover } from '@/lib/cover';
 export const dynamic = 'force-dynamic';
 
 type WorkRow = {
+  kind?: string; type?: string;
   id: number; slug: string; title: string; description: string;
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string; cover_path: string | null;
@@ -32,7 +33,11 @@ export default async function CatalogPage({
   let genres: Genre[] = [];
   try {
     [works, genres] = await Promise.all([
-      listWorks({ q, genre, type, sort, classic: kind === 'classic', limit: 36 }) as unknown as Promise<WorkRow[]>,
+      listWorks({
+        q, genre, type, sort, limit: 36,
+        classic: kind === 'classic',
+        fanfic: kind === 'fanfic' ? true : (kind === 'books' ? false : undefined),
+      }) as unknown as Promise<WorkRow[]>,
       listGenres() as unknown as Promise<Genre[]>,
     ]);
   } catch {
@@ -82,13 +87,14 @@ export default async function CatalogPage({
       <div className="mb-3 flex gap-2">
         {[
           { key: '', label: 'Sve' },
-          { key: 'novel', label: 'Romani' },
-          { key: 'comic', label: 'Stripovi' },
-          { key: 'classic', label: 'Klasika' },
+          { key: 'manga', label: 'Manga', color: 'manga' },
+          { key: 'books', label: 'Knjige', color: 'book' },
+          { key: 'fanfic', label: 'Fanfici', color: 'fanfic' },
+          { key: 'classic', label: 'Klasika', color: 'book' },
         ].map((tab) => (
           <Link
             key={tab.key || 'all'}
-            href={`/${l}/catalog${tab.key === 'classic' ? qs({ kind: 'classic', type: '' }) : qs({ type: tab.key, kind: '' })}`}
+            href={`/${l}/catalog${qs({ kind: tab.key === 'all' ? '' : tab.key, type: tab.key === 'manga' ? 'comic' : '' })}`}
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               (tab.key === 'classic' ? kind === 'classic' : (type || '') === tab.key && kind !== 'classic') ? 'bg-hot text-white' : 'border border-line text-mist hover:text-ink'
             }`}
@@ -131,6 +137,7 @@ export default async function CatalogPage({
                 {i < 3 ? <span className="badge-rank">TOP {i + 1}</span> : null}
               </div>
               <div className="mt-2 flex items-start gap-1">
+                <span className={`cat-badge cat-${w.kind === 'fanfic' ? 'fanfic' : (w.type === 'comic' ? 'manga' : 'book')}`}>{w.kind === 'fanfic' ? 'Fanfik' : (w.type === 'comic' ? 'Manga' : 'Knjiga')}</span>
                 <span className="line-clamp-1 flex-1 text-sm font-semibold group-hover:text-brand">{w.title}</span>
                 {w.age_rating ? <span className="badge-hot">{w.age_rating}+</span> : null}
               </div>

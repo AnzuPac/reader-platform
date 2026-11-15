@@ -57,3 +57,15 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
 }
 .skip-link:focus { left: 0; }
 .input::placeholder { color: #9b8fb5; }
+
+/* Три раздела: манга — синий, книги — серый, фанфики — фиолетовый */
+.cat-badge { display:inline-block; padding:1px 7px; border-radius:6px; font-size:10px; font-weight:800; letter-spacing:.02em; }
+.cat-manga { background:rgba(59,130,246,.18); color:#93c5fd; border:1px solid rgba(59,130,246,.45); }
+.cat-book  { background:rgba(156,163,175,.16); color:#d1d5db; border:1px solid rgba(156,163,175,.40); }
+.cat-fanfic{ background:rgba(139,92,246,.20); color:#c4b5fd; border:1px solid rgba(139,92,246,.50); }
+.tab-manga.active { background:#2563eb; color:#fff; }
+.tab-book.active  { background:#6b7280; color:#fff; }
+.tab-fanfic.active{ background:#7c3aed; color:#fff; }
+.card-manga { border-left:4px solid #3b82f6; }
+.card-book  { border-left:4px solid #9ca3af; }
+.card-fanfic{ border-left:4px solid #8b5cf6; }
