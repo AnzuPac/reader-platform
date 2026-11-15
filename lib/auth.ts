@@ -50,3 +50,20 @@ export async function clearSessionCookies(): Promise<void> {
   jar.delete(ACCESS_COOKIE);
   jar.delete(REFRESH_COOKIE);
 }
+
+export async function signDeleteToken(uid: number): Promise<string> {
+  return new SignJWT({ uid, purpose: 'delete' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('15m')
+    .sign(SECRET);
+}
+
+export async function verifyDeleteToken(token: string): Promise<number | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    if (payload.purpose !== 'delete') return null;
+    const uid = Number(payload.uid);
+    return Number.isFinite(uid) && uid > 0 ? uid : null;
+  } catch { return null; }
+}

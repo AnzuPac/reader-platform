@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified  INTEGER NOT NULL DEFAULT 0,
   storage_used    BIGINT NOT NULL DEFAULT 0,     -- байты
   created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_seen_at    TEXT
+  last_seen_at    TEXT,
+  deleted_at      TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email));

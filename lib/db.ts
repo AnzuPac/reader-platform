@@ -33,6 +33,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN search_norm TEXT',
     'ALTER TABLE works ADD COLUMN translit_allowed INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE users ADD COLUMN deleted_at TEXT',
     'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
