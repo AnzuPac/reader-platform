@@ -15,7 +15,7 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number } = {}): Promise<WorkCard[]> {
+export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number; classic?: boolean } = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
   const genre = (opts.genre || '').trim();
@@ -30,6 +30,7 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
     params.push(`%${nq}%`);
     where.push(`(w.search_norm LIKE $${params.length} OR lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
   }
+  if (opts.classic) where.push('w.is_classic = 1');
   if (wtype === 'novel' || wtype === 'comic') {
     params.push(wtype);
     where.push(`w.type = $${params.length}`);

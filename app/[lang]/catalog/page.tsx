@@ -22,17 +22,17 @@ export default async function CatalogPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ q?: string; genre?: string; type?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string; genre?: string; type?: string; sort?: string; kind?: string }>;
 }) {
   const { lang } = await params;
-  const { q, genre, type, sort } = await searchParams;
+  const { q, genre, type, sort, kind } = await searchParams;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
 
   let works: WorkRow[] = [];
   let genres: Genre[] = [];
   try {
     [works, genres] = await Promise.all([
-      listWorks({ q, genre, type, sort, limit: 36 }) as unknown as Promise<WorkRow[]>,
+      listWorks({ q, genre, type, sort, classic: kind === 'classic', limit: 36 }) as unknown as Promise<WorkRow[]>,
       listGenres() as unknown as Promise<Genre[]>,
     ]);
   } catch {
@@ -84,12 +84,13 @@ export default async function CatalogPage({
           { key: '', label: 'Sve' },
           { key: 'novel', label: 'Romani' },
           { key: 'comic', label: 'Stripovi' },
+          { key: 'classic', label: 'Klasika' },
         ].map((tab) => (
           <Link
             key={tab.key || 'all'}
-            href={`/${l}/catalog${qs({ type: tab.key })}`}
+            href={`/${l}/catalog${tab.key === 'classic' ? qs({ kind: 'classic', type: '' }) : qs({ type: tab.key, kind: '' })}`}
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              (type || '') === tab.key ? 'bg-hot text-white' : 'border border-line text-mist hover:text-ink'
+              (tab.key === 'classic' ? kind === 'classic' : (type || '') === tab.key && kind !== 'classic') ? 'bg-hot text-white' : 'border border-line text-mist hover:text-ink'
             }`}
           >
             {tab.label}

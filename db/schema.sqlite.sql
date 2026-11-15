@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS works (
   translit_allowed  INTEGER NOT NULL DEFAULT 1,
   paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1,
   rights_sale         INTEGER NOT NULL DEFAULT 1,
+  is_classic          INTEGER NOT NULL DEFAULT 0,
   rights_subscription INTEGER NOT NULL DEFAULT 1,
   subscription_window_days INTEGER NOT NULL DEFAULT 0,
   regions             TEXT NOT NULL DEFAULT 'RS',

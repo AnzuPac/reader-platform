@@ -36,6 +36,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE users ADD COLUMN deleted_at TEXT',
     'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE works ADD COLUMN rights_sale INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE works ADD COLUMN is_classic INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN rights_subscription INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE works ADD COLUMN subscription_window_days INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN regions TEXT NOT NULL DEFAULT $$RS$$',
