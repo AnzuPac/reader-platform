@@ -4,7 +4,7 @@ import { query, one, initSchema } from './db';
 export type WorkCard = {
   id: number; slug: string; title: string; description: string; cover_path: string | null;
   rating_avg: string; words_total: number; views_total: number;
-  age_rating: number; completion: string; author_name: string; type?: string; kind?: string;
+  age_rating: number; completion: string; author_name: string; type?: string; kind?: string; category?: string;
 };
 
 export type ChapterRow = {
@@ -63,7 +63,7 @@ export async function getWork(slug: string): Promise<(WorkCard & { type: string;
   await ensure();
   return one<WorkCard & { type: string; author_id: number }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, w.type, w.kind, w.author_id, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, w.type, w.kind, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, w.author_id, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );

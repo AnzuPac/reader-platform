@@ -7,7 +7,7 @@ import { WorkCover } from '@/lib/cover';
 export const dynamic = 'force-dynamic';
 
 type WorkRow = {
-  kind?: string; type?: string;
+  kind?: string; type?: string; category?: string;
   id: number; slug: string; title: string; description: string;
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string; cover_path: string | null;
@@ -137,7 +137,7 @@ export default async function CatalogPage({
                 {i < 3 ? <span className="badge-rank">TOP {i + 1}</span> : null}
               </div>
               <div className="mt-2 flex items-start gap-1">
-                <span className={`cat-badge cat-${w.kind === 'fanfic' ? 'fanfic' : (w.type === 'comic' ? 'manga' : 'book')}`}>{w.kind === 'fanfic' ? 'Fanfik' : (w.type === 'comic' ? 'Manga' : 'Knjiga')}</span>
+                <span className={`cat-badge cat-${w.category ?? 'book'}`}>{w.category === 'fanfic' ? 'Fanfik' : (w.category === 'manga' ? 'Manga' : 'Knjiga')}</span>
                 <span className="line-clamp-1 flex-1 text-sm font-semibold group-hover:text-brand">{w.title}</span>
                 {w.age_rating ? <span className="badge-hot">{w.age_rating}+</span> : null}
               </div>
