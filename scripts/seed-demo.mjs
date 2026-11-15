@@ -10,6 +10,11 @@ import bcrypt from 'bcryptjs';
 
 const root = process.cwd();
 const PASSWORD = 'demo1234';
+// Экономика v0.2: 1 монета = 1 RSD, книга 990 RSD, глава 15 монет, подписка 699 RSD.
+const BOOK_PRICE_RSD = 990;
+const CHAPTER_COINS = 15;
+const BOOK_PRICE_CENTS = BOOK_PRICE_RSD * 100;
+const CHAPTER_PRICE_CENTS = CHAPTER_COINS * 100;
 const ENV = process.env.DATABASE_URL ? 'pg' : 'sqlite';
 let db;
 let pg;
@@ -50,8 +55,17 @@ async function init() {
       'ALTER TABLE works ADD COLUMN font_family TEXT',
       'ALTER TABLE works ADD COLUMN font_path TEXT',
       'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
+      'ALTER TABLE works ADD COLUMN kind TEXT NOT NULL DEFAULT \'original\'',
+      'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE plans ADD COLUMN max_profiles SMALLINT NOT NULL DEFAULT 1',
     ]) { try { db.exec(sql); } catch {} }
   }
+
+  // v0.2: старые тарифы выключаем, семейный — 5 профилей (после схемы).
+  try { await exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try { await exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
 }
 
 const hash = bcrypt.hashSync(PASSWORD, 10);
@@ -87,20 +101,21 @@ async function upsertPublisher(name, slug, email, pct) {
 
 async function upsertWork(w) {
   const rows = await q(
-    `INSERT INTO works (slug, author_id, publisher_id, type, original_language, status, completion,
+    `INSERT INTO works (slug, author_id, publisher_id, type, kind, original_language, status, completion,
                         age_rating, title, description, words_total, published_at)
-     VALUES (?,?,?,?,'sr','published','ongoing',?,?,?,?,CURRENT_TIMESTAMP)
+     VALUES (?,?,?,?,?,'sr','published','ongoing',?,?,?,?,CURRENT_TIMESTAMP)
      ON CONFLICT(slug) DO UPDATE SET
        author_id = excluded.author_id,
        publisher_id = excluded.publisher_id,
        type = excluded.type,
+       kind = excluded.kind,
        status = 'published',
        title = excluded.title,
        description = excluded.description,
        words_total = excluded.words_total,
        published_at = COALESCE(works.published_at, CURRENT_TIMESTAMP)
      RETURNING id`,
-    [w.slug, w.authorId, w.publisherId ?? null, w.type, w.age, w.title, w.description, w.words]
+    [w.slug, w.authorId, w.publisherId ?? null, w.type, w.kind ?? 'original', w.age, w.title, w.description, w.words]
   );
   return rows[0].id;
 }
@@ -143,16 +158,17 @@ async function ensurePurchase(userId, workId, chapterId, amount) {
   const rows = await q(`SELECT id FROM purchases WHERE ${where} LIMIT 1`,
     chapterId ? [userId, chapterId, 'paid'] : [userId, workId, 'paid']);
   if (rows.length) return rows[0].id;
+  const coins = Math.round(amount / 100);
   const ins = await q(
-    `INSERT INTO purchases (user_id, work_id, chapter_id, amount_cents, currency, status, provider, paid_at)
-     VALUES (?,?,?,?,'EUR','paid','manual',CURRENT_TIMESTAMP) RETURNING id`,
-    [userId, workId, chapterId, amount]
+    `INSERT INTO purchases (user_id, work_id, chapter_id, amount_cents, coins, currency, status, provider, paid_at)
+     VALUES (?,?,?,?,?,'RSD','paid','manual',CURRENT_TIMESTAMP) RETURNING id`,
+    [userId, workId, chapterId, amount, coins]
   );
   return ins[0].id;
 }
 
 async function ensureRoyalty(publisherId, workId, purchaseId, amount, pct) {
-  const commission = Math.round(amount * pct / 100);
+  const commission = Math.floor((amount * pct + 50) / 100);
   await q(
     `INSERT INTO royalty_ledger (publisher_id, work_id, purchase_id, amount_cents, commission_cents)
      VALUES (?,?,?,?,?)
@@ -164,14 +180,56 @@ async function ensureRoyalty(publisherId, workId, purchaseId, amount, pct) {
 async function ensureDonation(userId, workId, authorId, amount, message, ext) {
   const existing = await q('SELECT id FROM donations WHERE external_id = ?', [ext]);
   if (existing.length) return existing[0].id;
-  const fee = Math.round(amount * 10 / 100);
+  // Донаты: 0% комиссии и для фанфика, и для оригинала по умолчанию.
+  const fee = 0;
   const rows = await q(
     `INSERT INTO donations (user_id, work_id, author_id, amount_cents, fee_cents, author_cents,
                             currency, message, status, provider, external_id, paid_at)
-     VALUES (?,?,?,?,?,?,'EUR',?,'paid','manual',?,CURRENT_TIMESTAMP) RETURNING id`,
+     VALUES (?,?,?,?,?,?,'RSD',?,'paid','manual',?,CURRENT_TIMESTAMP) RETURNING id`,
     [userId, workId, authorId, amount, fee, amount - fee, message, ext]
   );
   return rows[0].id;
+}
+
+/** Кошелёк демо-читателя: 500 монет и запись в неизменяемом журнале. */
+async function ensureWallet(userId, coins, refId) {
+  await q(
+    `INSERT INTO wallets (user_id, balance_coins) VALUES (?,?)
+     ON CONFLICT(user_id) DO NOTHING`,
+    [userId, coins]
+  );
+  const existing = await q('SELECT id FROM coin_transactions WHERE ref_id = ?', [refId]);
+  if (existing.length) return;
+  await q(
+    `INSERT INTO coin_transactions (user_id, delta, kind, ref_id, balance_after)
+     VALUES (?,?,'bonus',?,?)`,
+    [userId, coins, refId, coins]
+  );
+}
+
+/** Ставка автора: 70% обычная, 80% при эксклюзиве. */
+async function ensureAuthorEarning(authorId, workId, purchaseId, amount, pct) {
+  const commission = Math.floor((amount * (100 - pct) + 50) / 100);
+  await q(
+    `INSERT INTO author_earnings
+       (author_id, work_id, source, purchase_id, amount_cents, commission_cents, author_cents, currency, status)
+     VALUES (?,?, 'chapter', ?, ?, ?, ?, 'RSD', 'accrued')
+     ON CONFLICT DO NOTHING`,
+    [authorId, workId, purchaseId, amount, commission, amount - commission]
+  );
+}
+
+/** Потолок P3: сумма цен глав ≤ цена книги. */
+async function setChapterCoins(chapterId, coins) {
+  await q(
+    `INSERT INTO chapter_prices (chapter_id, coins, amount_cents, currency, active)
+     VALUES (?,?,?,'RSD',1)
+     ON CONFLICT(chapter_id) DO UPDATE SET
+       coins = excluded.coins, amount_cents = excluded.amount_cents,
+       currency = 'RSD', active = 1`,
+    [chapterId, coins, coins * 100]
+  );
+  await q('UPDATE chapters SET price_cents = ? WHERE id = ?', [coins * 100, chapterId]);
 }
 
 async function main() {
@@ -185,7 +243,8 @@ async function main() {
   // Чистый аккаунт без покупок — для живой демонстрации оплаты на сцене.
   await upsertUser('demo.buyer@example.com', 'Demo Kupac', 'reader');
 
-  const publisherId = await upsertPublisher('Demo Izdavaštvo', 'demo-izdavastvo', 'demo.publisher@example.com', 25);
+  // Комиссия платформы по ТЗ — 50% издательской книги.
+  const publisherId = await upsertPublisher('Demo Izdavaštvo', 'demo-izdavastvo', 'demo.publisher@example.com', 50);
   await q(
     `INSERT INTO publisher_members (publisher_id, user_id, role) VALUES (?,?,'owner')
      ON CONFLICT(publisher_id, user_id) DO UPDATE SET role = 'owner'`,
@@ -195,22 +254,23 @@ async function main() {
   const chapterText = (n) => `# Glava ${n}\n\nBeograd je te noći disao tiše nego obično. Kiša je prala kaldrmu Skadarlije, a senke su se skupljale uz zidove kao da čuvaju neku staru tajnu.\n\nMila je zatvorila kišobran i oslušnula. Negde između dva dvorišta začuo se korak — previše pravilan za pijanog prolaznika, previše tih za noćnog čuvara.\n\n„Ako si došao po priču“, rekla je, „ostavi je na stolu. Ako si došao po mene, zakasnio si sedam godina.“\n\nSvetlost fenjera prešla je preko lica nepoznatog čoveka. U ruci je držao kovertu bez imena, a na njoj je bio samo jedan pečat — zvezda sa sedam krakova.\n\nOno što je bilo unutra promenilo je sve što je Mila znala o gradu, o svojoj porodici i o noći kada je nestao njen brat.`;
 
   const bookId = await upsertWork({
-    slug: 'senke-starog-grada', authorId, publisherId, type: 'novel', age: 16,
+    slug: 'senke-starog-grada', authorId, publisherId, type: 'novel', kind: 'original', age: 16,
     title: 'Senke starog grada',
     description: 'Misterija iz starog Beograda: pismo bez imena, pečat sa sedam krakova i nestanak koji porodica nikada nije prebolela.',
     words: 4200,
   });
   await q(
-    `INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES (?,1500,'EUR',1)
-     ON CONFLICT(work_id) DO UPDATE SET amount_cents = 1500, currency = 'EUR', active = 1`,
-    [bookId]
+    `INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES (?,?,'RSD',1)
+     ON CONFLICT(work_id) DO UPDATE SET amount_cents = excluded.amount_cents, currency = 'RSD', active = 1`,
+    [bookId, BOOK_PRICE_CENTS]
   );
   const bookCh1 = await upsertChapter(bookId, 1, 'Pismo bez imena', chapterText(1), 'free');
-  await upsertChapter(bookId, 2, 'Pečat sa sedam krakova', chapterText(2), 'paid');
-  await upsertChapter(bookId, 3, 'Noć kada je grad ćutao', chapterText(3), 'paid');
+  const bookCh2 = await upsertChapter(bookId, 2, 'Pečat sa sedam krakova', chapterText(2), 'paid');
+  const bookCh3 = await upsertChapter(bookId, 3, 'Noć kada je grad ćutao', chapterText(3), 'paid');
+  for (const chId of [bookCh2, bookCh3]) await setChapterCoins(chId, CHAPTER_COINS);
 
   const comicId = await upsertWork({
-    slug: 'krvavi-mesec', authorId, publisherId: null, type: 'comic', age: 18,
+    slug: 'krvavi-mesec', authorId, publisherId: null, type: 'comic', kind: 'original', age: 18,
     title: 'Krvavi mesec',
     description: 'Noir strip o gradu, krvi i mesecu koji nikada ne zalazi. Tri glave, prva besplatna.',
     words: 0,
@@ -218,12 +278,14 @@ async function main() {
   const comicCh1 = await upsertChapter(comicId, 1, 'Prva noć', '', 'free');
   const comicCh2 = await upsertChapter(comicId, 2, 'Crveni trag', '', 'paid');
   const comicCh3 = await upsertChapter(comicId, 3, 'Mesec iznad grada', '', 'paid');
+  // Цена книги-комикса = 1 000 RSD, потолок глав — 1 000 монет.
+  await q(
+    `INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES (?,100000,'RSD',1)
+     ON CONFLICT(work_id) DO UPDATE SET amount_cents = 100000, currency = 'RSD', active = 1`,
+    [comicId]
+  );
   for (const [chId, n] of [[comicCh1, 1], [comicCh2, 2], [comicCh3, 3]]) {
-    await q(
-      `INSERT INTO chapter_prices (chapter_id, amount_cents, currency, active) VALUES (?,300,'EUR',1)
-       ON CONFLICT(chapter_id) DO UPDATE SET amount_cents = 300, currency = 'EUR', active = 1`,
-      [chId]
-    );
+    if (n > 1) await setChapterCoins(chId, CHAPTER_COINS);
     for (let p = 1; p <= 3; p++) {
       await q(
         `INSERT INTO chapter_pages (chapter_id, page_no, file_path, width, height)
@@ -235,7 +297,7 @@ async function main() {
   }
 
   const fanficId = await upsertWork({
-    slug: 'nocna-straza', authorId, publisherId: null, type: 'novel', age: 0,
+    slug: 'nocna-straza', authorId, publisherId: null, type: 'novel', kind: 'fanfic', age: 0,
     title: 'Noćna straža',
     description: 'Fanfiction: posle smene, čuvar gradske biblioteke otkriva da knjige menjaju mesta — i da ga neko čita dok spava.',
     words: 2600,
@@ -244,15 +306,19 @@ async function main() {
   await upsertChapter(fanficId, 2, 'Ko čita dok spavaš', chapterText(2), 'free');
 
   // Две оплаченные покупки демо-читателя: книга целиком и глава комикса.
-  const bookPurchase = await ensurePurchase(readerId, bookId, null, 1500);
-  await ensureRoyalty(publisherId, bookId, bookPurchase, 1500, 25);
-  // Глава комикса продаётся напрямую автору: издательства у комикса нет → роялти не пишем.
-  await ensurePurchase(readerId, comicId, comicCh2, 300);
+  const bookPurchase = await ensurePurchase(readerId, bookId, null, BOOK_PRICE_CENTS);
+  await ensureRoyalty(publisherId, bookId, bookPurchase, BOOK_PRICE_CENTS, 50);
+  // Глава комикса: продаётся напрямую автору (70%), издательства у комикса нет.
+  const comicPurchase = await ensurePurchase(readerId, comicId, comicCh2, CHAPTER_PRICE_CENTS);
+  await ensureAuthorEarning(authorId, comicId, comicPurchase, CHAPTER_PRICE_CENTS, 70);
 
-  // Три доната автору фанфика.
-  await ensureDonation(readerId, fanficId, authorId, 500, 'Hvala za priču! Jedva čekam nastavak.', 'seed-demo-donation-1');
-  await ensureDonation(readerId, fanficId, authorId, 1000, 'Noćna straža mi je ulepšala nedelju.', 'seed-demo-donation-2');
-  await ensureDonation(readerId, fanficId, authorId, 300, 'Podrška za sledeću glavu 🙌', 'seed-demo-donation-3');
+  // Кошелёк читателя: 500 монет бонусом (демо).
+  await ensureWallet(readerId, 500, 'seed-demo-wallet-bonus');
+
+  // Три доната автору фанфика: 0% комиссии.
+  await ensureDonation(readerId, fanficId, authorId, 50000, 'Hvala za priču! Jedva čekam nastavak.', 'seed-demo-donation-1');
+  await ensureDonation(readerId, fanficId, authorId, 100000, 'Noćna straža mi je ulepšala nedelju.', 'seed-demo-donation-2');
+  await ensureDonation(readerId, fanficId, authorId, 30000, 'Podrška za sledeću glavu 🙌', 'seed-demo-donation-3');
 
   // Одна заявка издательства.
   const lead = await q('SELECT id FROM publisher_leads WHERE email = ? AND company = ?', [
@@ -271,7 +337,7 @@ async function main() {
   const fanficSlug = 'nocna-straza';
   console.log('\n=== DEMO PODACI SPREMNI ===');
   console.table([
-    { uloga: 'Čitalac', login: 'demo.reader@example.com', lozinka: PASSWORD, 'šta gledati': 'kupovina knjige, biblioteka, donacija' },
+    { uloga: 'Čitalac', login: 'demo.reader@example.com', lozinka: PASSWORD, 'šta gledati': 'novčanik (500), kupovina knjige, biblioteka, donacija' },
     { uloga: 'Izdavač (vlasnik)', login: 'demo.publisher@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/publisher — izveštaj, cene, honorari' },
     { uloga: 'Autor', login: 'demo.author@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/author — dela, donacije, isplate' },
     { uloga: 'Admin (stranica)', login: 'demo.admin@example.com', lozinka: PASSWORD, 'šta gledati': '/sr/admin/publishers' },
@@ -283,6 +349,8 @@ async function main() {
   console.log(`  /sr/work/${fanficSlug}`);
   console.log(`  /sr/read/${comicCh1}  (komiks, glava 1 besplatna)`);
   console.log('  /sr/catalog');
+  console.log('  /sr/account  (novčanik: balans, dopuna, istorija)');
+  console.log('  /sr/subscribe  (699 / 6 990 / 1 199 RSD)');
   console.log('  /sr/publisher');
   console.log('  /sr/publishers');
   console.log('  /sr/admin/publishers');
