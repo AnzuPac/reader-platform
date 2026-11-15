@@ -11,12 +11,14 @@ export default function ChapterBody({
   originalLang = 'sr',
   protected: isProtected = false,
   fetchOnMount = false,
+  script,
 }: {
   chapterId: number;
   initialHtml: string;
   originalLang?: Lang;
   protected?: boolean;
   fetchOnMount?: boolean;
+  script?: 'lat' | 'cir';
 }) {
   const [content, setContent] = useState(initialHtml);
   const [originContent, setOriginContent] = useState(initialHtml);
@@ -31,7 +33,7 @@ export default function ChapterBody({
     let alive = true;
     (async () => {
       try {
-        const r = await fetch(`/api/chapter/text?chapter=${chapterId}`, { cache: 'no-store' });
+        const r = await fetch(`/api/chapter/text?chapter=${chapterId}${script ? `&script=${script}` : ''}`, { cache: 'no-store' });
         const j = await r.json().catch(() => ({}));
         if (!alive) return;
         if (r.status === 429) {

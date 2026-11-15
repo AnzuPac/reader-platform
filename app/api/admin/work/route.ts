@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { slugify } from '@/lib/slug';
 import { initSchema, query } from '@/lib/db';
 import { adminTokenOk, ensureAuthor } from '@/lib/admin';
+import { normalizeSr } from '@/lib/sr';
 
 
 
@@ -14,12 +15,14 @@ export async function POST(req: Request) {
   await initSchema();
   const authorId = await ensureAuthor();
   const slug = String(b?.slug || slugify(title));
+  const authorRow = await query<{ display_name: string }>('SELECT display_name FROM users WHERE id = $1', [authorId]);
+  const searchNorm = normalizeSr(title + ' ' + (authorRow[0]?.display_name || ''));
   const rows = await query<{ id: number; slug: string }>(
-    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description, published_at)
-     VALUES ($1,$2,'sr','published',$3,$4,$5,$6, now())
-     ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description
+    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description, search_norm, published_at)
+     VALUES ($1,$2,'sr','published',$3,$4,$5,$6,$7, now())
+     ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, search_norm = EXCLUDED.search_norm
      RETURNING id, slug`,
-    [slug, authorId, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || '')]
+    [slug, authorId, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || ''), searchNorm]
   );
   return NextResponse.json({ ok: true, work: rows[0] });
 }

@@ -4,6 +4,7 @@ import { isLang, type Lang } from '@/lib/i18n';
 import { getChapter, listChapters } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
 import { chapterGate, workPrice, effectiveChapterPrice } from '@/lib/purchases';
+import { translitSr } from '@/lib/sr';
 import { one } from '@/lib/db';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
@@ -21,8 +22,14 @@ export const revalidate = 0;
 
 export default async function ReadPage({
   params,
-}: { params: Promise<{ lang: string; id: string }> }) {
+  searchParams,
+}: {
+  params: Promise<{ lang: string; id: string }>;
+  searchParams: Promise<{ script?: string }>;
+}) {
   const { lang, id } = await params;
+  const { script: scriptParam } = await searchParams;
+  const script = scriptParam === 'lat' ? 'lat' : 'cir';
   const l = (isLang(lang) ? lang : 'sr') as Lang;
   const chapterId = Number(id);
   if (!Number.isFinite(chapterId)) notFound();
@@ -69,7 +76,19 @@ export default async function ReadPage({
         </ul>
       </details>
 
-      <h1 className="mb-8 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1>
+      <h1 className="mb-3 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1>
+      {ch.translit_allowed ? (
+        <div className="mb-6 flex items-center gap-2 text-sm">
+          <Link href={`/${l}/read/${ch.id}?script=cir`}
+                className={script === 'cir' ? 'rounded border border-violet px-2 py-1' : 'rounded border border-white/20 px-2 py-1 muted'}>
+            Ćirilica
+          </Link>
+          <Link href={`/${l}/read/${ch.id}?script=lat`}
+                className={script === 'lat' ? 'rounded border border-violet px-2 py-1' : 'rounded border border-white/20 px-2 py-1 muted'}>
+            Latinica
+          </Link>
+        </div>
+      ) : null}
 
       {ch.font_path && ch.font_family ? (
         <style dangerouslySetInnerHTML={{ __html: `
@@ -135,9 +154,10 @@ export default async function ReadPage({
         ) : (
           <ChapterBody
             chapterId={ch.id}
-            initialHtml={ch.access === 'free' ? ch.content : ''}
+            initialHtml={ch.access === 'free' ? (script === 'lat' && ch.translit_allowed ? translitSr(ch.content, 'lat') : ch.content) : ''}
             protected={ch.access !== 'free'}
             fetchOnMount={ch.access !== 'free'}
+            script={script === 'lat' ? 'lat' : undefined}
           />
         )
       )}

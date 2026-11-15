@@ -1,3 +1,4 @@
+import { normalizeSr } from './sr';
 import { query, one, initSchema } from './db';
 
 export type WorkCard = {
@@ -25,8 +26,9 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
   const params: unknown[] = [];
   const where: string[] = ["w.status = 'published'"];
   if (q) {
-    params.push(`%${q.toLowerCase()}%`);
-    where.push(`(lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
+    const nq = normalizeSr(q);
+    params.push(`%${nq}%`);
+    where.push(`(w.search_norm LIKE $${params.length} OR lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
   }
   if (wtype === 'novel' || wtype === 'comic') {
     params.push(wtype);
@@ -77,10 +79,10 @@ export async function getChapter(id: number) {
   return one<{
     id: number; work_id: number; number: number; title: string; content: string;
     access: string; price_cents: number; word_count: number; work_slug: string; work_title: string;
-    font_family: string | null; font_path: string | null; work_type: string;
+    font_family: string | null; font_path: string | null; work_type: string; translit_allowed: number;
   }>(
     `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.price_cents, c.word_count,
-            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type
+            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type, w.translit_allowed
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1 AND c.status = 'published'`, [id]
   );

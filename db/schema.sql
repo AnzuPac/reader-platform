@@ -72,6 +72,8 @@ CREATE TABLE works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  search_norm       TEXT NOT NULL DEFAULT '',
+  translit_allowed  BOOLEAN NOT NULL DEFAULT TRUE,
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -86,6 +88,7 @@ CREATE TABLE works (
 CREATE INDEX works_published_idx ON works(status, published_at DESC);
 CREATE INDEX works_author_idx ON works(author_id);
 CREATE INDEX works_type_idx ON works(type);
+CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm);
 
 CREATE TABLE work_translations (
   work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,

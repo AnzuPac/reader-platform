@@ -5,6 +5,7 @@ import { chapterGate } from '@/lib/purchases';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 import { encodeWatermark } from '@/lib/watermark';
 import { registerContentDevice } from '@/lib/devices';
+import { translitSr } from '@/lib/sr';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,8 +25,10 @@ export async function GET(req: Request) {
   }
 
   await initSchema();
-  const ch = await one<{ id: number; work_id: number; content: string; access: string; title: string }>(
-    'SELECT id, work_id, content, access, title FROM chapters WHERE id = $1 AND status = $2',
+  const ch = await one<{ id: number; work_id: number; content: string; access: string; title: string; translit_allowed: number }>(
+    `SELECT c.id, c.work_id, c.content, c.access, c.title, w.translit_allowed
+       FROM chapters c JOIN works w ON w.id = c.work_id
+      WHERE c.id = $1 AND c.status = $2`,
     [chapterId, 'published']
   );
   if (!ch) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE });
@@ -44,7 +47,8 @@ export async function GET(req: Request) {
     );
   }
 
-  let content = ch.content;
+  const script = new URL(req.url).searchParams.get('script');
+  let content = script === 'lat' && ch.translit_allowed ? translitSr(ch.content, 'lat') : ch.content;
   if (ch.access !== 'free') {
     if (!session) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401, headers: NO_STORE });

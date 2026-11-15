@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  search_norm       TEXT NOT NULL DEFAULT '',      -- нормализованные название+автор для поиска
+  translit_allowed  INTEGER NOT NULL DEFAULT 1,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS works (
 CREATE INDEX IF NOT EXISTS works_published_idx ON works(status, published_at DESC);
 CREATE INDEX IF NOT EXISTS works_author_idx ON works(author_id);
 CREATE INDEX IF NOT EXISTS works_type_idx ON works(type);
+CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm);
 
 CREATE TABLE IF NOT EXISTS work_translations (
   work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,

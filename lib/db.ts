@@ -1,5 +1,6 @@
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { normalizeSr } from './sr';
 
 /**
  * Локально — встроенный SQLite (node:sqlite), без зависимостей и sudo.
@@ -30,6 +31,8 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
     "ALTER TABLE works ADD COLUMN kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE works ADD COLUMN search_norm TEXT',
+    'ALTER TABLE works ADD COLUMN translit_allowed INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
@@ -39,6 +42,13 @@ async function migrateSqlite(db: any) {
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
+  try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
+  try {
+    const rows = db.prepare("SELECT w.id, w.title, u.display_name FROM works w JOIN users u ON u.id = w.author_id WHERE w.search_norm IS NULL").all();
+    for (const r of rows) {
+      db.prepare('UPDATE works SET search_norm = ? WHERE id = ?').run(normalizeSr(String(r.title || '') + ' ' + String(r.display_name || '')), r.id);
+    }
+  } catch {}
   // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
   try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { db.exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
@@ -53,6 +63,8 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS publisher_id BIGINT REFERENCES publishers(id) ON DELETE SET NULL',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS exclusivity BOOLEAN NOT NULL DEFAULT FALSE',
+    "ALTER TABLE works ADD COLUMN IF NOT EXISTS search_norm TEXT NOT NULL DEFAULT ''",
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS translit_allowed BOOLEAN NOT NULL DEFAULT TRUE',
     'ALTER TABLE chapter_prices ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN NOT NULL DEFAULT TRUE',
@@ -61,6 +73,17 @@ async function migratePg(db: any) {
     'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
   ];
   for (const sql of alters) { try { await db.query(sql); } catch {} }
+  try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
+  try { await db.query('UPDATE works SET translit_allowed = FALSE WHERE publisher_id IS NOT NULL AND translit_allowed = TRUE'); } catch {}
+  try {
+    const pending = await db.query(
+      `SELECT w.id, w.title, u.display_name FROM works w JOIN users u ON u.id = w.author_id
+        WHERE w.search_norm IS NULL OR w.search_norm = ''`
+    );
+    for (const r of pending.rows) {
+      await db.query('UPDATE works SET search_norm = $1 WHERE id = $2', [normalizeSr(`${r.title} ${r.display_name}`), r.id]);
+    }
+  } catch {}
   try { await db.query("UPDATE plans SET active = FALSE WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { await db.query("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {
