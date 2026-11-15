@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS works (
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
   search_norm       TEXT NOT NULL DEFAULT '',      -- нормализованные название+автор для поиска
-  translit_allowed  INTEGER NOT NULL DEFAULT 1,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
+  translit_allowed  INTEGER NOT NULL DEFAULT 1,
+  paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -592,3 +593,28 @@ INSERT INTO plans (code, name, price_cents, currency, period, storage_bytes, no_
 ON CONFLICT (code) DO UPDATE SET
   name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
   period = excluded.period, active = 1;
+
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  work_id         BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body            TEXT NOT NULL,
+  hidden          INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+-- Издательские книги: без транслитерации по умолчанию и без комментариев к абзацам.
+CREATE TRIGGER IF NOT EXISTS works_publisher_translit_off AFTER INSERT ON works
+WHEN NEW.publisher_id IS NOT NULL
+BEGIN
+  UPDATE works SET translit_allowed = 0 WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS works_publisher_pc_off AFTER INSERT ON works
+WHEN NEW.publisher_id IS NOT NULL
+BEGIN
+  UPDATE works SET paragraph_comments_enabled = 0 WHERE id = NEW.id;
+END;

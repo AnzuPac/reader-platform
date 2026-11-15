@@ -589,3 +589,29 @@ INSERT INTO plans (code, name, price_cents, currency, period, storage_bytes, no_
 ON CONFLICT (code) DO UPDATE SET
   name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
   period = excluded.period, active = TRUE;
+
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  work_id         BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body            TEXT NOT NULL,
+  hidden          INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+CREATE OR REPLACE FUNCTION works_publisher_flags() RETURNS trigger AS $$
+BEGIN
+  IF NEW.publisher_id IS NOT NULL THEN
+    NEW.translit_allowed := 0;
+    NEW.paragraph_comments_enabled := 0;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS works_publisher_flags_trg ON works;
+CREATE TRIGGER works_publisher_flags_trg BEFORE INSERT ON works
+FOR EACH ROW EXECUTE FUNCTION works_publisher_flags();

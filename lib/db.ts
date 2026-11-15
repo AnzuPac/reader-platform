@@ -34,6 +34,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN search_norm TEXT',
     'ALTER TABLE works ADD COLUMN translit_allowed INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE users ADD COLUMN deleted_at TEXT',
+    'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
@@ -44,6 +45,7 @@ async function migrateSqlite(db: any) {
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
   try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
+  try { db.exec('UPDATE works SET paragraph_comments_enabled = 0 WHERE publisher_id IS NOT NULL AND paragraph_comments_enabled = 1'); } catch {}
   try {
     const rows = db.prepare("SELECT w.id, w.title, u.display_name FROM works w JOIN users u ON u.id = w.author_id WHERE w.search_norm IS NULL").all();
     for (const r of rows) {

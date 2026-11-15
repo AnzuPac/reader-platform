@@ -158,6 +158,7 @@ export default async function ReadPage({
             protected={ch.access !== 'free'}
             fetchOnMount={ch.access !== 'free'}
             script={script === 'lat' ? 'lat' : undefined}
+            paragraphComments={ch.paragraph_comments_enabled === 1}
           />
         )
       )}

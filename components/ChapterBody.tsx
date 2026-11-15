@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import ParagraphComments from './ParagraphComments';
 
 type Lang = 'sr' | 'en' | 'ru';
 
@@ -12,6 +13,7 @@ export default function ChapterBody({
   protected: isProtected = false,
   fetchOnMount = false,
   script,
+  paragraphComments = false,
 }: {
   chapterId: number;
   initialHtml: string;
@@ -19,6 +21,7 @@ export default function ChapterBody({
   protected?: boolean;
   fetchOnMount?: boolean;
   script?: 'lat' | 'cir';
+  paragraphComments?: boolean;
 }) {
   const [content, setContent] = useState(initialHtml);
   const [originContent, setOriginContent] = useState(initialHtml);
@@ -132,6 +135,7 @@ export default function ChapterBody({
       >
         <article className="prose-reader whitespace-pre-line" dangerouslySetInnerHTML={{ __html: content }} />
       </div>
+      {paragraphComments ? <ParagraphComments chapterId={chapterId} /> : null}
     </>
   );
 }
