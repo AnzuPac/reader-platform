@@ -1,6 +1,9 @@
-import { one, query } from './db';
+import { one, query, withTx } from './db';
 import { decideChapterAccess, type GateResult } from './access';
 import { splitRoyalty } from './royalty';
+import { CURRENCY, coinsToCents, wholeCoins } from './money';
+import { authorCommissionPct } from './economy';
+import { creditCoins, debitCoins, refundCoins, checkSpendLimit, getEconomySettings, recordConsent } from './coins';
 
 /**
  * Покупки книг и глав.
@@ -19,6 +22,7 @@ export type PurchaseRow = {
   work_id: number | null;
   chapter_id: number | null;
   amount_cents: number;
+  coins: number;
   currency: string;
   status: 'pending' | 'paid' | 'refunded';
   provider: 'manual' | 'stripe';
@@ -29,10 +33,14 @@ export type PurchaseRow = {
 
 export type Price = { amount_cents: number; currency: string };
 
+/** Цена главы в монетах (1 монета = 1 RSD) и её денежный эквивалент. */
+export type ChapterPrice = { coins: number; amount_cents: number; currency: string };
+
 export type PurchaseTarget = {
   workId: number;
   chapterId: number | null;
   amount_cents: number;
+  coins: number;
   currency: string;
   title: string;
   slug: string;
@@ -59,8 +67,8 @@ export async function workPrice(workId: number): Promise<Price | null> {
   );
 }
 
-/** Цена одной главы (комиксы/отдельные главы). Валюта — валюта книги, иначе EUR. */
-export async function chapterPrice(chapterId: number): Promise<Price | null> {
+/** Цена одной главы (комиксы/отдельные главы) — в монетах. */
+export async function chapterPrice(chapterId: number): Promise<ChapterPrice | null> {
   const ch = await one<ChapterRow>(
     'SELECT id, work_id, number, title, access, price_cents, status FROM chapters WHERE id = $1',
     [chapterId]
@@ -70,51 +78,150 @@ export async function chapterPrice(chapterId: number): Promise<Price | null> {
 }
 
 /**
- * Действующая цена главы: chapter_prices (если задана и активна), иначе
+ * Действующая цена главы: chapter_prices.coins (если задана и активна), иначе
  * chapters.price_cents — историческое поле, оставленное для совместимости.
- * Валюта — из chapter_prices, иначе валюта книги, иначе EUR.
+ * Всё приводится к целым монетам: 1 монета = 1 RSD = 100 пара.
  */
 export async function effectiveChapterPrice(ch: {
   id: number; work_id: number; price_cents: number;
-}): Promise<Price | null> {
-  const cp = await one<{ amount_cents: number; currency: string }>(
-    'SELECT amount_cents, currency FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
+}): Promise<ChapterPrice | null> {
+  const cp = await one<{ coins: number; amount_cents: number }>(
+    'SELECT coins, amount_cents FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
     [ch.id]
   );
-  const amount = Math.trunc(Number(cp ? cp.amount_cents : ch.price_cents) || 0);
-  if (amount <= 0) return null;
-  const currency = cp?.currency || (await workPrice(ch.work_id))?.currency || 'EUR';
-  return { amount_cents: amount, currency };
+  let coins = Number(cp?.coins || 0);
+  if (!coins && cp) coins = wholeCoins(Number(cp.amount_cents) || 0);
+  if (!coins && !cp) coins = wholeCoins(Number(ch.price_cents) || 0);
+  if (coins <= 0) return null;
+  return { coins, amount_cents: coinsToCents(coins), currency: CURRENCY };
 }
 
-/** Задать цену главы (кабинет автора/издателя). Идемпотентно. */
-export async function setChapterPrice(
+/**
+ * Сводка цен глав книги против потолка P3: сумма цен глав не может превышать
+ * цену всей книги. Возвращает монеты и признак превышения.
+ */
+export async function chapterPriceSummary(workId: number): Promise<{
+  book_coins: number | null;
+  chapters_coins: number;
+  cap_exceeded: boolean;
+}> {
+  const book = await workPrice(workId);
+  const bookCoins = book ? wholeCoins(book.amount_cents) : null;
+  const row = await one<{ s: number }>(
+    `SELECT COALESCE(SUM(
+              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = 1 AND cp.coins > 0
+                   THEN cp.coins
+                   ELSE CAST(ROUND(c.price_cents / 100.0) AS INTEGER) END), 0) AS s
+       FROM chapters c
+       LEFT JOIN chapter_prices cp ON cp.chapter_id = c.id
+      WHERE c.work_id = $1 AND c.access = 'paid'`,
+    [workId]
+  );
+  const chaptersCoins = Number(row?.s || 0);
+  return {
+    book_coins: bookCoins,
+    chapters_coins: chaptersCoins,
+    cap_exceeded: bookCoins !== null && chaptersCoins > bookCoins,
+  };
+}
+
+/** Сумма цен других платных глав книги (без указанной главы). */
+async function otherChaptersCoins(workId: number, exceptChapterId: number): Promise<number> {
+  const row = await one<{ s: number }>(
+    `SELECT COALESCE(SUM(
+              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = 1 AND cp.coins > 0
+                   THEN cp.coins
+                   ELSE CAST(ROUND(c.price_cents / 100.0) AS INTEGER) END), 0) AS s
+       FROM chapters c
+       LEFT JOIN chapter_prices cp ON cp.chapter_id = c.id
+      WHERE c.work_id = $1 AND c.id <> $2 AND c.access = 'paid'`,
+    [workId, exceptChapterId]
+  );
+  return Number(row?.s || 0);
+}
+
+/**
+ * Задать цену главы в монетах. Потолок: сумма глав ≤ цена книги, поэтому
+ * цена автоматически урезается до остатка (capped=true).
+ */
+export async function setChapterCoins(
   chapterId: number,
-  amountCents: number,
-  currency?: string,
+  coins: number,
   active = true
-): Promise<{ ok: boolean; error?: 'invalid_amount' | 'invalid_currency' | 'not_found' }> {
-  const amount = Math.trunc(Number(amountCents));
-  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: 'invalid_amount' };
+): Promise<{ ok: boolean; coins?: number; capped?: boolean; error?: 'invalid_amount' | 'not_found' }> {
+  const requested = Math.trunc(Number(coins));
+  if (!Number.isInteger(requested) || requested < 0) return { ok: false, error: 'invalid_amount' };
   const ch = await one<{ id: number; work_id: number }>('SELECT id, work_id FROM chapters WHERE id = $1', [chapterId]);
   if (!ch) return { ok: false, error: 'not_found' };
 
-  const fallback = (await workPrice(ch.work_id))?.currency || 'EUR';
-  const cur = String(currency || fallback).toUpperCase().slice(0, 3);
-  if (!/^[A-Z]{3}$/.test(cur)) return { ok: false, error: 'invalid_currency' };
+  let applied = requested;
+  let capped = false;
+  const book = await workPrice(ch.work_id);
+  if (book) {
+    const capCoins = wholeCoins(book.amount_cents);
+    const others = await otherChaptersCoins(ch.work_id, chapterId);
+    const maxAllowed = Math.max(0, capCoins - others);
+    if (applied > maxAllowed) { applied = maxAllowed; capped = true; }
+  }
 
+  const amount = coinsToCents(applied);
   await query(
-    `INSERT INTO chapter_prices (chapter_id, amount_cents, currency, active)
-     VALUES ($1,$2,$3,$4)
+    `INSERT INTO chapter_prices (chapter_id, coins, amount_cents, currency, active)
+     VALUES ($1,$2,$3,$4,$5)
      ON CONFLICT (chapter_id) DO UPDATE SET
+       coins = EXCLUDED.coins,
        amount_cents = EXCLUDED.amount_cents,
        currency = EXCLUDED.currency,
        active = EXCLUDED.active,
        updated_at = now()`,
-    [chapterId, amount, cur, active ? 1 : 0]
+    [chapterId, applied, amount, CURRENCY, active ? 1 : 0]
   );
   await query('UPDATE chapters SET price_cents = $2 WHERE id = $1', [chapterId, amount]);
-  return { ok: true };
+  return { ok: true, coins: applied, capped };
+}
+
+/** Задать цену главы в парах RSD (совместимый вход) — приводится к монетам. */
+export async function setChapterPrice(
+  chapterId: number,
+  amountCents: number,
+  _currency?: string,
+  active = true
+): Promise<{ ok: boolean; coins?: number; capped?: boolean; error?: 'invalid_amount' | 'not_found' }> {
+  const amount = Math.trunc(Number(amountCents));
+  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: 'invalid_amount' };
+  return setChapterCoins(chapterId, Math.round(amount / 100), active);
+}
+
+/**
+ * Пересчёт потолка после смены цены книги: лишние монеты снимаются с глав,
+ * начиная с последней. Возвращает итоговую сводку.
+ */
+export async function enforceChapterCap(workId: number): Promise<{ trimmed: number; summary: Awaited<ReturnType<typeof chapterPriceSummary>> }> {
+  const book = await workPrice(workId);
+  let trimmed = 0;
+  if (book) {
+    const capCoins = wholeCoins(book.amount_cents);
+    const chapters = await query<{ id: number; coins: number; price_cents: number }>(
+      `SELECT c.id, COALESCE(NULLIF(cp.coins, 0), CAST(ROUND(c.price_cents / 100.0) AS INTEGER)) AS coins,
+              c.price_cents
+         FROM chapters c LEFT JOIN chapter_prices cp ON cp.chapter_id = c.id
+        WHERE c.work_id = $1 AND c.access = 'paid' ORDER BY c.number`,
+      [workId]
+    );
+    let used = 0;
+    for (const ch of chapters) {
+      const current = Math.max(0, Number(ch.coins) || 0);
+      const allowed = Math.max(0, capCoins - used);
+      if (current > allowed) {
+        await setChapterCoins(ch.id, allowed, true);
+        trimmed += current - allowed;
+        used += allowed;
+      } else {
+        used += current;
+      }
+    }
+  }
+  return { trimmed, summary: await chapterPriceSummary(workId) };
 }
 
 export async function resolveTarget(input: { workId?: number | null; chapterId?: number | null }): Promise<
@@ -143,6 +250,7 @@ export async function resolveTarget(input: { workId?: number | null; chapterId?:
         workId: w.id,
         chapterId: ch.id,
         amount_cents: price.amount_cents,
+        coins: price.coins,
         currency: price.currency,
         title: `${w.title} — ${ch.title || `Glava ${ch.number}`}`,
         slug: w.slug,
@@ -163,6 +271,7 @@ export async function resolveTarget(input: { workId?: number | null; chapterId?:
       workId: w.id,
       chapterId: null,
       amount_cents: price.amount_cents,
+      coins: wholeCoins(price.amount_cents),
       currency: price.currency,
       title: w.title,
       slug: w.slug,
@@ -212,6 +321,119 @@ export async function startPurchase(
   }
 }
 
+export type CoinPurchaseResult =
+  | { ok: true; purchaseId: number; coins: number; balance: number; already: boolean }
+  | { ok: false; error: 'not_found' | 'not_for_sale' | 'consent_required'
+      | 'insufficient_coins' | 'monthly_limit_exceeded' | 'login_required' };
+
+/**
+ * Покупка главы за монеты — единственный путь для глав.
+ *
+ * Требования ТЗ 4.8: явное согласие на потерю права отказа (чекбокс) и запись
+ * факта согласия в журнал; списание только в пределах месячного лимита.
+ * Всё — одной транзакцией: монеты, покупка, доступ, согласие, начисления.
+ */
+export async function purchaseChapterWithCoins(
+  userId: number,
+  chapterId: number,
+  opts: { consent: boolean }
+): Promise<CoinPurchaseResult> {
+  if (!userId) return { ok: false, error: 'login_required' };
+  if (!opts?.consent) return { ok: false, error: 'consent_required' };
+
+  const ch = await one<ChapterRow>(
+    'SELECT id, work_id, number, title, access, price_cents, status FROM chapters WHERE id = $1',
+    [chapterId]
+  );
+  if (!ch || ch.status !== 'published') return { ok: false, error: 'not_found' };
+  if (ch.access !== 'paid') return { ok: false, error: 'not_for_sale' };
+  const price = await effectiveChapterPrice(ch);
+  if (!price) return { ok: false, error: 'not_for_sale' };
+
+  const settings = await getEconomySettings(userId);
+  void settings; // автопокупка выключена по умолчанию; явное согласие требуется всегда
+
+  try {
+    return await withTx(async (t) => {
+      const paid = await t.one<PurchaseRow>(
+        `SELECT * FROM purchases WHERE user_id = $1 AND chapter_id = $2 AND status = 'paid' LIMIT 1`,
+        [userId, chapterId]
+      );
+      if (paid) {
+        const bal = await t.one<{ balance_coins: number }>('SELECT balance_coins FROM wallets WHERE user_id = $1', [userId]);
+        return { ok: true as const, purchaseId: paid.id, coins: 0, balance: Number(bal?.balance_coins || 0), already: true };
+      }
+
+      const limit = await checkSpendLimit(userId, price.coins, t);
+      if (!limit.ok) return { ok: false as const, error: 'monthly_limit_exceeded' as const };
+
+      const debit = await debitCoins(userId, price.coins, `chapter:${chapterId}`, t);
+      if (!debit.ok) return { ok: false as const, error: 'insufficient_coins' as const };
+
+      const rows = await t.query<{ id: number }>(
+        `INSERT INTO purchases (user_id, work_id, chapter_id, amount_cents, coins, currency, status, provider, paid_at)
+         VALUES ($1,$2,$3,$4,$5,$6,'paid','manual',now()) RETURNING id`,
+        [userId, ch.work_id, chapterId, price.amount_cents, price.coins, price.currency]
+      );
+      const purchaseId = rows[0].id;
+
+      await t.query(
+        `INSERT INTO entitlements (user_id, target_type, target_id, source)
+         VALUES ($1,'chapter',$2,'purchase') ON CONFLICT DO NOTHING`,
+        [userId, chapterId]
+      );
+
+      await recordConsent(userId, 'paid_chapter_refusal_right', { workId: ch.work_id, chapterId }, t);
+      await accrueForPurchase(t, {
+        id: purchaseId, user_id: userId, work_id: ch.work_id, chapter_id: chapterId,
+        amount_cents: price.amount_cents, coins: price.coins, status: 'paid',
+      });
+
+      return { ok: true as const, purchaseId, coins: price.coins, balance: debit.balance, already: false };
+    });
+  } catch {
+    return { ok: false, error: 'insufficient_coins' };
+  }
+}
+
+type AccrualPurchase = {
+  id: number; user_id: number; work_id: number | null; chapter_id: number | null;
+  amount_cents: number; coins?: number; status: string;
+};
+
+/** Начисления по оплаченной покупке: издателю в royalty_ledger, автору — в author_earnings. */
+async function accrueForPurchase(t: { query: typeof query; one: typeof one }, p: AccrualPurchase): Promise<void> {
+  if (!p.work_id) return;
+  const work = await t.one<{ publisher_id: number | null; author_id: number; exclusivity: number | boolean }>(
+    'SELECT publisher_id, author_id, exclusivity FROM works WHERE id = $1', [p.work_id]
+  );
+  if (!work) return;
+
+  if (work.publisher_id) {
+    const pub = await t.one<{ commission_pct: number }>(
+      'SELECT commission_pct FROM publishers WHERE id = $1', [work.publisher_id]
+    );
+    const split = splitRoyalty(p.amount_cents, Number(pub?.commission_pct ?? 50));
+    await t.query(
+      `INSERT INTO royalty_ledger (publisher_id, work_id, purchase_id, amount_cents, commission_cents, status)
+       VALUES ($1,$2,$3,$4,$5,'accrued') ON CONFLICT (purchase_id) DO NOTHING`,
+      [work.publisher_id, p.work_id, p.id, split.amount_cents, split.commission_cents]
+    );
+    return;
+  }
+
+  const split = splitRoyalty(p.amount_cents, authorCommissionPct({ exclusivity: work.exclusivity }));
+  await t.query(
+    `INSERT INTO author_earnings
+       (author_id, work_id, source, purchase_id, amount_cents, commission_cents, author_cents, currency, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'accrued') ON CONFLICT DO NOTHING`,
+    [
+      work.author_id, p.work_id, p.chapter_id ? 'chapter' : 'book', p.id,
+      split.amount_cents, split.commission_cents, split.publisher_cents, CURRENCY,
+    ]
+  );
+}
+
 export async function attachCheckoutSession(purchaseId: number, externalId: string): Promise<void> {
   await query("UPDATE purchases SET provider = 'stripe', external_id = $2 WHERE id = $1", [purchaseId, externalId]);
 }
@@ -255,24 +477,17 @@ export async function markPurchasePaid(purchaseId: number, externalId?: string |
     ? (await one<{ publisher_id: number | null }>('SELECT publisher_id FROM works WHERE id = $1', [p.work_id]))?.publisher_id
     : null;
 
+  await accrueForPurchase({ query, one }, p);
+
   if (p.work_id && publisherId) {
-    const pub = await one<{ commission_pct: number }>(
-      'SELECT commission_pct FROM publishers WHERE id = $1', [publisherId]
-    );
-    if (pub) {
-      const split = splitRoyalty(p.amount_cents, pub.commission_pct);
-      await query(
-        `INSERT INTO royalty_ledger (publisher_id, work_id, purchase_id, amount_cents, commission_cents, status)
-         VALUES ($1,$2,$3,$4,$5,'accrued')
-         ON CONFLICT (purchase_id) DO NOTHING`,
-        [publisherId, p.work_id, p.id, split.amount_cents, split.commission_cents]
-      );
-      royalty = {
-        publisher_id: publisherId,
-        commission_cents: split.commission_cents,
-        publisher_cents: split.publisher_cents,
-      };
-    }
+    const split = splitRoyalty(p.amount_cents, Number(
+      (await one<{ commission_pct: number }>('SELECT commission_pct FROM publishers WHERE id = $1', [publisherId]))?.commission_pct ?? 50
+    ));
+    royalty = {
+      publisher_id: publisherId,
+      commission_cents: split.commission_cents,
+      publisher_cents: split.publisher_cents,
+    };
   }
 
   const fresh = await one<PurchaseRow>('SELECT * FROM purchases WHERE id = $1', [purchaseId]);
@@ -286,6 +501,10 @@ export async function refundPurchase(purchaseId: number): Promise<{ ok: boolean;
 
   await query("UPDATE purchases SET status = 'refunded' WHERE id = $1", [purchaseId]);
   await query('DELETE FROM royalty_ledger WHERE purchase_id = $1', [purchaseId]);
+  await query('DELETE FROM author_earnings WHERE purchase_id = $1', [purchaseId]);
+  if (Number(p.coins || 0) > 0) {
+    await refundCoins(p.user_id, Number(p.coins), `purchase:${purchaseId}`);
+  }
   const targetType = p.chapter_id ? 'chapter' : 'work';
   const targetId = p.chapter_id ?? p.work_id;
   if (targetId) {
@@ -297,12 +516,26 @@ export async function refundPurchase(purchaseId: number): Promise<{ ok: boolean;
   return { ok: true };
 }
 
+/**
+ * Активная подписка: своя или семейная (владелец оформил тариф family,
+ * профилей до 5). Отменённая подписка действует до конца оплаченного периода.
+ */
 export async function hasActiveSubscription(userId: number): Promise<boolean> {
   const row = await one(
-    "SELECT 1 AS ok FROM subscriptions WHERE user_id = $1 AND status = 'active' AND current_period_end > now() LIMIT 1",
+    `SELECT 1 AS ok FROM subscriptions
+      WHERE user_id = $1 AND status IN ('active','canceled') AND current_period_end > now() LIMIT 1`,
     [userId]
   );
-  return !!row;
+  if (row) return true;
+  const family = await one(
+    `SELECT 1 AS ok
+       FROM family_members f
+       JOIN subscriptions s ON s.user_id = f.owner_user_id
+      WHERE f.member_user_id = $1 AND s.plan_code = 'family'
+        AND s.status IN ('active','canceled') AND s.current_period_end > now() LIMIT 1`,
+    [userId]
+  );
+  return !!family;
 }
 
 export async function hasWorkPurchase(userId: number, workId: number): Promise<boolean> {

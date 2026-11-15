@@ -32,7 +32,7 @@ beforeAll(async () => {
      VALUES ('donate-knjiga', $1, 'sr', 'published', 'Doniraj knjigu', CURRENT_TIMESTAMP) RETURNING id`,
     [authorId]
   ))!.id;
-  await query('INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES ($1, 500, $2, 1)', [workId, 'EUR']);
+  await query('INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES ($1, 500, $2, 1)', [workId, 'RSD']);
   chapterId = (await one<{ id: number }>(
     `INSERT INTO chapters (work_id, number, title, content, access, price_cents, status)
      VALUES ($1, 1, 'Prva', 'tekst', 'paid', 200, 'published') RETURNING id`,
@@ -59,11 +59,15 @@ describe('валидация доната', () => {
 });
 
 describe('комиссия платформы', () => {
-  it('10% по умолчанию, целые центы, сумма частей равна донату', () => {
-    expect(donations.splitDonation(500, 10)).toEqual({ amount_cents: 500, fee_cents: 50, author_cents: 450 });
-    expect(donations.splitDonation(101, 10)).toEqual({ amount_cents: 101, fee_cents: 10, author_cents: 91 });
-    expect(donations.splitDonation(100, 0)).toEqual({ amount_cents: 100, fee_cents: 0, author_cents: 100 });
-    const s = donations.splitDonation(1000, 10);
+  it('донаты: оригинал 0% по умолчанию, фанфик 0%, ставка настраивается', () => {
+    expect(donations.DEFAULT_FEE_PCT).toBe(0);
+    expect(donations.donationFeePctForWork('original')).toBe(0);
+    expect(donations.donationFeePctForWork('fanfic')).toBe(0);
+    expect(donations.donationFeePctForWork('original', '5')).toBe(0); // env читается из economy
+    expect(donations.donationFeePct('5')).toBe(5);
+    expect(donations.splitDonation(500, 0)).toEqual({ amount_cents: 500, fee_cents: 0, author_cents: 500 });
+    expect(donations.splitDonation(101, 5)).toEqual({ amount_cents: 101, fee_cents: 5, author_cents: 96 });
+    const s = donations.splitDonation(1000, 5);
     expect(s.fee_cents + s.author_cents).toBe(s.amount_cents);
   });
 });
@@ -84,9 +88,9 @@ describe('создание и подтверждение доната', () => {
     expect(res.ok).toBe(true);
     expect(res.donation.status).toBe('pending');
     expect(res.donation.amount_cents).toBe(500);
-    expect(res.donation.fee_cents).toBe(50);
-    expect(res.donation.author_cents).toBe(450);
-    expect(res.donation.currency).toBe('EUR');
+    expect(res.donation.fee_cents).toBe(0);
+    expect(res.donation.author_cents).toBe(500);
+    expect(res.donation.currency).toBe('RSD');
   });
 
   it('подтверждение идемпотентно и начисляет автору долю', async () => {
@@ -97,30 +101,30 @@ describe('создание и подтверждение доната', () => {
     const paid = await donations.markDonationPaid(id, 'ext-1');
     expect(paid.ok).toBe(true);
     expect(paid.already).toBe(false);
-    expect(paid.donation.author_cents).toBe(900);
+    expect(paid.donation.author_cents).toBe(1000);
 
     const again = await donations.markDonationPaid(id, 'ext-1');
     expect(again.ok).toBe(true);
     expect(again.already).toBe(true);
 
     const summary = await donations.authorDonationSummary(authorId);
-    const eur = summary.balances.find((b: any) => b.currency === 'EUR');
+    const rsd = summary.balances.find((b: any) => b.currency === 'RSD');
     // Первый донат (500) остался pending и в баланс не входит.
-    expect(eur.received_cents).toBe(900);
-    expect(eur.available_cents).toBe(900);
+    expect(rsd.received_cents).toBe(1000);
+    expect(rsd.available_cents).toBe(1000);
     expect(summary.history.length).toBeGreaterThanOrEqual(2);
   });
 
   it('заявка на выплату обнуляет доступный баланс и не создаётся дважды', async () => {
-    const first = await donations.requestAuthorPayout(authorId, 'EUR');
+    const first = await donations.requestAuthorPayout(authorId, 'RSD');
     expect(first.ok).toBe(true);
-    expect(first.amount_cents).toBe(900);
+    expect(first.amount_cents).toBe(1000);
 
-    const second = await donations.requestAuthorPayout(authorId, 'EUR');
+    const second = await donations.requestAuthorPayout(authorId, 'RSD');
     expect(second).toEqual({ ok: false, error: 'nothing_to_pay' });
 
     const summary = await donations.authorDonationSummary(authorId);
-    expect(summary.balances.find((b: any) => b.currency === 'EUR').available_cents).toBe(0);
+    expect(summary.balances.find((b: any) => b.currency === 'RSD').available_cents).toBe(0);
     expect(summary.payouts.length).toBe(1);
   });
 });

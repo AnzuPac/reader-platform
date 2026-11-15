@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS publishers (
   name           TEXT NOT NULL,
   slug           TEXT UNIQUE NOT NULL,
   contact_email  TEXT NOT NULL DEFAULT '',
-  commission_pct SMALLINT NOT NULL DEFAULT 30 CHECK (commission_pct BETWEEN 0 AND 100),
+  commission_pct SMALLINT NOT NULL DEFAULT 50 CHECK (commission_pct BETWEEN 0 AND 100),
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -64,6 +64,8 @@ CREATE TABLE works (
   publisher_id      BIGINT REFERENCES publishers(id) ON DELETE SET NULL,
   type              TEXT NOT NULL DEFAULT 'novel' CHECK (type IN ('novel','comic')),
   original_language TEXT NOT NULL CHECK (original_language IN ('sr','en','ru')),
+  kind              TEXT NOT NULL DEFAULT 'original' CHECK (kind IN ('original','fanfic')),
+  exclusivity       BOOLEAN NOT NULL DEFAULT FALSE,   -- эксклюзив автора → 80%
   status            TEXT NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft','review','published','hidden')),
   completion        TEXT NOT NULL DEFAULT 'ongoing' CHECK (completion IN ('ongoing','completed','hiatus')),
@@ -230,8 +232,9 @@ CREATE TABLE plans (
   code         TEXT PRIMARY KEY,                   -- free | reader | reader_plus
   name         TEXT NOT NULL,
   price_cents  INTEGER NOT NULL DEFAULT 0,
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   period       TEXT NOT NULL DEFAULT 'month' CHECK (period IN ('month','year','none')),
+  max_profiles SMALLINT NOT NULL DEFAULT 1,
   storage_bytes BIGINT NOT NULL DEFAULT 1073741824,
   no_ads       BOOLEAN NOT NULL DEFAULT FALSE,
   early_access BOOLEAN NOT NULL DEFAULT FALSE,
@@ -245,6 +248,9 @@ CREATE TABLE subscriptions (
   status              TEXT NOT NULL CHECK (status IN ('active','past_due','canceled','expired')),
   current_period_start TIMESTAMPTZ NOT NULL DEFAULT now(),
   current_period_end   TIMESTAMPTZ NOT NULL,
+  auto_renew           BOOLEAN NOT NULL DEFAULT TRUE,
+  canceled_at          TIMESTAMPTZ,
+  reminder_sent_at     TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX subscriptions_user_idx ON subscriptions(user_id, status);
@@ -264,7 +270,7 @@ CREATE TABLE payments (
   id           BIGSERIAL PRIMARY KEY,
   user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount_cents INTEGER NOT NULL,
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   method       TEXT NOT NULL CHECK (method IN ('manual','card','transfer')),
   external_id  TEXT,
   status       TEXT NOT NULL CHECK (status IN ('pending','paid','failed','refunded')),
@@ -277,7 +283,7 @@ CREATE TABLE payments (
 CREATE TABLE IF NOT EXISTS book_prices (
   work_id      BIGINT NOT NULL UNIQUE REFERENCES works(id) ON DELETE CASCADE,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   active       SMALLINT NOT NULL DEFAULT 1,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -289,7 +295,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   work_id      BIGINT REFERENCES works(id) ON DELETE CASCADE,
   chapter_id   BIGINT REFERENCES chapters(id) ON DELETE CASCADE,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  coins        INTEGER NOT NULL DEFAULT 0 CHECK (coins >= 0),
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','refunded')),
   provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
   external_id  TEXT,
@@ -400,8 +407,9 @@ CREATE TABLE IF NOT EXISTS email_tokens (
 
 CREATE TABLE IF NOT EXISTS chapter_prices (
   chapter_id   BIGINT NOT NULL UNIQUE REFERENCES chapters(id) ON DELETE CASCADE,
+  coins        INTEGER NOT NULL DEFAULT 0 CHECK (coins >= 0),  -- цена главы в монетах (1 монета = 1 RSD)
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   active       BOOLEAN NOT NULL DEFAULT TRUE,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -416,7 +424,7 @@ CREATE TABLE IF NOT EXISTS donations (
   amount_cents INTEGER NOT NULL CHECK (amount_cents BETWEEN 100 AND 100000),
   fee_cents    INTEGER NOT NULL DEFAULT 0 CHECK (fee_cents >= 0),
   author_cents INTEGER NOT NULL DEFAULT 0 CHECK (author_cents >= 0),
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   message      TEXT NOT NULL DEFAULT '',
   status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','refunded')),
   provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
@@ -433,7 +441,7 @@ CREATE TABLE IF NOT EXISTS author_payouts (
   id           BIGSERIAL PRIMARY KEY,
   author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
-  currency     TEXT NOT NULL DEFAULT 'EUR',
+  currency     TEXT NOT NULL DEFAULT 'RSD',
   status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   paid_at      TIMESTAMPTZ
@@ -463,3 +471,118 @@ CREATE TABLE IF NOT EXISTS content_devices (
   UNIQUE (user_id, device_hash)
 );
 CREATE INDEX IF NOT EXISTS content_devices_user_idx ON content_devices(user_id, last_seen_at DESC);
+
+-- === Экономика v0.2: монеты (1 монета = 1 RSD), RSD, семейные профили, согласия ===
+
+CREATE TABLE IF NOT EXISTS wallets (
+  user_id       BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  balance_coins BIGINT NOT NULL DEFAULT 0 CHECK (balance_coins >= 0),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS coin_transactions (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  delta         INTEGER NOT NULL CHECK (delta <> 0),
+  kind          TEXT NOT NULL CHECK (kind IN ('topup','spend','refund','bonus')),
+  ref_id        TEXT,
+  balance_after BIGINT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS coin_tx_user_idx ON coin_transactions(user_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION coin_tx_immutable() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'coin_transactions is append-only';
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS coin_tx_immutable_update ON coin_transactions;
+CREATE TRIGGER coin_tx_immutable_update BEFORE UPDATE ON coin_transactions
+  FOR EACH ROW EXECUTE FUNCTION coin_tx_immutable();
+DROP TRIGGER IF EXISTS coin_tx_immutable_delete ON coin_transactions;
+CREATE TRIGGER coin_tx_immutable_delete BEFORE DELETE ON coin_transactions
+  FOR EACH ROW EXECUTE FUNCTION coin_tx_immutable();
+
+CREATE TABLE IF NOT EXISTS coin_packages (
+  code        TEXT PRIMARY KEY,
+  coins       INTEGER NOT NULL CHECK (coins > 0),
+  price_rsd   INTEGER NOT NULL CHECK (price_rsd > 0),
+  bonus_coins INTEGER NOT NULL DEFAULT 0 CHECK (bonus_coins >= 0),
+  active      BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO coin_packages (code, coins, price_rsd, bonus_coins, active) VALUES
+  ('coins_200',  200,  200,  0, TRUE),
+  ('coins_500',  500,  500,  0, TRUE),
+  ('coins_1000', 1000, 1000, 0, TRUE),
+  ('coins_2000', 2000, 2000, 0, TRUE)
+ON CONFLICT (code) DO UPDATE SET
+  coins = excluded.coins, price_rsd = excluded.price_rsd,
+  bonus_coins = excluded.bonus_coins, active = excluded.active;
+
+CREATE TABLE IF NOT EXISTS coin_orders (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  package_code TEXT NOT NULL REFERENCES coin_packages(code),
+  coins        INTEGER NOT NULL,
+  price_rsd    INTEGER NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
+  provider     TEXT NOT NULL DEFAULT 'manual' CHECK (provider IN ('manual','stripe')),
+  external_id  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  paid_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS coin_orders_user_idx ON coin_orders(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS coin_orders_external_idx ON coin_orders(external_id) WHERE external_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS user_economy_settings (
+  user_id                  BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  auto_unlock              BOOLEAN NOT NULL DEFAULT FALSE,
+  monthly_spend_limit_coins INTEGER NOT NULL DEFAULT 0 CHECK (monthly_spend_limit_coins >= 0),
+  updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS consents (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL CHECK (kind IN ('paid_chapter_refusal_right','terms')),
+  work_id      BIGINT, chapter_id BIGINT,
+  text_version TEXT NOT NULL DEFAULT 'v0.2',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS consents_user_idx ON consents(user_id, kind, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS family_members (
+  owner_user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  member_user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (owner_user_id, member_user_id)
+);
+CREATE INDEX IF NOT EXISTS family_owner_idx ON family_members(owner_user_id);
+
+CREATE TABLE IF NOT EXISTS author_earnings (
+  id               BIGSERIAL PRIMARY KEY,
+  author_id        BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  work_id          BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  source           TEXT NOT NULL CHECK (source IN ('book','chapter','donation')),
+  purchase_id      BIGINT REFERENCES purchases(id) ON DELETE CASCADE,
+  donation_id      BIGINT REFERENCES donations(id) ON DELETE CASCADE,
+  amount_cents     INTEGER NOT NULL CHECK (amount_cents >= 0),
+  commission_cents INTEGER NOT NULL CHECK (commission_cents >= 0),
+  author_cents     INTEGER NOT NULL CHECK (author_cents >= 0),
+  currency         TEXT NOT NULL DEFAULT 'RSD',
+  status           TEXT NOT NULL DEFAULT 'accrued' CHECK (status IN ('accrued','paid')),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS author_earnings_purchase_idx
+  ON author_earnings(purchase_id) WHERE purchase_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS author_earnings_author_idx ON author_earnings(author_id, status);
+
+-- Новые тарифы (решения §10): 699 / 6 990 / 1 199 RSD, семейный — до 5 профилей.
+INSERT INTO plans (code, name, price_cents, currency, period, storage_bytes, no_ads, early_access, active) VALUES
+  ('month',  'Mesečna pretplata', 69900, 'RSD', 'month', 5368709120, TRUE, FALSE, TRUE),
+  ('year',   'Godišnja pretplata', 699000, 'RSD', 'year', 21474836480, TRUE, TRUE, TRUE),
+  ('family', 'Porodična pretplata', 119900, 'RSD', 'month', 21474836480, TRUE, FALSE, TRUE)
+ON CONFLICT (code) DO UPDATE SET
+  name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
+  period = excluded.period, active = TRUE;

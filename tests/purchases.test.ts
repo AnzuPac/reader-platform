@@ -49,7 +49,7 @@ beforeAll(async () => {
 
   await query(
     `INSERT INTO book_prices (work_id, amount_cents, currency, active) VALUES ($1,$2,$3,1)`,
-    [workId, 1500, 'EUR']
+    [workId, 150000, 'RSD']
   );
 
   await query(
@@ -102,8 +102,8 @@ describe('покупка книги', () => {
     if (!a.ok || !b.ok) return;
     expect(a.purchase.id).toBe(b.purchase.id);
     expect(b.already).toBe(false);
-    expect(a.purchase.amount_cents).toBe(1500);
-    expect(a.purchase.currency).toBe('EUR');
+    expect(a.purchase.amount_cents).toBe(150000);
+    expect(a.purchase.currency).toBe('RSD');
   });
 
   it('повторное подтверждение не задваивает роялти', async () => {
@@ -120,8 +120,8 @@ describe('покупка книги', () => {
       [pending.purchase.id]
     );
     expect(ledger).toHaveLength(1);
-    expect(ledger[0].amount_cents).toBe(1500);
-    expect(ledger[0].commission_cents).toBe(450);
+    expect(ledger[0].amount_cents).toBe(150000);
+    expect(ledger[0].commission_cents).toBe(45000);
 
     expect(await purchases.hasWorkPurchase(buyerId, workId)).toBe(true);
     expect(await purchases.hasWorkAccess(buyerId, workId)).toBe(true);
@@ -216,14 +216,14 @@ describe('доступ к главам', () => {
 describe('отчёт издателя за период', () => {
   it('считает продажи, выручку, комиссию, роялти и к выплате', async () => {
     const report = await publisher.publisherReport(publisherId, '2000-01-01', '2099-12-31');
-    const eur = report.byCurrency.find((r: any) => r.currency === 'EUR');
-    expect(eur).toBeTruthy();
-    // книга 1500 + глава 300
-    expect(eur.sales).toBe(2);
-    expect(eur.gross_cents).toBe(1800);
-    expect(eur.commission_cents).toBe(540);
-    expect(eur.royalty_cents).toBe(1260);
-    expect(report.payable.find((p: any) => p.currency === 'EUR')?.amount_cents).toBe(1260);
+    const rsd = report.byCurrency.find((r: any) => r.currency === 'RSD');
+    expect(rsd).toBeTruthy();
+    // книга 150 000 + глава 300 (3 монеты) — всё в RSD
+    expect(rsd.sales).toBe(2);
+    expect(rsd.gross_cents).toBe(150300);
+    expect(rsd.commission_cents).toBe(45090);
+    expect(rsd.royalty_cents).toBe(105210);
+    expect(report.payable.find((p: any) => p.currency === 'RSD')?.amount_cents).toBe(105210);
   });
 
   it('пустой период даёт нули, а не ошибку', async () => {
@@ -243,9 +243,9 @@ describe('отчёт издателя за период', () => {
     const works = await publisher.publisherWorks(publisherId);
     const w = works.find((x: any) => x.id === workId);
     expect(w).toBeTruthy();
-    expect(w.amount_cents).toBe(1500);
-    expect(w.currency).toBe('EUR');
+    expect(w.amount_cents).toBe(150000);
+    expect(w.currency).toBe('RSD');
     expect(w.sales).toBe(2);
-    expect(w.royalty_cents).toBe(1260);
+    expect(w.royalty_cents).toBe(105210);
   });
 });

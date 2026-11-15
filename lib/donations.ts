@@ -1,4 +1,5 @@
 import { one, query } from './db';
+import { donationFeePctFor, DEFAULT_DONATION_FEE_PCT } from './economy';
 
 /**
  * Донаты авторам (фанфики и комиксы) и выплаты авторам.
@@ -12,7 +13,9 @@ import { one, query } from './db';
 export const DONATION_MIN_CENTS = 100;
 export const DONATION_MAX_CENTS = 100_000;
 export const DONATION_MESSAGE_MAX = 300;
-export const DEFAULT_FEE_PCT = 10;
+// Решение §10: комиссия с донатов на оригиналы — 0% по умолчанию (настраивается),
+// фанфики — всегда 0%.
+export const DEFAULT_FEE_PCT = DEFAULT_DONATION_FEE_PCT;
 
 export type DonationStatus = 'pending' | 'paid' | 'refunded';
 
@@ -37,9 +40,12 @@ export type DonationRow = {
 export type DonationSplit = { amount_cents: number; fee_cents: number; author_cents: number };
 
 export function donationFeePct(raw = process.env.DONATION_FEE_PCT): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return DEFAULT_FEE_PCT;
-  return Math.min(100, Math.max(0, Math.trunc(n)));
+  return donationFeePctFor('original', raw);
+}
+
+/** Ставка зависит от типа произведения: фанфик 0%, оригинал — настройка. */
+export function donationFeePctForWork(kind: string | null | undefined): number {
+  return donationFeePctFor(kind);
 }
 
 /** Целочисленный round-half-up, как в lib/royalty.ts. */
@@ -63,7 +69,7 @@ export function validateDonation(input: { amountCents?: unknown; message?: unkno
   return { ok: true, amountCents: amount, message };
 }
 
-type WorkRow = { id: number; author_id: number; status: string; title: string };
+type WorkRow = { id: number; author_id: number; status: string; title: string; kind: string | null };
 type ChapterRow = { id: number; work_id: number; number: number; title: string };
 
 export type CreateDonationResult =
@@ -103,7 +109,7 @@ export async function createDonation(
   }
   if (!workId) return { ok: false, error: 'work_not_found' };
 
-  const work = await one<WorkRow>('SELECT id, author_id, status, title FROM works WHERE id = $1', [workId]);
+  const work = await one<WorkRow>('SELECT id, author_id, status, title, kind FROM works WHERE id = $1', [workId]);
   if (!work || work.status !== 'published') return { ok: false, error: 'work_not_found' };
   if (work.author_id === userId) return { ok: false, error: 'self_donation' };
 
@@ -111,7 +117,7 @@ export async function createDonation(
     'SELECT currency FROM book_prices WHERE work_id = $1 AND active = 1',
     [workId]
   );
-  let currency = currencyRow?.currency || 'EUR';
+  let currency = currencyRow?.currency || 'RSD';
   if (chapter) {
     const cp = await one<{ currency: string }>(
       'SELECT currency FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
@@ -120,7 +126,7 @@ export async function createDonation(
     if (cp?.currency) currency = cp.currency;
   }
 
-  const split = splitDonation(v.amountCents);
+  const split = splitDonation(v.amountCents, donationFeePctForWork(work.kind));
   const rows = await query<{ id: number }>(
     `INSERT INTO donations
        (user_id, work_id, chapter_id, author_id, amount_cents, fee_cents, author_cents,

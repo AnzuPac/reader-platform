@@ -28,16 +28,43 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN font_family TEXT',
     'ALTER TABLE works ADD COLUMN font_path TEXT',
     'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
+    "ALTER TABLE works ADD COLUMN kind TEXT NOT NULL DEFAULT 'original'",
+    'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE subscriptions ADD COLUMN canceled_at TEXT',
+    'ALTER TABLE subscriptions ADD COLUMN reminder_sent_at TEXT',
+    'ALTER TABLE plans ADD COLUMN max_profiles SMALLINT NOT NULL DEFAULT 1',
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
+  // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
+  try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try {
+    db.exec('UPDATE chapter_prices SET coins = CAST(ROUND(amount_cents / 100.0) AS INTEGER) WHERE coins = 0 AND amount_cents > 0');
+    db.exec('UPDATE chapter_prices SET amount_cents = coins * 100 WHERE coins > 0');
+  } catch {}
 }
 
 async function migratePg(db: any) {
   const alters = [
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS publisher_id BIGINT REFERENCES publishers(id) ON DELETE SET NULL',
+    "ALTER TABLE works ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'original'",
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS exclusivity BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE chapter_prices ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE purchases ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN NOT NULL DEFAULT TRUE',
+    'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ',
+    'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ',
+    'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
   ];
   for (const sql of alters) { try { await db.query(sql); } catch {} }
+  try { await db.query("UPDATE plans SET active = FALSE WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try {
+    await db.query('UPDATE chapter_prices SET coins = ROUND(amount_cents / 100.0) WHERE coins = 0 AND amount_cents > 0');
+    await db.query('UPDATE chapter_prices SET amount_cents = coins * 100 WHERE coins > 0');
+  } catch {}
 }
 
 async function initSqlite() {
@@ -89,4 +116,49 @@ export async function query<T = Row>(sql: string, params: unknown[] = []): Promi
 export async function one<T = Row>(sql: string, params: unknown[] = []): Promise<T | null> {
   const rows = await query<T>(sql, params);
   return rows[0] ?? null;
+}
+
+/** Хелперы, привязанные к одной транзакции (клиенту PG или общему SQLite). */
+export type Tx = {
+  query: <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
+  one: <T = Row>(sql: string, params?: unknown[]) => Promise<T | null>;
+};
+
+/**
+ * Транзакция для денежных операций. Внутри колбэка используйте переданный tx,
+ * а не глобальный query — иначе в PostgreSQL запрос уйдёт из транзакции.
+ */
+export async function withTx<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const db = await getDb();
+
+  if (process.env.DATABASE_URL) {
+    const client = await db.connect();
+    const tx: Tx = {
+      query: async <R = Row>(sql: string, params: unknown[] = []) =>
+        (await client.query(sql, params)).rows as R[],
+      one: async <R = Row>(sql: string, params: unknown[] = []) =>
+        ((await client.query(sql, params)).rows[0] ?? null) as R | null,
+    };
+    try {
+      await client.query('BEGIN');
+      const res = await fn(tx);
+      await client.query('COMMIT');
+      return res;
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch {}
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const res = await fn({ query, one });
+    db.exec('COMMIT');
+    return res;
+  } catch (e) {
+    try { db.exec('ROLLBACK'); } catch {}
+    throw e;
+  }
 }
