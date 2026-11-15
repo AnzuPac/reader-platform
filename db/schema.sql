@@ -12,6 +12,8 @@ CREATE TABLE users (
   locale          TEXT NOT NULL DEFAULT 'sr' CHECK (locale IN ('sr','en','ru')),
   email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
   storage_used    BIGINT NOT NULL DEFAULT 0,     -- байты
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','deleted')),
+  deleted_at      TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen_at    TIMESTAMPTZ
 );
@@ -72,6 +74,13 @@ CREATE TABLE works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
+  search_norm       TEXT NOT NULL DEFAULT '',
+  is_classic        BOOLEAN NOT NULL DEFAULT FALSE,   -- классика (public domain)
+  -- NULL = по умолчанию: самиздат/классика — можно, издательские — нельзя.
+  translit_allowed  BOOLEAN,
+  -- NULL = по умолчанию: самиздат и фанфики — можно, издательские и классика — нет.
+  paragraph_comments_enabled BOOLEAN,
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -226,6 +235,29 @@ CREATE TABLE comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX comments_work_idx ON comments(work_id, created_at DESC);
+
+-- Комментарии к абзацам (ТЗ 4.6, 5.4): только для самиздата и фанфиков.
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              BIGSERIAL PRIMARY KEY,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  text            TEXT NOT NULL,
+  hidden          BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+-- Удаление аккаунта в 2 шага (ТЗ 7.6): запрос → подтверждение по токену.
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS account_deletion_user_idx ON account_deletion_requests(user_id, used_at);
 
 -- === Подписки и платежи ===
 CREATE TABLE plans (

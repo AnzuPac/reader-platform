@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   locale          TEXT NOT NULL DEFAULT 'sr' CHECK (locale IN ('sr','en','ru')),
   email_verified  INTEGER NOT NULL DEFAULT 0,
   storage_used    BIGINT NOT NULL DEFAULT 0,     -- байты
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','deleted')),
+  deleted_at      TEXT,
   created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_seen_at    TEXT
 );
@@ -74,6 +76,13 @@ CREATE TABLE IF NOT EXISTS works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
+  search_norm       TEXT NOT NULL DEFAULT '',
+  is_classic        INTEGER NOT NULL DEFAULT 0,   -- классика (public domain)
+  -- NULL = по умолчанию: самиздат/классика — можно, издательские — нельзя.
+  translit_allowed  INTEGER,
+  -- NULL = по умолчанию: самиздат и фанфики — можно, издательские и классика — нет.
+  paragraph_comments_enabled INTEGER,
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -228,6 +237,29 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS comments_work_idx ON comments(work_id, created_at DESC);
+
+-- Комментарии к абзацам (ТЗ 4.6, 5.4): только для самиздата и фанфиков.
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  text            TEXT NOT NULL,
+  hidden          INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+-- Удаление аккаунта в 2 шага (ТЗ 7.6): запрос → подтверждение по токену.
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at    TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS account_deletion_user_idx ON account_deletion_requests(user_id, used_at);
 
 -- === Подписки и платежи ===
 CREATE TABLE IF NOT EXISTS plans (

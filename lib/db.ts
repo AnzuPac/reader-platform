@@ -30,6 +30,12 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
     "ALTER TABLE works ADD COLUMN kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
+    "ALTER TABLE works ADD COLUMN search_norm TEXT NOT NULL DEFAULT ''",
+    'ALTER TABLE works ADD COLUMN is_classic INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE works ADD COLUMN translit_allowed INTEGER',
+    'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER',
+    'ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'',
+    'ALTER TABLE users ADD COLUMN deleted_at TEXT',
     'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
@@ -39,6 +45,7 @@ async function migrateSqlite(db: any) {
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
   // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
   try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { db.exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
@@ -53,6 +60,12 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS publisher_id BIGINT REFERENCES publishers(id) ON DELETE SET NULL',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS exclusivity BOOLEAN NOT NULL DEFAULT FALSE',
+    "ALTER TABLE works ADD COLUMN IF NOT EXISTS search_norm TEXT NOT NULL DEFAULT ''",
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS is_classic BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS translit_allowed BOOLEAN',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS paragraph_comments_enabled BOOLEAN',
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'",
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ',
     'ALTER TABLE chapter_prices ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN NOT NULL DEFAULT TRUE',
@@ -61,6 +74,7 @@ async function migratePg(db: any) {
     'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
   ];
   for (const sql of alters) { try { await db.query(sql); } catch {} }
+  try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
   try { await db.query("UPDATE plans SET active = FALSE WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { await db.query("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {
