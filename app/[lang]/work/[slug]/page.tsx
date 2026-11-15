@@ -68,7 +68,7 @@ export default async function WorkPage({
   const bookRsd = price ? formatRsd(price.amount_cents) : null;
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-5xl px-5 py-8">
       <div className="card mb-8 p-5 sm:p-7">
         <div className="flex flex-col gap-6 sm:flex-row">
           <div className="w-[170px] shrink-0">

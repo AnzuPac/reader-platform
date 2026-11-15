@@ -22,7 +22,7 @@ export default async function AuthorWorkPage({
   if (!work) notFound();
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-4xl px-5 py-8">
       <div className="mb-5 flex items-center gap-3">
         <Link href={`/${l}/author`} className="text-sm muted hover:text-brand">← Кабинет автора</Link>
         <span className="text-sm muted">·</span>

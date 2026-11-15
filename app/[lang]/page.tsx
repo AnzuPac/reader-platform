@@ -37,7 +37,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   const fresh = works.slice(3, 12);
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-6xl px-5 py-8">
       {/* hero */}
       <section className="mb-10 overflow-hidden rounded-2xl border border-[#3a2c56] bg-gradient-to-br from-[#1b1330] via-[#2d1a4d] to-[#3a1f5c] px-7 py-10 text-white sm:px-10 sm:py-14">
         <div className="max-w-xl">

@@ -51,7 +51,7 @@ export default async function CatalogPage({
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-6xl px-5 py-8">
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">{t(l, 'catalog_title')}</h1>
         <span className="text-sm muted">{works.length} dela</span>

@@ -29,7 +29,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-5 py-16">
+    <main id="main" className="mx-auto max-w-md px-5 py-16">
       <h1 className="mb-6 text-3xl font-bold">Registracija</h1>
       <form onSubmit={submit} className="card space-y-4 p-6">
         <div>

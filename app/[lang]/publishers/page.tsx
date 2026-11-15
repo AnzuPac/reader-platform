@@ -173,7 +173,7 @@ export default async function PublishersPage({ params }: { params: Promise<{ lan
   const c = COPY[l];
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-10">
+    <main id="main" className="mx-auto max-w-5xl px-5 py-10">
       <section className="mb-10">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand">{c.kicker}</p>
         <h1 className="mb-4 max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl">{c.h1}</h1>

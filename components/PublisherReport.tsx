@@ -59,11 +59,11 @@ export default function PublisherReport({
         <form onSubmit={load} className="flex flex-wrap items-end gap-2">
           <label className="text-xs muted">
             Od
-            <input type="date" className="input mt-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <input type="date" aria-label="Datum od" className="input mt-1" value={from} onChange={(e) => setFrom(e.target.value)} />
           </label>
           <label className="text-xs muted">
             Do
-            <input type="date" className="input mt-1" value={to} onChange={(e) => setTo(e.target.value)} />
+            <input type="date" aria-label="Datum od" className="input mt-1" value={to} onChange={(e) => setTo(e.target.value)} />
           </label>
           <button className="btn btn-ghost" disabled={busy}>{busy ? '…' : 'Prikaži'}</button>
         </form>

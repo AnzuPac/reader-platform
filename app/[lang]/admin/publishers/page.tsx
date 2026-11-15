@@ -95,7 +95,7 @@ export default function AdminPublishersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-10">
+    <main id="main" className="mx-auto max-w-6xl px-5 py-10">
       <h1 className="mb-2 text-2xl font-bold">Издательства</h1>
       <p className="mb-6 text-sm muted">
         Комиссия площадки, привязка владельца и произведений, заявки с лендинга.

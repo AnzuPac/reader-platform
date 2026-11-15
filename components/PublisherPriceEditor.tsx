@@ -50,7 +50,7 @@ export default function PublisherPriceEditor({
       />
       <span className="text-xs muted">RSD</span>
       <label className="flex items-center gap-1 text-xs muted">
-        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> aktivna
+        <input type="checkbox" aria-label="Cena aktivna" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> aktivna
       </label>
       <button className="btn btn-ghost" disabled={busy}>{busy ? '…' : 'Sačuvaj'}</button>
       {msg ? <span className="text-xs muted">{msg}</span> : null}

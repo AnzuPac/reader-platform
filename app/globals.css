@@ -15,7 +15,7 @@ a { color: inherit; text-decoration: none; }
 .btn-ghost:hover { border-color:#8b5cf6; }
 
 .input { width:100%; padding:9px 12px; border-radius:10px; background:#150f21; border:1px solid #2c2340; color:#ece7f6; font-size:14px; }
-.input::placeholder { color:#7f7297; }
+.input::placeholder { color:#9b8fb5; }
 .input:focus { outline:none; border-color:#8b5cf6; }
 
 .muted { color:#a99fc4; }
@@ -43,3 +43,17 @@ a { color: inherit; text-decoration: none; }
 .paid-text img { pointer-events:none; }
 
 ::selection { background:rgba(139,92,246,.45); }
+
+/* WCAG 2.1 AA: видимый клавиатурный фокус */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #c4b5fd;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: #8b5cf6; color: #fff; padding: 10px 16px; border-radius: 0 0 10px 0; font-weight: 700;
+}
+.skip-link:focus { left: 0; }
+.input::placeholder { color: #9b8fb5; }

@@ -33,7 +33,7 @@ export default async function PublisherPage({
   const session = await readSession();
   if (!session) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold">Kabinet izdavača</h1>
           <p className="mb-5 muted">Prodaje, rojaliti i izveštaji — dostupno izdavačima.</p>

@@ -19,7 +19,7 @@ export default async function LibraryPage({ params }: { params: Promise<{ lang: 
 
   if (!session) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold">{t(l, 'nav_library')}</h1>
           <p className="mb-5 muted">Sačuvaj omiljena dela i nastavi čitanje sa istog mesta.</p>

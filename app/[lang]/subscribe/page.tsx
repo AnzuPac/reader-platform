@@ -16,7 +16,7 @@ export default async function SubscribePage({ params }: { params: Promise<{ lang
   const currentPlan = plans.find((p) => p.code === current?.plan_code) || null;
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-12">
+    <main id="main" className="mx-auto max-w-4xl px-5 py-12">
       <h1 className="mb-2 text-3xl font-bold">Pretplata</h1>
       <p className="mb-8 muted">
         Čitaj bez ograničenja i podrži autore. Bez reklama, bez kredita — cela ponuda je u pretplati.

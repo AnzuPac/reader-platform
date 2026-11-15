@@ -48,7 +48,7 @@ export default function AccountDangerZone({ lang }: { lang: string }) {
         <div className="mt-4 max-w-sm">
           <p className="mb-2 text-sm">Potvrdite lozinkom. Nalog će biti obezličen, komentari skriveni.</p>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                 placeholder="Lozinka" className="mb-2 w-full rounded border border-white/20 bg-transparent px-3 py-2" />
+                 placeholder="Lozinka" aria-label="Lozinka za potvrdu brisanja" className="mb-2 w-full rounded border border-white/20 bg-transparent px-3 py-2" />
           <div className="flex gap-2">
             <button onClick={confirmDelete} disabled={busy} className="rounded bg-red-600/80 px-3 py-2 text-sm">Obriši zauvek</button>
             <button onClick={() => { setStep('idle'); setPassword(''); }} className="rounded border border-white/20 px-3 py-2 text-sm">Otkaži</button>
