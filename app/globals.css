@@ -69,3 +69,41 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
 .card-manga { border-left:4px solid #3b82f6; }
 .card-book  { border-left:4px solid #9ca3af; }
 .card-fanfic{ border-left:4px solid #8b5cf6; }
+
+/* ----- Светлая нейтральная тема (общая), цвет остаётся только у разделов ----- */
+:root { color-scheme: light; }
+html, body { background:#ffffff; color:#1f2937; }
+a { color: inherit; }
+
+.card { background:#ffffff; border:1px solid #e5e7eb; box-shadow:0 1px 2px rgba(16,24,40,.04); }
+.muted { color:#6b7280; }
+.text-mist { color:#4b5563 !important; }
+.border-line { border-color:#e5e7eb !important; }
+
+.input { background:#ffffff; border:1px solid #d1d5db; color:#111827; }
+.input::placeholder { color:#6b7280; }
+.input:focus { border-color:#6b7280; }
+
+.btn-primary { background:#111827; color:#ffffff; }
+.btn-primary:hover { filter:brightness(1.15); }
+.btn-ghost { background:#ffffff; border:1px solid #d1d5db; color:#111827; }
+.btn-ghost:hover { border-color:#6b7280; }
+
+/* Тёмные утилиты Tailwind → нейтральные светлые */
+.border-white\/20, .border-white\/15, .border-white\/10 { border-color:#e5e7eb !important; }
+.bg-white\/5 { background:#f9fafb !important; }
+[class*="bg-[#14121c]"] { background:#ffffff !important; border-color:#e5e7eb !important; }
+.bg-brand, .bg-hot { background:#6b7280 !important; }
+.text-brand { color:#374151 !important; }
+.badge-hot { background:#f3f4f6; color:#374151; }
+.badge-rank { background:#111827; color:#fff; }
+
+/* Разделы: манга — синий, книги — серый, фанфики — фиолетовый */
+.cat-manga { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
+.cat-book  { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; }
+.cat-fanfic{ background:#ede9fe; color:#6d28d9; border:1px solid #c4b5fd; }
+.card-manga { border-left:4px solid #2563eb; }
+.card-book  { border-left:4px solid #9ca3af; }
+.card-fanfic{ border-left:4px solid #7c3aed; }
+.skip-link { background:#111827; color:#fff; }
+:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
