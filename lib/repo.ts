@@ -52,7 +52,7 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
     sort === 'words' ? 'w.words_total DESC' :
     'w.published_at DESC NULLS LAST';
   const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-                      w.age_rating, w.completion, w.cover_path, u.display_name AS author_name
+                      w.age_rating, w.completion, w.cover_path, w.type, w.kind, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id
                 WHERE ${where.join(' AND ')}
                 ORDER BY ${order} LIMIT $${limIdx} OFFSET $${offIdx}`;
