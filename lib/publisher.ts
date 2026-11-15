@@ -18,6 +18,8 @@ export type PublisherWorksRow = {
   id: number; slug: string; title: string; status: string; type: string;
   amount_cents: number | null; currency: string | null; active: number | null;
   sales: number; gross_cents: number; royalty_cents: number; commission_cents: number;
+  rights_sale?: number; rights_subscription?: number; subscription_window_days?: number;
+  regions?: string; tts_allowed?: number; free_excerpt_pct?: number;
 };
 
 export type ReportLine = {
@@ -65,6 +67,7 @@ export async function getPublisher(id: number): Promise<Publisher | null> {
 export async function publisherWorks(publisherId: number): Promise<PublisherWorksRow[]> {
   const rows = await query<Record<string, unknown>>(
     `SELECT w.id, w.slug, w.title, w.status, w.type,
+            w.rights_sale, w.rights_subscription, w.subscription_window_days, w.regions, w.tts_allowed, w.free_excerpt_pct,
             bp.amount_cents, bp.currency, bp.active,
             COALESCE(s.sales, 0) AS sales,
             COALESCE(s.gross, 0) AS gross_cents,

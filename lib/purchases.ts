@@ -1,4 +1,5 @@
 import { one, query, withTx } from './db';
+import { subscriptionAvailable } from './rights';
 import { decideChapterAccess, type GateResult } from './access';
 import { splitRoyalty } from './royalty';
 import { CURRENCY, coinsToCents, wholeCoins } from './money';
@@ -588,7 +589,10 @@ export async function chapterGate(
     });
   }
 
-  const work = await one<{ author_id: number }>('SELECT author_id FROM works WHERE id = $1', [chapter.work_id]);
+  const work = await one<{ author_id: number; rights_subscription: number; subscription_window_days: number; published_at: string | null }>(
+    'SELECT author_id, rights_subscription, subscription_window_days, published_at FROM works WHERE id = $1',
+    [chapter.work_id]
+  );
   const [sub, workBuy, chapterBuy, ent] = await Promise.all([
     hasActiveSubscription(session.uid),
     hasWorkPurchase(session.uid, chapter.work_id),
@@ -601,7 +605,7 @@ export async function chapterGate(
     loggedIn: true,
     isAuthor: work?.author_id === session.uid,
     isAdmin: session.role === 'admin',
-    hasSubscription: sub,
+    hasSubscription: sub && (work ? subscriptionAvailable(work) : false),
     hasWorkPurchase: workBuy,
     hasChapterPurchase: chapterBuy,
     hasEntitlement: ent,

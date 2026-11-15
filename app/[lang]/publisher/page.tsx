@@ -8,6 +8,7 @@ import {
 } from '@/lib/publisher';
 import PublisherReport from '@/components/PublisherReport';
 import PublisherPriceEditor from '@/components/PublisherPriceEditor';
+import PublisherRightsEditor from '@/components/PublisherRightsEditor';
 import PayoutForm from '@/components/PayoutForm';
 
 export const dynamic = 'force-dynamic';
@@ -176,6 +177,16 @@ export default async function PublisherPage({
                       amountCents={w.amount_cents}
                       currency={w.currency}
                       active={w.active}
+                    />
+                    <PublisherRightsEditor
+                      workId={w.id}
+                      publisherId={publisherId}
+                      rightsSale={Number(w.rights_sale ?? 1)}
+                      rightsSubscription={Number(w.rights_subscription ?? 1)}
+                      windowDays={Number(w.subscription_window_days ?? 0)}
+                      regions={String(w.regions ?? 'RS')}
+                      tts={Number(w.tts_allowed ?? 0)}
+                      excerpt={Number(w.free_excerpt_pct ?? 10)}
                     />
                   </td>
                   <td className="px-4 py-3">{w.sales}</td>

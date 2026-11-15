@@ -77,7 +77,13 @@ CREATE TABLE IF NOT EXISTS works (
   description       TEXT NOT NULL DEFAULT '',
   search_norm       TEXT NOT NULL DEFAULT '',      -- нормализованные название+автор для поиска
   translit_allowed  INTEGER NOT NULL DEFAULT 1,
-  paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
+  paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1,
+  rights_sale         INTEGER NOT NULL DEFAULT 1,
+  rights_subscription INTEGER NOT NULL DEFAULT 1,
+  subscription_window_days INTEGER NOT NULL DEFAULT 0,
+  regions             TEXT NOT NULL DEFAULT 'RS',
+  tts_allowed         INTEGER NOT NULL DEFAULT 0,
+  free_excerpt_pct    INTEGER NOT NULL DEFAULT 10,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
