@@ -445,6 +445,10 @@ CREATE TABLE IF NOT EXISTS author_payouts (
   author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
   currency     TEXT NOT NULL DEFAULT 'RSD',
+  gross_cents  INTEGER NOT NULL DEFAULT 0,
+  tax_cents    INTEGER NOT NULL DEFAULT 0,
+  contributions_cents INTEGER NOT NULL DEFAULT 0,
+  net_cents    INTEGER NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','canceled')),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   paid_at      TIMESTAMPTZ

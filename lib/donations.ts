@@ -259,8 +259,10 @@ export async function authorDonationSummary(authorId: number, limit = 50): Promi
 }
 
 export type PayoutRequestResult =
-  | { ok: true; payoutId: number; amount_cents: number; currency: string }
+  | { ok: true; payoutId: number; amount_cents: number; currency: string; breakdown?: any }
   | { ok: false; error: 'nothing_to_pay' | 'invalid_currency' };
+
+import { computePayout } from './taxes';
 
 export async function requestAuthorPayout(authorId: number, currency = 'RSD'): Promise<PayoutRequestResult> {
   const cur = String(currency || 'RSD').toUpperCase().slice(0, 3);
@@ -271,12 +273,13 @@ export async function requestAuthorPayout(authorId: number, currency = 'RSD'): P
   const available = Number(balance?.available_cents || 0);
   if (available <= 0) return { ok: false, error: 'nothing_to_pay' };
 
+  const b = computePayout(available);
   const rows = await query<{ id: number }>(
-    `INSERT INTO author_payouts (author_id, amount_cents, currency, status)
-     VALUES ($1,$2,$3,'pending') RETURNING id`,
-    [authorId, available, cur]
+    `INSERT INTO author_payouts (author_id, amount_cents, currency, gross_cents, tax_cents, contributions_cents, net_cents, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending') RETURNING id`,
+    [authorId, available, cur, b.gross_cents, b.tax_cents, b.contributions_cents, b.net_cents]
   );
-  return { ok: true, payoutId: rows[0].id, amount_cents: available, currency: cur };
+  return { ok: true, payoutId: rows[0].id, amount_cents: available, currency: cur, breakdown: b };
 }
 
 export async function markAuthorPayoutPaid(
