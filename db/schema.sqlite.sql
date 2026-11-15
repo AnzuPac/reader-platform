@@ -629,3 +629,21 @@ WHEN NEW.publisher_id IS NOT NULL
 BEGIN
   UPDATE works SET paragraph_comments_enabled = 0 WHERE id = NEW.id;
 END;
+
+CREATE TABLE IF NOT EXISTS pool_runs (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  month             TEXT NOT NULL UNIQUE,
+  revenue_cents     INTEGER NOT NULL DEFAULT 0,
+  pool_cents        INTEGER NOT NULL DEFAULT 0,
+  distributed_cents INTEGER NOT NULL DEFAULT 0,
+  created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS pool_ledger (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  pool_run_id BIGINT NOT NULL REFERENCES pool_runs(id) ON DELETE CASCADE,
+  work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+  author_id   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  pages       INTEGER NOT NULL DEFAULT 0,
+  cents       INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS pool_ledger_run_idx ON pool_ledger(pool_run_id);
