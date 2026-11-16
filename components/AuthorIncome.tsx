@@ -34,14 +34,14 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workId: work.id, exclusivity: !work.exclusivity }),
       });
-      if (!r.ok) { setMsg('Не удалось изменить ставку.'); return; }
+      if (!r.ok) { setMsg('Stopa nije promenjena.'); return; }
       setMsg(!work.exclusivity ? 'Ekskluzivitet uključen: 80% autoru.' : 'Ekskluzivitet isključen: 70% autoru.');
       await load();
     } finally { setBusy(false); }
   }
 
   if (!data) {
-    return <section className="card p-5 text-sm muted">{msg || 'Загрузка дохода…'}</section>;
+    return <section className="card p-5 text-sm muted">{msg || 'Učitavanje prihoda…'}</section>;
   }
 
   const rsdTotal = data.totals.find((t) => t.currency === 'RSD') || {

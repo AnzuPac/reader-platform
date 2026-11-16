@@ -150,7 +150,7 @@ export default function ChapterBody({
     const text = pcDraft.trim();
     if (pcSending) return;
     if (!text) { setPcMsg('Unesite tekst komentara.'); return; }
-    if (text.length > PC_MAX) { setPcMsg(`Максимум ${PC_MAX} символов.`); return; }
+    if (text.length > PC_MAX) { setPcMsg(`Maksimum ${PC_MAX} karaktera.`); return; }
     setPcSending(true);
     setPcMsg('');
     try {
@@ -160,13 +160,13 @@ export default function ChapterBody({
         body: JSON.stringify({ paragraphIndex: index, text }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.status === 401) { setPcMsg('Войдите, чтобы оставить комментарий.'); return; }
+      if (r.status === 401) { setPcMsg('Prijavite se da ostavite komentar.'); return; }
       if (r.status === 403) { setPcMsg('Komentari isključeni od strane nosioca prava.'); return; }
       if (!r.ok) {
         setPcMsg(
           j.error === 'bad_text' ? `Tekst je prazan ili duži od ${PC_MAX} karaktera.`
-            : j.error === 'bad_index' ? 'Неверный номер абзаца.'
-            : 'Не удалось отправить комментарий.'
+            : j.error === 'bad_index' ? 'Neispravan broj pasusa.'
+            : 'Komentar nije poslat.'
         );
         return;
       }
@@ -190,8 +190,8 @@ export default function ChapterBody({
       });
       const j = await r.json().catch(() => ({}));
       if (r.status === 401) { setPcMsg('Prijavite se da biste moderirali komentare.'); return; }
-      if (r.status === 403) { setPcMsg('Нет прав: скрывать может автор произведения или модератор.'); return; }
-      if (!r.ok) { setPcMsg(j.error === 'not_found' ? 'Komentar nije pronađen.' : 'Не удалось изменить видимость.'); return; }
+      if (r.status === 403) { setPcMsg('Nema prava: skriva autor dela ili moderator.'); return; }
+      if (!r.ok) { setPcMsg(j.error === 'not_found' ? 'Komentar nije pronađen.' : 'Vidljivost nije promenjena.'); return; }
       await loadParagraphComments();
     } catch {
       setPcMsg('Greška mreže. Pokušajte ponovo.');
@@ -397,7 +397,7 @@ export default function ChapterBody({
                     onClick={() => togglePanel(idx)}
                     aria-expanded={pcActive === idx}
                     aria-label={`Komentari na pasus ${idx + 1}`}
-                    title={visibleCount(idx) ? `Komentari: ${visibleCount(idx)}` : 'Комментировать абзац'}
+                    title={visibleCount(idx) ? `Komentari: ${visibleCount(idx)}` : 'Komentariši pasus'}
                   >
                     {visibleCount(idx) ? `💬 ${visibleCount(idx)}` : '💬'}
                   </button>

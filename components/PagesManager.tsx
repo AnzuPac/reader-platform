@@ -92,7 +92,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
                   <span className="muted">{i + 1}</span>
                   <div className="flex gap-1">
                     <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'up')} title="Iznad">↑</button>
-                    <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'down')} title="Ниже">↓</button>
+                    <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'down')} title="Ispod">↓</button>
                     <button className="text-mist hover:text-hot" onClick={() => remove(p.id)} title="Obriši">✕</button>
                   </div>
                 </div>

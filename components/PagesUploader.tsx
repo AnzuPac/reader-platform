@@ -12,7 +12,7 @@ export default function PagesUploader({ workSlug }: { workSlug: string }) {
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setBusy(true); setMsg(`Загружаю ${files.length} страниц…`);
+    setBusy(true); setMsg(`Otpremam ${files.length} stranica…`);
     const fd = new FormData();
     fd.append('workSlug', workSlug);
     fd.append('number', String(number));

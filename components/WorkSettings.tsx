@@ -23,7 +23,7 @@ export default function WorkSettings({
     fd.append('file', file);
     const r = await fetch('/api/author/cover', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена' : 'Greška korica: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Korice otpremljene' : 'Greška korica: ' + (j.error || r.status));
     e.target.value = '';
   }
 

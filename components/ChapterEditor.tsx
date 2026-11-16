@@ -74,7 +74,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Импортирую…');
+    setBusy(true); setMsg('Uvozim…');
     const fd = new FormData();
     fd.append('file', file);
     const r = await fetch('/api/author/import', { method: 'POST', body: fd });
@@ -82,14 +82,14 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     setBusy(false);
     if (!r.ok) { setMsg('Greška uvoza: ' + (j.error || r.status)); return; }
     editor?.commands.setContent(j.html || '');
-    setMsg(`Импортировано: ${j.words} слов`);
+    setMsg(`Uvezeno: ${j.words} reči`);
     e.target.value = '';
   }
 
   async function onImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Загружаю иллюстрацию…');
+    setBusy(true); setMsg('Otpremam ilustraciju…');
     const fd = new FormData();
     fd.append('file', file);
     const r = await fetch('/api/author/image', { method: 'POST', body: fd });
@@ -109,14 +109,14 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    setMsg(r.ok ? 'Глава опубликована' : 'Greška objave: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Glava objavljena' : 'Greška objave: ' + (j.error || r.status));
     await loadChapters();
   }
 
   async function uploadFont(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Загружаю шрифт…');
+    setBusy(true); setMsg('Otpremam font…');
     const fd = new FormData();
     fd.append('workSlug', workSlug);
     fd.append('family', fontName || 'Custom');
@@ -181,7 +181,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
             <B onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}>H3</B>
             <span className="mx-1 w-px bg-line" />
             <B onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Lista">•</B>
-            <B onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Нумерация">1.</B>
+            <B onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numeracija">1.</B>
             <B onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Citat">❝</B>
             <span className="mx-1 w-px bg-line" />
             <B onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })}>⟸</B>

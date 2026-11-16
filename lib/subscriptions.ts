@@ -3,7 +3,7 @@ import { CURRENCY, formatRsd } from './money';
 
 /**
  * Подписка (ТЗ 4.9, решения §10):
- *  - месяц 699 RSD, год 6 990 RSD, семейная 1 199 RSD (до 5 профилей);
+ *  - mesec 699 RSD, godina 6 990 RSD, семейная 1 199 RSD (до 5 профилей);
  *  - безлимит, без кредитов; рекламы нет;
  *  - отмена в 2 нажатия, доступ сохраняется до конца оплаченного периода;
  *  - напоминание за 3 дня до продления.
@@ -152,17 +152,17 @@ export async function markReminderSent(subscriptionId: number): Promise<void> {
 
 /** Текст условий для экрана подписки. */
 export function planFacts(plan: PlanRow): string[] {
-  const facts = ['Безлимитное чтение книг в подписке', 'Новые главы самиздата', 'Без рекламы'];
-  if (plan.code === 'family') facts.push(`До ${plan.max_profiles} профилей в семье`);
-  if (plan.code === 'year') facts.push('Два месяца в подарок');
-  facts.push(`Цена: ${formatRsd(plan.price_cents)} / ${plan.period === 'year' ? 'год' : 'месяц'}`);
-  facts.push(`Следующее списание: ${formatRsd(plan.price_cents)} ${plan.period === 'year' ? 'через год' : 'через месяц'}`);
+  const facts = ['Neograničeno čitanje knjiga uz pretplatu', 'Nove glave samizdata', 'Bez reklama'];
+  if (plan.code === 'family') facts.push(`Do ${plan.max_profiles} profila u porodici`);
+  if (plan.code === 'year') facts.push('Dva meseca na poklon');
+  facts.push(`Цена: ${formatRsd(plan.price_cents)} / ${plan.period === 'year' ? 'godina' : 'mesec'}`);
+  facts.push(`Следующее списание: ${formatRsd(plan.price_cents)} ${plan.period === 'year' ? 'za godinu dana' : 'za mesec dana'}`);
   return facts;
 }
 
 export const SUBSCRIPTION_CURRENCY = CURRENCY;
 
-/** Дата конца периода по коду tarifaа (месяц = 30 дней, год = 365). */
+/** Дата конца периода по коду tarifaа (mesec = 30 дней, godina = 365). */
 export function periodEndFor(planCode: string, from = new Date()): string {
   const days = planCode === 'year' ? 365 : 30;
   return new Date(from.getTime() + days * 86_400_000).toISOString();

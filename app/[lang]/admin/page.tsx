@@ -70,7 +70,7 @@ export default function AdminPage() {
 
   async function workAction(slg: string, action: string) {
     const r = await fetch('/api/admin/work-status', { method: 'POST', headers: headers(), body: JSON.stringify({ slug: slg, action }) });
-    setMsg(r.ok ? `Произведение: ${action}` : 'Greška');
+    setMsg(r.ok ? `Delo: ${action}` : 'Greška');
     await loadAll();
   }
 
@@ -114,19 +114,19 @@ export default function AdminPage() {
       body: JSON.stringify({ workSlug: slug, number, title: chTitle, content, access }),
     });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Глава ${j.chapter.number} добавлена` : 'Greška: ' + (j.error || r.status));
+    setMsg(r.ok ? `Glava ${j.chapter.number} dodata` : 'Greška: ' + (j.error || r.status));
     setChTitle(''); setContent('');
   }
 
   async function uploadCover(e: React.FormEvent) {
     e.preventDefault();
-    if (!coverSlug || !coverFile) { setMsg('Выбери произведение и файл'); return; }
+    if (!coverSlug || !coverFile) { setMsg('Izaberi delo i fajl'); return; }
     const fd = new FormData();
     fd.append('workSlug', coverSlug);
     fd.append('file', coverFile);
     const r = await fetch('/api/admin/cover', { method: 'POST', headers: { 'x-admin-token': token }, body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена: ' + j.cover : 'Greška: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Korice otpremljene: ' + j.cover : 'Greška: ' + (j.error || r.status));
   }
 
   const Tab = ({ id, label, count }: { id: typeof tab; label: string; count?: number }) => (
@@ -150,7 +150,7 @@ export default function AdminPage() {
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
-        <Tab id="review" label="На проверке" count={review.length} />
+        <Tab id="review" label="Na proveri" count={review.length} />
         <Tab id="payments" label="Plaćanja" count={payments.length} />
         <Tab id="purchases" label="Kupovine" count={purchases.length} />
         <Tab id="donations" label="Donacije" count={donations.length} />
@@ -197,7 +197,7 @@ export default function AdminPage() {
                 <span className="flex-1">
                   #{p.id} · {p.user} ({p.email})
                   <span className="block text-xs muted">
-                    {p.work || '—'}{p.chapter ? ` · ${p.chapter} (gl. ${p.chapter_number})` : ' · вся книга'} · {p.provider}
+                    {p.work || '—'}{p.chapter ? ` · ${p.chapter} (gl. ${p.chapter_number})` : ' · cela knjiga'} · {p.provider}
                   </span>
                 </span>
                 <span className="text-sm">{(p.amount_cents / 100).toFixed(2)} {p.currency}</span>
@@ -283,7 +283,7 @@ export default function AdminPage() {
               <input className="input max-w-[110px]" type="number" min={1} value={number} onChange={(e) => setNumber(Number(e.target.value))} />
               <input className="input" placeholder="Naslov glave" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
             </div>
-            <textarea className="input" rows={8} placeholder="Текст glave" value={content} onChange={(e) => setContent(e.target.value)} />
+            <textarea className="input" rows={8} placeholder="Tekst glave" value={content} onChange={(e) => setContent(e.target.value)} />
             <select className="input max-w-[200px]" value={access} onChange={(e) => setAccess(e.target.value)}>
               <option value="free">Бесплатно</option>
               <option value="subscribers">Подписчики</option>

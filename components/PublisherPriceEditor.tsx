@@ -34,7 +34,7 @@ export default function PublisherPriceEditor({
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     setMsg(r.ok
-      ? `Sačuvano${j.trimmed_coins ? ` · главы урезаны на ${j.trimmed_coins} монет` : ''}`
+      ? `Sačuvano${j.trimmed_coins ? ` · glave skraćene za ${j.trimmed_coins} novčića` : ''}`
       : `Greška: ${j.error || r.status}`);
   }
 

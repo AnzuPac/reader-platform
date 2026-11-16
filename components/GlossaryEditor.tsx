@@ -25,7 +25,7 @@ export default function GlossaryEditor({ workSlug }: { workSlug: string }) {
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
-    if (!term.trim() || !translation.trim()) { setMsg('Заполни термин и перевод'); return; }
+    if (!term.trim() || !translation.trim()) { setMsg('Popuni termin i prevod'); return; }
     const r = await fetch('/api/author/glossary', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workSlug, lang, term, translation }),

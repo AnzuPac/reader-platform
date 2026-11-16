@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
-  const title = l === 'en' ? 'For publishers — Čitaonica' : l === 'ru' ? 'Издателям — Čitaonica' : 'Za izdavače — Čitaonica';
+  const title = l === 'en' ? 'For publishers — Čitaonica' : l === 'ru' ? 'Izdavačima — Čitaonica' : 'Za izdavače — Čitaonica';
   return { title, description: 'Knjige, fanfiction i stripovi na jednom mestu. Pilot 3–6 naslova bez ekskluzivnosti.' };
 }
 
@@ -118,7 +118,7 @@ const COPY = {
     formNote: 'For the pilot and questions, fill in the form — we reply within two business days.',
   },
   ru: {
-    kicker: 'Издателям',
+    kicker: 'Izdavačima',
     h1: 'Vaše knjige, fanfikovi i stripovi — na jednom mestu',
     lead:
       'Čitaonica — regionalna platforma za čitanje sa kupovinom knjiga, pretplatom i direktnom podrškom autorima. Počinjemo s pilotom od 3–6 knjiga, bez ekskluzive.',
@@ -128,42 +128,42 @@ const COPY = {
       { t: 'Fanfikovi', d: 'Autori objavljuju besplatno, čitaoci podržavaju donacijama. Platforma uzima 10%, autor dobija 90%.' },
       { t: 'Fanfikovi', d: 'Autori objavljuju besplatno, čitaoci podržavaju donacijama. Platforma uzima 10%, autor dobija 90%.' },
     ],
-    rightsTitle: 'Защита прав — что реально есть',
+    rightsTitle: 'Zaštita prava — šta zaista postoji',
     rightsNowTitle: 'Već radi',
     rightsNow: [
-      'Платный текст не кешируется и не индексируется (no-store).',
-      'Невидимый водяной знак с ID читателя в каждом платном тексте — утечку можно привязать к аккаунту.',
-      'Лимит 60 запросов текста в минуту на пользователя и мягкий лимит 3 устройств.',
+      'Plaćeni tekst se ne kešira i ne indeksira (no-store).',
+      'Nevidljiv vodeni žig sa ID čitaoca u svakom plaćenom tekstu — curenje se može povezati sa nalogom.',
       'Limit 60 zahteva za tekst u minuti po korisniku i meki limit od 3 uređaja.',
-      'Запрет выделения и копирования в платной читалке (доступность для скринридеров сохранена).',
+      'Limit 60 zahteva za tekst u minuti po korisniku i meki limit od 3 uređaja.',
+      'Zabrana selekcije i kopiranja u plaćenoj čitaonici (pristupačnost za čitače ekrana sačuvana).',
     ],
     rightsSoonTitle: 'Uvodimo / diskutujemo',
     rightsSoon: [
       'Automatsko otkrivanje masovnih preuzimanja i privremeno zamrzavanje naloga.',
-      'Процесс жалобы на нарушение прав со сроками ответа и удалением контента.',
+      'Proces prijave kršenja prava sa rokovima odgovora i uklanjanjem sadržaja.',
       'Vidljiv vodeni žig sa imenom čitaoca — opcija za izdavače kojima je to potrebno.',
-      'Интеграция с внешним DRM — только если пилот покажет потребность.',
+      'Integracija sa spoljnim DRM — samo ako pilot pokaže potrebu.',
     ],
-    moneyTitle: 'Комиссии, без мелкого fonta',
+    moneyTitle: 'Provizije, bez sitnog fonta',
     money: [
       ['Knjige — prodaja', '70% autoru/izdavaču · 30% platformi'],
       ['Stripovi — prodaja glave', '70% autoru/izdavaču · 30% platformi'],
       ['Donacije čitalaca', '90% autoru · 10% platformi'],
-      ['Пилот (3–6 книг)', 'Iste stope; bez ekskluzive i ulazne naknade'],
+      ['Pilot (3–6 knjiga)', 'Iste stope; bez ekskluzive i ulazne naknade'],
     ],
-    pilotTitle: 'Пилот: 3–6 книг, без эксклюзива',
+    pilotTitle: 'Pilot: 3–6 knjiga, bez ekskluzive',
     pilot: [
-      'Вы выбираете книги и цены; мы настраиваем страницу, читалку и оплату.',
+      'Vi birate knjige i cene; mi podešavamo stranicu, čitaonicu i plaćanje.',
       'Ekskluzivitet ne zahtevamo — knjiga može istovremeno da se prodaje u drugim prodavnicama.',
       'Zajedno merimo 60 dana: prodaja, dočitavanja, povraćaji i donacije.',
-      'Если пилот работает — расширяем на весь каталог на тех же условиях.',
+      'Ako pilot funkcioniše — širimo na ceo katalog pod istim uslovima.',
     ],
-    linksTitle: 'Дальше',
-    cabinet: 'Кабинет издателя',
-    cabinetNote: 'Продажи, роялти, отчёты и prijave на выплату.',
+    linksTitle: 'Dalje',
+    cabinet: 'Kabinet izdavača',
+    cabinetNote: 'Prodaja, rojalitiji, izveštaji i zahtevi za isplatu.',
     demo: 'Pogledaj demo knjigu',
-    demoNote: 'Как выглядят страница произведения и читалка.',
-    formNote: 'Для пилота и вопросов заполните форму — ответим в течение двух рабочих дней.',
+    demoNote: 'Kako izgledaju stranica dela i čitaonica.',
+    formNote: 'Za pilot i pitanja popunite formu — odgovaramo u roku od dva radna dana.',
   },
 } as const;
 

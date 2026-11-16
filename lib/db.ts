@@ -134,7 +134,7 @@ export async function one<T = Row>(sql: string, params: unknown[] = []): Promise
   return rows[0] ?? null;
 }
 
-/** Хелперы, привязанные к одной транзакции (клиенту PG или общему SQLite). */
+/** Хелперы, привязанные к одной транзакции (klijentу PG или общему SQLite). */
 export type Tx = {
   query: <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
   one: <T = Row>(sql: string, params?: unknown[]) => Promise<T | null>;

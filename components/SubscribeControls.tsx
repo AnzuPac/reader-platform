@@ -55,9 +55,9 @@ export default function SubscribeControls({
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         setMsg(
-          j.error === 'limit_reached' ? `Достигнут лимит: ${maxProfiles} профилей, включая владельца.`
+          j.error === 'limit_reached' ? `Dostignut limit: ${maxProfiles} profila, uključujući vlasnika.`
             : j.error === 'user_not_found' ? 'Korisnik nije pronađen.'
-            : 'Не удалось добавить профиль.'
+            : 'Profil nije dodat.'
         );
         return;
       }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 const TXT = {
   sr: { title: 'Prijava', email: 'E-pošta', password: 'Lozinka', submit: 'Prijavi se', err: 'Pogrešna e-pošta ili lozinka', need: 'Popuni sva polja' },
   en: { title: 'Sign in', email: 'Email', password: 'Password', submit: 'Sign in', err: 'Wrong email or password', need: 'Fill in all fields' },
-  ru: { title: 'Вход', email: 'Pošta', password: 'Lozinka', submit: 'Prijava', err: 'Неверная почта или пароль', need: 'Заполни все поля' },
+  ru: { title: 'Prijava', email: 'Pošta', password: 'Lozinka', submit: 'Prijava', err: 'Pogrešna adresa ili lozinka', need: 'Popuni sva polja' },
 };
 
 export default function LoginPage({ params }: { params: Promise<{ lang: string }> }) {

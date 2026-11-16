@@ -34,7 +34,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
       </div>
 
       <form onSubmit={saveName} className="card space-y-3 p-5">
-        <div className="font-semibold">Имя или ник</div>
+        <div className="font-semibold">Ime ili nadimak</div>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="flex items-center gap-3">
           <button className="btn btn-primary">Sačuvaj</button>
@@ -45,7 +45,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
       <form onSubmit={savePw} className="card space-y-3 p-5">
         <div className="font-semibold">Смена пароля</div>
         <input className="input" type="password" placeholder="Trenutna lozinka" value={cur} onChange={(e) => setCur(e.target.value)} />
-        <input className="input" type="password" placeholder="Новый пароль (мин. 8)" value={next} onChange={(e) => setNext(e.target.value)} />
+        <input className="input" type="password" placeholder="Nova lozinka (min. 8)" value={next} onChange={(e) => setNext(e.target.value)} />
         <div className="flex items-center gap-3">
           <button className="btn btn-primary">Изменить пароль</button>
           {msgPw ? <span className="text-sm text-hot">{msgPw}</span> : null}

@@ -41,10 +41,10 @@ export default function AuthorDonations() {
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        setMsg(j.error === 'nothing_to_pay' ? 'Нет доступной суммы.' : 'Greška prijave: ' + (j.error || r.status));
+        setMsg(j.error === 'nothing_to_pay' ? 'Nema dostupnog iznosa.' : 'Greška prijave: ' + (j.error || r.status));
         return;
       }
-      setMsg(`Заявка #${j.payoutId} на ${money(j.amount_cents, j.currency)} создана.`);
+      setMsg(`Zahtev #${j.payoutId} na ${money(j.amount_cents, j.currency)} napravljen.`);
       await load();
     } finally {
       setBusy(false);
@@ -90,7 +90,7 @@ export default function AuthorDonations() {
             <span className="font-semibold">{money(h.amount_cents, h.currency)}</span>
             <span className="muted">→ autoru {money(h.author_cents, h.currency)}</span>
             <span className="flex-1 truncate text-xs muted">
-              {h.donor_name} · {h.work_title}{h.chapter_number ? ` · глава ${h.chapter_number}` : ''}
+              {h.donor_name} · {h.work_title}{h.chapter_number ? ` · glava ${h.chapter_number}` : ''}
               {h.message ? ` — «${h.message}»` : ''}
             </span>
             <span className={h.status === 'paid' ? 'text-brand' : 'badge-hot'}>{h.status}</span>

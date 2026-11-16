@@ -7,7 +7,7 @@ import { ensureWallet, listCoinPackages, listWalletHistory, getEconomySettings }
 
 export const dynamic = 'force-dynamic';
 
-/** SQLite отдаёт null-prototype строки — в клиентский компонент их передавать нельзя. */
+/** SQLite отдаёт null-prototype строки — в klijentский компонент их передавать нельзя. */
 function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }

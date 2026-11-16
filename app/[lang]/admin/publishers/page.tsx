@@ -12,7 +12,7 @@ type Lead = {
 };
 
 const LEAD_LABEL: Record<string, string> = {
-  new: 'новая', contacted: 'обработана', won: 'клиент', lost: 'отказ',
+  new: 'nova', contacted: 'obrađena', won: 'klijent', lost: 'odbijanje',
 };
 
 export default function AdminPublishersPage() {
@@ -82,7 +82,7 @@ export default function AdminPublishersPage() {
       method: 'POST', headers: headers(), body: JSON.stringify(body),
     }).then((x) => x.json()).catch(() => ({}));
     if (r.ok) {
-      setMsg(`Произведение привязано${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
+      setMsg(`Delo povezano${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
       await loadAll();
     } else setMsg(`Greška: ${r.error || 'nije uspelo'}`);
   }
