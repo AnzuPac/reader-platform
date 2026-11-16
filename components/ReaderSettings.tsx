@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 type Theme = 'dark' | 'light' | 'sepia';
 
 const THEMES: Record<Theme, { bg: string; fg: string; label: string }> = {
-  dark: { bg: '#150f21', fg: '#e4ddf2', label: 'Тёмная' },
-  light: { bg: '#ffffff', fg: '#1f2329', label: 'Светлая' },
-  sepia: { bg: '#f4ecd8', fg: '#3a3226', label: 'Сепия' },
+  dark: { bg: '#150f21', fg: '#e4ddf2', label: 'Tamna' },
+  light: { bg: '#ffffff', fg: '#1f2329', label: 'Svetla' },
+  sepia: { bg: '#f4ecd8', fg: '#3a3226', label: 'Sepija' },
 };
 
 const FONTS = [
@@ -56,10 +56,10 @@ export default function ReaderSettings() {
     <div className="fixed bottom-5 right-5 z-40">
       {open ? (
         <div className="card mb-2 w-64 p-4 shadow-lg">
-          <div className="mb-3 text-sm font-semibold">Чтение</div>
+          <div className="mb-3 text-sm font-semibold">Čitanje</div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="muted">Шрифт</span>
+            <span className="muted">Font</span>
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost px-2 py-0.5" onClick={() => update({ size: Math.max(14, prefs.size - 1) })}>A−</button>
               <span className="w-8 text-center">{prefs.size}</span>
@@ -68,7 +68,7 @@ export default function ReaderSettings() {
           </div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="muted">Интервал</span>
+            <span className="muted">Prored</span>
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost px-2 py-0.5" onClick={() => update({ lh: Math.max(1.4, +(prefs.lh - 0.1).toFixed(1)) })}>−</button>
               <span className="w-8 text-center">{prefs.lh}</span>
@@ -76,7 +76,7 @@ export default function ReaderSettings() {
             </div>
           </div>
 
-          <div className="mb-1 text-sm muted">Шрифт</div>
+          <div className="mb-1 text-sm muted">Font</div>
           <div className="mb-3 flex flex-wrap gap-1">
             {FONTS.map((f) => (
               <button key={f.label} onClick={() => update({ font: f.value })}
@@ -87,7 +87,7 @@ export default function ReaderSettings() {
             ))}
           </div>
 
-          <div className="mb-1 text-sm muted">Тема</div>
+          <div className="mb-1 text-sm muted">Tema</div>
           <div className="flex gap-1">
             {(Object.keys(THEMES) as Theme[]).map((k) => (
               <button key={k} onClick={() => update({ theme: k })}
@@ -99,7 +99,7 @@ export default function ReaderSettings() {
         </div>
       ) : null}
 
-      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title="Настройки чтения">
+      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title="Podešavanja čitanja">
         Aa
       </button>
     </div>

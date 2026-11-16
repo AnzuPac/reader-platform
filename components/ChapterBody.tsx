@@ -110,7 +110,7 @@ export default function ChapterBody({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-        <span className="muted">Читать на:</span>
+        <span className="muted">Čitaj na:</span>
         {(['sr', 'en', 'ru'] as Lang[]).map((code) => (
           <button
             key={code}

@@ -62,7 +62,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
   return (
     <div className="card mt-6 p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="font-semibold">Страницы главы</span>
+        <span className="font-semibold">Страницы glave</span>
         <input className="input max-w-[90px]" type="number" min={1} value={number}
                onChange={(e) => setNumber(Number(e.target.value))} />
         <span className="text-sm muted">{pages.length} страниц</span>
@@ -87,7 +87,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
                   dragId === p.id ? 'border-brand opacity-60' : 'border-line'
                 }`}
               >
-                <img src={p.file_path} alt={`Стр. ${p.page_no}`} className="mb-1 h-28 w-full rounded object-cover" loading="lazy" />
+                <img src={p.file_path} alt={`Str. ${p.page_no}`} className="mb-1 h-28 w-full rounded object-cover" loading="lazy" />
                 <div className="flex items-center justify-between px-1 text-xs">
                   <span className="muted">{i + 1}</span>
                   <div className="flex gap-1">

@@ -20,7 +20,7 @@ export default function StorageManager() {
 
   async function load() {
     const r = await fetch('/api/storage');
-    if (!r.ok) { setMsg('Нужно войти в аккаунт'); return; }
+    if (!r.ok) { setMsg('Potrebna je prijava'); return; }
     const j = await r.json();
     setQuota(j.quota); setFiles(j.files || []);
   }
@@ -29,19 +29,19 @@ export default function StorageManager() {
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Загружаю…');
+    setBusy(true); setMsg('Učitavam…');
     const fd = new FormData();
     fd.append('file', file);
     const r = await fetch('/api/storage', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     e.target.value = '';
-    if (r.status === 401) { setMsg('Нужно войти в аккаунт'); return; }
+    if (r.status === 401) { setMsg('Potrebna je prijava'); return; }
     if (!r.ok) {
-      setMsg(j.error === 'quota_exceeded' ? 'Не хватает места в хранилище' : 'Ошибка загрузки: ' + (j.error || r.status));
+      setMsg(j.error === 'quota_exceeded' ? 'Nema dovoljno prostora' : 'Greška pri otpremanju: ' + (j.error || r.status));
       return;
     }
-    setQuota(j.quota); setMsg('Файл загружен'); await load();
+    setQuota(j.quota); setMsg('Fajl je otpremljen'); await load();
   }
 
   async function remove(id: number) {
@@ -56,7 +56,7 @@ export default function StorageManager() {
     <div className="space-y-5">
       <div className="card p-5">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold">Хранилище</span>
+          <span className="font-semibold">Skladište</span>
           <span className="muted">
             {quota ? `${fmt(quota.used)} из ${fmt(quota.limit)} · тариф ${quota.plan}` : '—'}
           </span>
@@ -66,18 +66,18 @@ export default function StorageManager() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button className="btn btn-primary" onClick={() => ref.current?.click()} disabled={busy}>
-            {busy ? 'Загружаю…' : 'Загрузить скан или файл'}
+            {busy ? 'Učitavam…' : 'Otpremi sken ili fajl'}
           </button>
           <input ref={ref} type="file" accept=".pdf,.epub,.docx,.txt,image/*" className="hidden" onChange={upload} />
           {msg ? <span className="text-sm text-hot">{msg}</span> : null}
         </div>
         <p className="mt-2 text-xs muted">
-          Бесплатно — 1 ГБ. Сканирование книг выполняется на устройстве, сюда попадает готовый PDF или EPUB.
+          Besplatno — 1 GB. Skeniranje knjiga se radi na uređaju; ovde stiže gotov PDF ili EPUB.
         </p>
       </div>
 
       <div className="card overflow-hidden">
-        <div className="border-b border-line px-5 py-3 font-semibold">Мои файлы ({files.length})</div>
+        <div className="border-b border-line px-5 py-3 font-semibold">Moji fajlovi ({files.length})</div>
         <ul className="divide-y divide-line">
           {files.map((f) => (
             <li key={f.id} className="flex items-center gap-3 px-5 py-3 text-sm">

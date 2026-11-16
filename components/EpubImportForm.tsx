@@ -30,7 +30,7 @@ export default function EpubImportForm() {
   return (
     <form onSubmit={submit} className="mt-6 rounded border border-white/15 p-4">
       <h2 className="mb-2 text-sm font-semibold">Uvoz knjige iz EPUB</h2>
-      <p className="mb-3 text-xs muted">EPUB 3: naslov i главы se čitaju iz container/OPF. Knjiga se dodaje kao nacrt.</p>
+      <p className="mb-3 text-xs muted">EPUB 3: naslov i glave se čitaju iz container/OPF. Knjiga se dodaje kao nacrt.</p>
       <div className="flex flex-wrap items-center gap-2">
         <input type="file" name="file" aria-label="EPUB fajl" accept=".epub,application/epub+zip" className="text-xs" />
         <button disabled={busy} className="rounded bg-brand px-3 py-2 text-xs font-semibold">Uvezi</button>

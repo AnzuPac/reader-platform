@@ -125,7 +125,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) { setMsg('Ошибка шрифта: ' + (j.error || r.status)); return; }
-    setMsg(`Шрифт «${j.family}» загружен и применён к произведению`);
+    setMsg(`Font «${j.family}» загружен и применён к произведению`);
     e.target.value = '';
   }
 
@@ -158,7 +158,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input className="input max-w-[110px]" type="number" min={1} value={number}
                  onChange={(e) => setNumber(Number(e.target.value))} />
-          <input className="input flex-1" placeholder="Название главы" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input className="input flex-1" placeholder="Название glave" value={title} onChange={(e) => setTitle(e.target.value)} />
           <select className="input max-w-[190px]" value={access} onChange={(e) => setAccess(e.target.value)}>
             <option value="free">Бесплатно</option>
             <option value="subscribers">Подписчики</option>

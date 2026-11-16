@@ -32,7 +32,7 @@ export default function PagesUploader({ workSlug }: { workSlug: string }) {
       <div className="font-semibold">Страницы комикса</div>
       <div className="flex flex-wrap items-center gap-2">
         <input className="input max-w-[100px]" type="number" min={1} value={number} onChange={(e) => setNumber(Number(e.target.value))} />
-        <input className="input max-w-[220px]" placeholder="Название главы" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input className="input max-w-[220px]" placeholder="Название glave" value={title} onChange={(e) => setTitle(e.target.value)} />
         <select className="input max-w-[180px]" value={access} onChange={(e) => setAccess(e.target.value)}>
           <option value="free">Бесплатно</option>
           <option value="subscribers">Подписчики</option>

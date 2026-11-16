@@ -50,7 +50,7 @@ export default async function WorkPage({
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
   const canDonate = !!session && session.uid !== work.author_id;
 
-  // Все платные главы: цена в монетах и потолок «вся книга не дороже N RSD».
+  // Все платные glave: цена в монетах и потолок «вся книга не дороже N RSD».
   const chapterPrices = new Map<number, { coins: number; amount_cents: number; currency: string } | null>();
   if (!owned) {
     await Promise.all(

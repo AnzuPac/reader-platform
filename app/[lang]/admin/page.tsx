@@ -281,9 +281,9 @@ export default function AdminPage() {
             </select>
             <div className="flex gap-2">
               <input className="input max-w-[110px]" type="number" min={1} value={number} onChange={(e) => setNumber(Number(e.target.value))} />
-              <input className="input" placeholder="Название главы" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
+              <input className="input" placeholder="Название glave" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
             </div>
-            <textarea className="input" rows={8} placeholder="Текст главы" value={content} onChange={(e) => setContent(e.target.value)} />
+            <textarea className="input" rows={8} placeholder="Текст glave" value={content} onChange={(e) => setContent(e.target.value)} />
             <select className="input max-w-[200px]" value={access} onChange={(e) => setAccess(e.target.value)}>
               <option value="free">Бесплатно</option>
               <option value="subscribers">Подписчики</option>
