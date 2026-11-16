@@ -10,13 +10,21 @@ import { normalizeSr } from './translit';
  * пересчитывается при записи; для старых строк есть backfill.
  */
 
+/**
+ * Выражения написаны в булевом виде, без CASE … THEN 1 ELSE 0: колонки
+ * translit_allowed/paragraph_comments_enabled — BOOLEAN в PostgreSQL и INTEGER
+ * в SQLite, а COALESCE(boolean, integer) и `is_classic = 0` в PostgreSQL падают
+ * («operator does not exist: boolean = integer»). `NOT x` и `IS NULL` работают
+ * в обоих диалектах, как и `flag()` при чтении результата.
+ */
+
 /** Разрешена ли транслитерация ćirilica ↔ latinica (ТЗ 4.6). NULL = по умолчанию. */
 export const TRANSLIT_ALLOWED_SQL =
-  'COALESCE(w.translit_allowed, CASE WHEN w.publisher_id IS NULL THEN 1 ELSE 0 END)';
+  'COALESCE(w.translit_allowed, (w.publisher_id IS NULL))';
 
 /** Включены ли комментарии к абзацам: самиздат и фанфики — да, издательские и классика — нет. */
 export const PARAGRAPH_COMMENTS_SQL =
-  "COALESCE(w.paragraph_comments_enabled, CASE WHEN w.publisher_id IS NULL AND (w.kind = 'fanfic' OR w.is_classic = 0) THEN 1 ELSE 0 END)";
+  "COALESCE(w.paragraph_comments_enabled, (w.publisher_id IS NULL AND (w.kind = 'fanfic' OR NOT w.is_classic)))";
 
 /** Флаг из БД (0/1 или boolean) → boolean. */
 export function flag(value: unknown): boolean {

@@ -1,10 +1,31 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { splitParagraphs } from '@/lib/paragraph-split';
 
 type Lang = 'sr' | 'en' | 'ru';
 type Script = 'lat' | 'cir';
 
 const LABEL: Record<Lang, string> = { sr: 'SR', en: 'EN', ru: 'RU' };
+
+/** Лимит текста комментария к абзацу: тот же, что проверяет lib/paragraph-comments.ts. */
+const PC_MAX = 1000;
+
+type ParagraphComment = {
+  id: number;
+  chapter_id: number;
+  paragraph_index: number;
+  user_id: number;
+  text: string;
+  hidden: number | boolean;
+  created_at: string;
+  author: string;
+};
+
+function formatWhen(value: unknown): string {
+  const s = String(value ?? '');
+  // SQLite отдаёт 'YYYY-MM-DD HH:MM:SS', PostgreSQL — ISO: показываем минуты.
+  return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
+}
 
 export default function ChapterBody({
   chapterId,
@@ -33,6 +54,15 @@ export default function ChapterBody({
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>(fetchOnMount ? 'loading' : 'idle');
   const [errorText, setErrorText] = useState('');
   const [translitDenied, setTranslitDenied] = useState(false);
+
+  /* === Комментарии к абзацам (ТЗ 4.6, 5.4) === */
+  const [pcItems, setPcItems] = useState<ParagraphComment[]>([]);
+  const [pcCanModerate, setPcCanModerate] = useState(false);
+  const [pcActive, setPcActive] = useState<number | null>(null);
+  const [pcDraft, setPcDraft] = useState('');
+  const [pcMsg, setPcMsg] = useState('');
+  const [pcSending, setPcSending] = useState(false);
+  const [pcBusyId, setPcBusyId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!fetchOnMount) return;
@@ -69,6 +99,106 @@ export default function ChapterBody({
     })();
     return () => { alive = false; };
   }, [chapterId, fetchOnMount]);
+
+  const pcUrl = `/api/chapters/${chapterId}/paragraph-comments`;
+
+  /** Список комментариев главы. Скрытые приходят только тем, кто может их вернуть. */
+  const loadParagraphComments = useCallback(async () => {
+    if (!paragraphCommentsEnabled) return;
+    try {
+      const r = await fetch(pcUrl, { cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.enabled === false) {
+        setPcItems([]);
+        setPcCanModerate(false);
+        return;
+      }
+      setPcItems(Array.isArray(j.comments) ? (j.comments as ParagraphComment[]) : []);
+      setPcCanModerate(!!j.canModerate);
+    } catch {
+      setPcItems([]);
+    }
+  }, [paragraphCommentsEnabled, pcUrl]);
+
+  useEffect(() => {
+    if (!paragraphCommentsEnabled) return;
+    void loadParagraphComments();
+  }, [loadParagraphComments, paragraphCommentsEnabled]);
+
+  const blocks = useMemo(() => splitParagraphs(content), [content]);
+
+  /** Комментарии по абзацам: скрытые не считаем и не показываем без прав. */
+  const pcByParagraph = useMemo(() => {
+    const map = new Map<number, ParagraphComment[]>();
+    for (const c of pcItems) {
+      if (!pcCanModerate && c.hidden) continue;
+      const list = map.get(Number(c.paragraph_index)) ?? [];
+      list.push(c);
+      map.set(Number(c.paragraph_index), list);
+    }
+    return map;
+  }, [pcItems, pcCanModerate]);
+
+  function togglePanel(index: number) {
+    setPcDraft('');
+    setPcMsg('');
+    setPcActive((prev) => (prev === index ? null : index));
+  }
+
+  async function sendComment(index: number, e: React.FormEvent) {
+    e.preventDefault();
+    const text = pcDraft.trim();
+    if (pcSending) return;
+    if (!text) { setPcMsg('Введите текст комментария.'); return; }
+    if (text.length > PC_MAX) { setPcMsg(`Максимум ${PC_MAX} символов.`); return; }
+    setPcSending(true);
+    setPcMsg('');
+    try {
+      const r = await fetch(pcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paragraphIndex: index, text }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) { setPcMsg('Войдите, чтобы оставить комментарий.'); return; }
+      if (r.status === 403) { setPcMsg('Комментарии отключены правообладателем.'); return; }
+      if (!r.ok) {
+        setPcMsg(
+          j.error === 'bad_text' ? `Текст пустой или длиннее ${PC_MAX} символов.`
+            : j.error === 'bad_index' ? 'Неверный номер абзаца.'
+            : 'Не удалось отправить комментарий.'
+        );
+        return;
+      }
+      setPcDraft('');
+      await loadParagraphComments();
+    } catch {
+      setPcMsg('Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      setPcSending(false);
+    }
+  }
+
+  async function toggleHidden(c: ParagraphComment) {
+    setPcBusyId(c.id);
+    setPcMsg('');
+    try {
+      const r = await fetch(pcUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId: c.id, hidden: !c.hidden }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) { setPcMsg('Войдите, чтобы модерировать комментарии.'); return; }
+      if (r.status === 403) { setPcMsg('Нет прав: скрывать может автор произведения или модератор.'); return; }
+      if (!r.ok) { setPcMsg(j.error === 'not_found' ? 'Комментарий не найден.' : 'Не удалось изменить видимость.'); return; }
+      await loadParagraphComments();
+    } catch {
+      setPcMsg('Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      setPcBusyId(null);
+    }
+  }
 
   async function switchTo(target: Lang) {
     if (target === lang) return;
@@ -137,6 +267,69 @@ export default function ChapterBody({
     );
   }
 
+  /** Сколько видимых (не скрытых) комментариев у абзаца — число на иконке. */
+  function visibleCount(index: number): number {
+    return (pcByParagraph.get(index) ?? []).filter((c) => !c.hidden).length;
+  }
+
+  function renderPanel(index: number) {
+    const list = pcByParagraph.get(index) ?? [];
+    const visible = list.filter((c) => !c.hidden).length;
+    return (
+      <div className="pc-panel mb-5 rounded-xl border border-line bg-panel p-3 text-sm font-sans">
+        <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+          <span className="font-semibold text-mist">Комментарии к абзацу {index + 1}</span>
+          <span className="muted">{visible ? `${visible} видимых` : 'пока пусто'}</span>
+        </div>
+
+        {list.length ? (
+          <ul className="mb-3 list-none space-y-2 p-0">
+            {list.map((c) => (
+              <li key={c.id} className={`rounded-lg border border-line px-2.5 py-2 ${c.hidden ? 'opacity-60' : ''}`}>
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold text-ink">{c.author}</span>
+                  <span className="muted">{formatWhen(c.created_at)}</span>
+                  {c.hidden ? <span className="badge-hot">скрыт</span> : null}
+                  {pcCanModerate ? (
+                    <button
+                      type="button"
+                      className="ml-auto text-xs underline decoration-dotted"
+                      onClick={() => void toggleHidden(c)}
+                      disabled={pcBusyId === c.id}
+                    >
+                      {pcBusyId === c.id ? '…' : c.hidden ? 'Показать' : 'Скрыть'}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="whitespace-pre-line text-sm text-ink/90">{c.text}</div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted mb-3 text-xs">Пока никто не комментировал этот абзац.</p>
+        )}
+
+        <form onSubmit={(e) => void sendComment(index, e)} className="flex flex-col gap-2">
+          <textarea
+            className="input"
+            rows={2}
+            maxLength={PC_MAX}
+            placeholder="Ваш комментарий к абзацу…"
+            value={pcDraft}
+            onChange={(e) => setPcDraft(e.target.value)}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button className="btn btn-primary" disabled={pcSending || !pcDraft.trim()}>
+              {pcSending ? 'Отправка…' : 'Отправить'}
+            </button>
+            <span className="text-xs muted">{pcDraft.length}/{PC_MAX}</span>
+            {pcMsg ? <span className="text-xs text-hot">{pcMsg}</span> : null}
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
@@ -189,9 +382,33 @@ export default function ChapterBody({
         onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
         onDragStart={isProtected ? (e) => e.preventDefault() : undefined}
       >
-        <article className="prose-reader whitespace-pre-line" dangerouslySetInnerHTML={{ __html: content }} />
+        <article className="prose-reader whitespace-pre-line">
+          {blocks.map((block, i) => {
+            if (block.kind === 'raw' || block.index === null) {
+              return <div key={`raw-${i}`} dangerouslySetInnerHTML={{ __html: block.html }} />;
+            }
+            const idx = block.index;
+            return (
+              <div key={`para-${idx}`} className="flow-root" data-paragraph={idx}>
+                {paragraphCommentsEnabled ? (
+                  <button
+                    type="button"
+                    className={`pc-icon${visibleCount(idx) ? ' has-comments' : ''}${pcActive === idx ? ' active' : ''}`}
+                    onClick={() => togglePanel(idx)}
+                    aria-expanded={pcActive === idx}
+                    aria-label={`Комментарии к абзацу ${idx + 1}`}
+                    title={visibleCount(idx) ? `Комментарии: ${visibleCount(idx)}` : 'Комментировать абзац'}
+                  >
+                    {visibleCount(idx) ? `💬 ${visibleCount(idx)}` : '💬'}
+                  </button>
+                ) : null}
+                <div dangerouslySetInnerHTML={{ __html: block.html }} />
+                {paragraphCommentsEnabled && pcActive === idx ? renderPanel(idx) : null}
+              </div>
+            );
+          })}
+        </article>
       </div>
-      {paragraphCommentsEnabled ? null : null}
     </>
   );
 }
