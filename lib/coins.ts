@@ -215,7 +215,7 @@ export async function setEconomySettings(
   return { auto_unlock: auto, monthly_spend_limit_coins: limit };
 }
 
-/** Расход монет за текущий календарный месяц (для лимита). */
+/** Расход монет за текущий календарный mesec (для лимита). */
 export async function monthlySpendCoins(userId: number, tx?: Tx): Promise<number> {
   const monthFilter = process.env.DATABASE_URL
     ? "created_at >= date_trunc('month', now())"

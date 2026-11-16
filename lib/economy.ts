@@ -2,7 +2,7 @@
  * Ставки платформы (ТЗ v0.2, решения §10).
  *
  *  - пул правообладателям — 50% (комиссия платформы с подписки);
- *  - самиздат: автору 70%, при эксклюзиве — 80%;
+ *  - самиздат: autoru 70%, при эксклюзиве — 80%;
  *  - издательская книга: комиссия платформы = commission_pct издательства (по умолчанию 50%);
  *  - донаты: фанфик — 0%, оригинал — DONATION_FEE_PCT (по умолчанию 0%);
  *  - безлимитная подписка, без кредитов; рекламы нет.
@@ -37,7 +37,7 @@ export function donationFeePctFor(kind: string | null | undefined, raw = process
   return Math.min(100, Math.max(0, Math.trunc(n)));
 }
 
-/** Деление подписочного пула: 50% правообладателям, остальное платформе. */
+/** Деление подписочного пула: 50% правообладателям, остальное platformi. */
 export function subscriptionPoolSplit(totalCents: number, poolPct = SUBSCRIPTION_POOL_PCT): {
   amount_cents: number;
   pool_cents: number;

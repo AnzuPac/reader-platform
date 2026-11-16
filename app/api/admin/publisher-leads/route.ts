@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 const STATUSES = ['new', 'contacted', 'won', 'lost'];
 
-/** GET /api/admin/publisher-leads — заявки со страницы издательств. */
+/** GET /api/admin/publisher-leads — prijave со страницы издательств. */
 export async function GET(req: Request) {
   if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   await initSchema();

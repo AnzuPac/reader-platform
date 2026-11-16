@@ -7,7 +7,7 @@ import { authorCommissionPct } from './economy';
 import { creditCoins, debitCoins, refundCoins, checkSpendLimit, getEconomySettings, recordConsent } from './coins';
 
 /**
- * Покупки книг и глав.
+ * Kupovine книг и глав.
  *
  * Инварианты:
  *  - сумма покупки фиксируется в момент создания (цена может измениться позже);
@@ -330,7 +330,7 @@ export type CoinPurchaseResult =
 /**
  * Покупка главы за монеты — единственный путь для глав.
  *
- * Требования ТЗ 4.8: явное согласие на потерю права отказа (чекбокс) и запись
+ * Требования ТЗ 4.8: явное согласие на потерю права odbijanjeа (чекбокс) и запись
  * факта согласия в журнал; списание только в пределах месячного лимита.
  * Всё — одной транзакцией: монеты, покупка, доступ, согласие, начисления.
  */
@@ -352,7 +352,7 @@ export async function purchaseChapterWithCoins(
   if (!price) return { ok: false, error: 'not_for_sale' };
 
   const settings = await getEconomySettings(userId);
-  void settings; // автопокупка выключена по умолчанию; явное согласие требуется всегда
+  void settings; // автопокупка isključenа по умолчанию; явное согласие требуется всегда
 
   try {
     return await withTx(async (t) => {
@@ -402,7 +402,7 @@ type AccrualPurchase = {
   amount_cents: number; coins?: number; status: string;
 };
 
-/** Начисления по оплаченной покупке: издателю в royalty_ledger, автору — в author_earnings. */
+/** Начисления по оплаченной покупке: издателю в royalty_ledger, autoru — в author_earnings. */
 async function accrueForPurchase(t: { query: typeof query; one: typeof one }, p: AccrualPurchase): Promise<void> {
   if (!p.work_id) return;
   const work = await t.one<{ publisher_id: number | null; author_id: number; exclusivity: number | boolean }>(
@@ -518,7 +518,7 @@ export async function refundPurchase(purchaseId: number): Promise<{ ok: boolean;
 }
 
 /**
- * Активная подписка: своя или семейная (владелец оформил тариф family,
+ * Активная подписка: своя или семейная (владелец оформил tarifa family,
  * профилей до 5). Отменённая подписка действует до конца оплаченного периода.
  */
 export async function hasActiveSubscription(userId: number): Promise<boolean> {

@@ -5,7 +5,7 @@ import { markAuthorPayoutPaid, markDonationPaid } from '@/lib/donations';
 
 export const runtime = 'nodejs';
 
-/** GET /api/admin/donation?status=pending — донаты для ручного подтверждения. */
+/** GET /api/admin/donation?status=pending — донаты для ручного potvrde. */
 export async function GET(req: Request) {
   if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const status = new URL(req.url).searchParams.get('status') || 'pending';
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   return NextResponse.json({ donations });
 }
 
-/** POST /api/admin/donation — ручное подтверждение доната или выплаты автору. */
+/** POST /api/admin/donation — ручное подтверждение доната или выплаты autoru. */
 export async function POST(req: Request) {
   if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const b = await req.json().catch(() => null);

@@ -22,7 +22,7 @@ export async function GET() {
   return NextResponse.json({ works });
 }
 
-/** Создать или обновить произведение (черновик) */
+/** Создать или обновить произведение (nacrt) */
 export async function POST(req: Request) {
   const s = await requireAuthor();
   if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });

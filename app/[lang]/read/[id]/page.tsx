@@ -5,6 +5,7 @@ import { getChapter, listChapters } from '@/lib/repo-extra';
 import { readSession } from '@/lib/auth';
 import { chapterGate, workPrice, effectiveChapterPrice } from '@/lib/purchases';
 import { translitSr } from '@/lib/sr';
+import { flag } from '@/lib/search';
 import { one } from '@/lib/db';
 import ReaderClient from '@/components/ReaderClient';
 import AdSlot from '@/components/AdSlot';
@@ -157,8 +158,9 @@ export default async function ReadPage({
             initialHtml={ch.access === 'free' ? (script === 'lat' && ch.translit_allowed ? translitSr(ch.content, 'lat') : ch.content) : ''}
             protected={ch.access !== 'free'}
             fetchOnMount={ch.access !== 'free'}
-            script={script === 'lat' ? 'lat' : undefined}
-            paragraphComments={ch.paragraph_comments_enabled === 1}
+            script={script}
+            translitAllowed={flag(ch.translit_allowed)}
+            paragraphCommentsEnabled={flag(ch.paragraph_comments_enabled)}
           />
         )
       )}

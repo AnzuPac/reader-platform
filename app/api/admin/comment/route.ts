@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { initSchema, query } from '@/lib/db';
 import { adminTokenOk } from '@/lib/admin';
 
-/** Список комментариев для модерации (все статусы). */
+/** Lista комментариев для модерации (все статусы). */
 export async function GET(req: Request) {
   if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const url = new URL(req.url);

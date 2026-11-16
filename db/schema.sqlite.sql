@@ -12,9 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
   locale          TEXT NOT NULL DEFAULT 'sr' CHECK (locale IN ('sr','en','ru')),
   email_verified  INTEGER NOT NULL DEFAULT 0,
   storage_used    BIGINT NOT NULL DEFAULT 0,     -- байты
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','deleted')),
+  deleted_at      TEXT,
   created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_seen_at    TEXT,
-  deleted_at      TEXT
+  last_seen_at    TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email));
@@ -75,16 +76,21 @@ CREATE TABLE IF NOT EXISTS works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
-  search_norm       TEXT NOT NULL DEFAULT '',      -- нормализованные название+автор для поиска
-  translit_allowed  INTEGER NOT NULL DEFAULT 1,
-  paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1,
-  rights_sale         INTEGER NOT NULL DEFAULT 1,
-  is_classic          INTEGER NOT NULL DEFAULT 0,
-  rights_subscription INTEGER NOT NULL DEFAULT 1,
+  -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
+  search_norm       TEXT NOT NULL DEFAULT '',
+  is_classic        INTEGER NOT NULL DEFAULT 0,   -- классика (public domain)
+  -- NULL = по умолчанию (самиздат/классика — можно, издательские — нельзя);
+  -- 1 — можно, 0 — запрет правообладателя (издательские книги триггер ниже).
+  translit_allowed  INTEGER,
+  -- NULL = по умолчанию (самиздат и фанфики — можно, издательские и классика — нет).
+  paragraph_comments_enabled INTEGER,
+  -- Права издателя по книге (ТЗ 6.1).
+  rights_sale              INTEGER NOT NULL DEFAULT 1,
+  rights_subscription      INTEGER NOT NULL DEFAULT 1,
   subscription_window_days INTEGER NOT NULL DEFAULT 0,
-  regions             TEXT NOT NULL DEFAULT 'RS',
-  tts_allowed         INTEGER NOT NULL DEFAULT 0,
-  free_excerpt_pct    INTEGER NOT NULL DEFAULT 10,    -- ћирилица/латиница: 1 — можно, 0 — издательский запрет
+  regions                  TEXT    NOT NULL DEFAULT 'RS',
+  tts_allowed              INTEGER NOT NULL DEFAULT 0,
+  free_excerpt_pct         INTEGER NOT NULL DEFAULT 10,
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -240,6 +246,33 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS comments_work_idx ON comments(work_id, created_at DESC);
+
+-- Комментарии к абзацам (ТЗ 4.6, 5.4): только для самиздата и фанфиков.
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  -- Совместимость с прежней схемой main (комментарий привязан и к книге).
+  work_id         BIGINT REFERENCES works(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  text            TEXT NOT NULL,
+  -- Прежнее имя текста в main; заполняется миграцией, новые записи идут в text.
+  body            TEXT,
+  hidden          INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+-- Удаление аккаунта в 2 шага (ТЗ 7.6): запрос → подтверждение по токену.
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at    TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS account_deletion_user_idx ON account_deletion_requests(user_id, used_at);
 
 -- === Подписки и платежи ===
 CREATE TABLE IF NOT EXISTS plans (
@@ -605,27 +638,15 @@ ON CONFLICT (code) DO UPDATE SET
   name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
   period = excluded.period, active = 1;
 
-CREATE TABLE IF NOT EXISTS paragraph_comments (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
-  work_id         BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
-  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
-  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  body            TEXT NOT NULL,
-  hidden          INTEGER NOT NULL DEFAULT 0,
-  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
-
 -- Издательские книги: без транслитерации по умолчанию и без комментариев к абзацам.
 CREATE TRIGGER IF NOT EXISTS works_publisher_translit_off AFTER INSERT ON works
-WHEN NEW.publisher_id IS NOT NULL
+WHEN NEW.publisher_id IS NOT NULL AND NEW.translit_allowed IS NULL
 BEGIN
   UPDATE works SET translit_allowed = 0 WHERE id = NEW.id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS works_publisher_pc_off AFTER INSERT ON works
-WHEN NEW.publisher_id IS NOT NULL
+WHEN NEW.publisher_id IS NOT NULL AND NEW.paragraph_comments_enabled IS NULL
 BEGIN
   UPDATE works SET paragraph_comments_enabled = 0 WHERE id = NEW.id;
 END;

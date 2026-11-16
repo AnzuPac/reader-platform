@@ -1,7 +1,7 @@
 /**
  * Деньги платформы.
  *
- * 1 монета = 1 RSD. Книги продаются в RSD напрямую, главы — в монетах.
+ * 1 монета = 1 RSD. Knjige продаются в RSD напрямую, главы — в монетах.
  * Все суммы хранятся целыми числами: amount_cents — пара RSD, coins — монеты.
  * Никакой арифметики с float: только целые и явное округление.
  */
@@ -36,7 +36,7 @@ export function formatCoins(coins: number): string {
   return `${n} ${n === 1 ? 'novčić' : n < 5 ? 'novčića' : 'novčića'}`;
 }
 
-/** «15 novčića (15 RSD)» — курс всегда 1:1, поэтому эквивалент виден сразу. */
+/** «15 novčića (15 RSD)» — курс всегда 1:1, поэтому эквивалент vidljiv сразу. */
 export function coinsWithRsd(coins: number): string {
   return `${formatCoins(coins)} (${formatRsd(coinsToCents(coins))})`;
 }

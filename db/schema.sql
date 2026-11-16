@@ -12,6 +12,8 @@ CREATE TABLE users (
   locale          TEXT NOT NULL DEFAULT 'sr' CHECK (locale IN ('sr','en','ru')),
   email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
   storage_used    BIGINT NOT NULL DEFAULT 0,     -- байты
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','deleted')),
+  deleted_at      TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen_at    TIMESTAMPTZ
 );
@@ -72,8 +74,20 @@ CREATE TABLE works (
   age_rating        SMALLINT NOT NULL DEFAULT 0 CHECK (age_rating IN (0,16,18)),
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
   search_norm       TEXT NOT NULL DEFAULT '',
-  translit_allowed  BOOLEAN NOT NULL DEFAULT TRUE,
+  is_classic        BOOLEAN NOT NULL DEFAULT FALSE,   -- классика (public domain)
+  -- NULL = по умолчанию: самиздат/классика — можно, издательские — нельзя.
+  translit_allowed  BOOLEAN DEFAULT TRUE,
+  -- NULL = по умолчанию: самиздат и фанфики — можно, издательские и классика — нет.
+  paragraph_comments_enabled BOOLEAN,
+  -- Права издателя по книге (ТЗ 6.1). 0/1: так их читают lib/rights.ts и API прав.
+  rights_sale              SMALLINT NOT NULL DEFAULT 1,
+  rights_subscription      SMALLINT NOT NULL DEFAULT 1,
+  subscription_window_days INTEGER  NOT NULL DEFAULT 0,
+  regions                  TEXT     NOT NULL DEFAULT 'RS',
+  tts_allowed              SMALLINT NOT NULL DEFAULT 0,
+  free_excerpt_pct         INTEGER  NOT NULL DEFAULT 10,
   cover_path        TEXT,
   font_family       TEXT,
   font_path         TEXT,
@@ -229,6 +243,33 @@ CREATE TABLE comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX comments_work_idx ON comments(work_id, created_at DESC);
+
+-- Комментарии к абзацам (ТЗ 4.6, 5.4): только для самиздата и фанфиков.
+CREATE TABLE IF NOT EXISTS paragraph_comments (
+  id              BIGSERIAL PRIMARY KEY,
+  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  -- Совместимость с прежней схемой main (комментарий привязан и к книге).
+  work_id         BIGINT REFERENCES works(id) ON DELETE CASCADE,
+  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  text            TEXT NOT NULL,
+  -- Прежнее имя текста в main; заполняется миграцией, новые записи идут в text.
+  body            TEXT,
+  hidden          BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
+
+-- Удаление аккаунта в 2 шага (ТЗ 7.6): запрос → подтверждение по токену.
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS account_deletion_user_idx ON account_deletion_requests(user_id, used_at);
 
 -- === Подписки и платежи ===
 CREATE TABLE plans (
@@ -594,23 +635,11 @@ ON CONFLICT (code) DO UPDATE SET
   name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
   period = excluded.period, active = TRUE;
 
-CREATE TABLE IF NOT EXISTS paragraph_comments (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  chapter_id      BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
-  work_id         BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
-  paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
-  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  body            TEXT NOT NULL,
-  hidden          INTEGER NOT NULL DEFAULT 0,
-  created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS paragraph_comments_chapter_idx ON paragraph_comments(chapter_id, paragraph_index);
-
 CREATE OR REPLACE FUNCTION works_publisher_flags() RETURNS trigger AS $$
 BEGIN
   IF NEW.publisher_id IS NOT NULL THEN
-    NEW.translit_allowed := 0;
-    NEW.paragraph_comments_enabled := 0;
+    NEW.translit_allowed := FALSE;
+    NEW.paragraph_comments_enabled := FALSE;
   END IF;
   RETURN NEW;
 END;
@@ -621,15 +650,15 @@ CREATE TRIGGER works_publisher_flags_trg BEFORE INSERT ON works
 FOR EACH ROW EXECUTE FUNCTION works_publisher_flags();
 
 CREATE TABLE IF NOT EXISTS pool_runs (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  id                BIGSERIAL PRIMARY KEY,
   month             TEXT NOT NULL UNIQUE,
   revenue_cents     INTEGER NOT NULL DEFAULT 0,
   pool_cents        INTEGER NOT NULL DEFAULT 0,
   distributed_cents INTEGER NOT NULL DEFAULT 0,
-  created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS pool_ledger (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  id          BIGSERIAL PRIMARY KEY,
   pool_run_id BIGINT NOT NULL REFERENCES pool_runs(id) ON DELETE CASCADE,
   work_id     BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
   author_id   BIGINT REFERENCES users(id) ON DELETE SET NULL,

@@ -58,7 +58,7 @@ export default function StorageManager() {
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-semibold">Skladište</span>
           <span className="muted">
-            {quota ? `${fmt(quota.used)} из ${fmt(quota.limit)} · тариф ${quota.plan}` : '—'}
+            {quota ? `${fmt(quota.used)} od ${fmt(quota.limit)} · tarifa ${quota.plan}` : '—'}
           </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-[#221a35]">

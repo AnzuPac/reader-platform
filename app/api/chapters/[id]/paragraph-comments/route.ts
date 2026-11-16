@@ -1,54 +1,97 @@
 import { NextResponse } from 'next/server';
-import { initSchema, query, one } from '@/lib/db';
+import { initSchema, one } from '@/lib/db';
 import { readSession } from '@/lib/auth';
+import {
+  addParagraphComment, listParagraphComments, paragraphCommentsAllowed, setParagraphCommentHidden,
+} from '@/lib/paragraph-comments';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const NO_STORE = { 'Cache-Control': 'no-store' };
 
-async function loadChapter(id: number) {
-  return one<{ id: number; work_id: number; enabled: number }>(
-    `SELECT c.id, c.work_id, w.paragraph_comments_enabled AS enabled
-       FROM chapters c JOIN works w ON w.id = c.work_id
-      WHERE c.id = $1 AND c.status = 'published'`, [id]
-  );
+const NO_STORE = { 'Cache-Control': 'no-store, private, max-age=0' };
+
+type Ctx = { params: Promise<{ id: string }> };
+
+async function chapterIdFrom(ctx: Ctx): Promise<number | null> {
+  const { id } = await ctx.params;
+  const n = Number(id);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const { id } = await ctx.params;
-  const chapterId = Number(id);
-  if (!Number.isFinite(chapterId)) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
+/** GET /api/chapters/{id}/paragraph-comments — комментарии к абзацам главы. */
+export async function GET(_req: Request, ctx: Ctx) {
+  const chapterId = await chapterIdFrom(ctx);
+  if (!chapterId) return NextResponse.json({ error: 'bad_input' }, { status: 400, headers: NO_STORE });
+
   await initSchema();
-  const ch = await loadChapter(chapterId);
-  if (!ch) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  if (!ch.enabled) return NextResponse.json({ enabled: false, comments: [] }, { headers: NO_STORE });
-  const comments = await query(
-    `SELECT pc.id, pc.paragraph_index, pc.body, pc.created_at, u.display_name AS author
-       FROM paragraph_comments pc JOIN users u ON u.id = pc.user_id
-      WHERE pc.chapter_id = $1 AND pc.hidden = 0 ORDER BY pc.paragraph_index, pc.id`, [chapterId]
-  );
-  return NextResponse.json({ enabled: true, comments }, { headers: NO_STORE });
+  const enabled = await paragraphCommentsAllowed(chapterId);
+  if (!enabled) {
+    return NextResponse.json({ enabled: false, comments: [], canModerate: false }, { headers: NO_STORE });
+  }
+
+  const session = await readSession();
+  let canModerate = false;
+  if (session) {
+    const w = await one<{ author_id: number }>(
+      `SELECT w.author_id FROM chapters c JOIN works w ON w.id = c.work_id WHERE c.id = $1`, [chapterId]
+    );
+    // author_id — BIGINT: в PostgreSQL драйвер отдаёт строку, сравниваем числа.
+    canModerate = session.role === 'admin' || session.role === 'moderator' || Number(w?.author_id) === session.uid;
+  }
+
+  // Скрытые комментарии видит только тот, кто может их показать обратно
+  // (автор произведения, модератор, админ) — иначе skrivenие нечем отменить.
+  const comments = await listParagraphComments(chapterId, { includeHidden: canModerate });
+  return NextResponse.json({ enabled: true, comments, canModerate }, { headers: NO_STORE });
 }
 
-export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const { id } = await ctx.params;
-  const chapterId = Number(id);
-  if (!Number.isFinite(chapterId)) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
-  const s = await readSession();
-  if (!s) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
-  await initSchema();
-  const ch = await loadChapter(chapterId);
-  if (!ch) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  if (!ch.enabled) return NextResponse.json({ error: 'comments_disabled' }, { status: 403 });
-  const b = await req.json().catch(() => null);
-  const idx = Number(b?.paragraph_index);
-  const body = String(b?.body || '').trim();
-  if (!Number.isInteger(idx) || idx < 0) return NextResponse.json({ error: 'bad_index' }, { status: 400 });
-  if (body.length < 1 || body.length > 1000) return NextResponse.json({ error: 'bad_body' }, { status: 400 });
-  const rows = await query<{ id: number }>(
-    `INSERT INTO paragraph_comments (chapter_id, work_id, paragraph_index, user_id, body)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-    [chapterId, ch.work_id, idx, s.uid, body]
-  );
-  return NextResponse.json({ ok: true, id: rows[0]?.id }, { headers: NO_STORE });
+/**
+ * POST /api/chapters/{id}/paragraph-comments
+ * body: { paragraphIndex: number, text: string }
+ */
+export async function POST(req: Request, ctx: Ctx) {
+  const chapterId = await chapterIdFrom(ctx);
+  if (!chapterId) return NextResponse.json({ error: 'bad_input' }, { status: 400, headers: NO_STORE });
+
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: 'auth_required' }, { status: 401, headers: NO_STORE });
+
+  const body = await req.json().catch(() => null);
+  const result = await addParagraphComment({
+    chapterId,
+    paragraphIndex: Number(body?.paragraphIndex),
+    userId: session.uid,
+    text: String(body?.text ?? ''),
+  });
+
+  if (!result.ok) {
+    const status = result.error === 'disabled' ? 403 : 400;
+    return NextResponse.json({ error: result.error }, { status, headers: NO_STORE });
+  }
+  return NextResponse.json({ ok: true, id: result.id }, { headers: NO_STORE });
+}
+
+/**
+ * PATCH /api/chapters/{id}/paragraph-comments
+ * body: { commentId: number, hidden: boolean } — автор произведения или модератор.
+ */
+export async function PATCH(req: Request, ctx: Ctx) {
+  const chapterId = await chapterIdFrom(ctx);
+  if (!chapterId) return NextResponse.json({ error: 'bad_input' }, { status: 400, headers: NO_STORE });
+
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: 'auth_required' }, { status: 401, headers: NO_STORE });
+
+  const body = await req.json().catch(() => null);
+  const result = await setParagraphCommentHidden({
+    commentId: Number(body?.commentId),
+    hidden: Boolean(body?.hidden),
+    actorId: session.uid,
+    actorRole: session.role,
+  });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 403, headers: NO_STORE });
+  }
+  return NextResponse.json({ ok: true }, { headers: NO_STORE });
 }

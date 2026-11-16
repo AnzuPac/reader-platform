@@ -31,10 +31,10 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN publisher_id INTEGER REFERENCES publishers(id)',
     "ALTER TABLE works ADD COLUMN kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN exclusivity INTEGER NOT NULL DEFAULT 0',
-    'ALTER TABLE works ADD COLUMN search_norm TEXT',
-    'ALTER TABLE works ADD COLUMN translit_allowed INTEGER NOT NULL DEFAULT 1',
+    "ALTER TABLE works ADD COLUMN search_norm TEXT NOT NULL DEFAULT ''",
+    'ALTER TABLE works ADD COLUMN translit_allowed INTEGER',
     'ALTER TABLE users ADD COLUMN deleted_at TEXT',
-    'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER',
     'ALTER TABLE works ADD COLUMN rights_sale INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE works ADD COLUMN is_classic INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE author_payouts ADD COLUMN gross_cents INTEGER NOT NULL DEFAULT 0',
@@ -46,6 +46,11 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN regions TEXT NOT NULL DEFAULT $$RS$$',
     'ALTER TABLE works ADD COLUMN tts_allowed INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN free_excerpt_pct INTEGER NOT NULL DEFAULT 10',
+    // Комментарии к абзацам: колонки, которых не было в старой схеме main.
+    'ALTER TABLE paragraph_comments ADD COLUMN text TEXT',
+    'ALTER TABLE paragraph_comments ADD COLUMN work_id INTEGER',
+    'ALTER TABLE paragraph_comments ADD COLUMN body TEXT',
+    'ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'',
     'ALTER TABLE chapter_prices ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN auto_renew INTEGER NOT NULL DEFAULT 1',
@@ -57,6 +62,8 @@ async function migrateSqlite(db: any) {
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
   try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
   try { db.exec('UPDATE works SET paragraph_comments_enabled = 0 WHERE publisher_id IS NOT NULL AND paragraph_comments_enabled = 1'); } catch {}
+  // Старые комментарии main лежали в body — переносим в text (новая фича читает его).
+  try { db.exec("UPDATE paragraph_comments SET text = body WHERE (text IS NULL OR text = '') AND body IS NOT NULL"); } catch {}
   try {
     const rows = db.prepare("SELECT w.id, w.title, u.display_name FROM works w JOIN users u ON u.id = w.author_id WHERE w.search_norm IS NULL").all();
     for (const r of rows) {
@@ -64,6 +71,8 @@ async function migrateSqlite(db: any) {
     }
   } catch {}
   // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
+  try { db.exec('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
+  // Экономика v0.2: старые tarifaы выключаем, цены глав переводим в монеты.
   try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { db.exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {
@@ -78,7 +87,21 @@ async function migratePg(db: any) {
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'original'",
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS exclusivity BOOLEAN NOT NULL DEFAULT FALSE',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS search_norm TEXT NOT NULL DEFAULT ''",
-    'ALTER TABLE works ADD COLUMN IF NOT EXISTS translit_allowed BOOLEAN NOT NULL DEFAULT TRUE',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS translit_allowed BOOLEAN',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS is_classic BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS paragraph_comments_enabled BOOLEAN',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS rights_sale SMALLINT NOT NULL DEFAULT 1',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS rights_subscription SMALLINT NOT NULL DEFAULT 1',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS subscription_window_days INTEGER NOT NULL DEFAULT 0',
+    "ALTER TABLE works ADD COLUMN IF NOT EXISTS regions TEXT NOT NULL DEFAULT 'RS'",
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS tts_allowed SMALLINT NOT NULL DEFAULT 0',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS free_excerpt_pct INTEGER NOT NULL DEFAULT 10',
+    // Комментарии к абзацам: колонки, которых не было в старой схеме main.
+    'ALTER TABLE paragraph_comments ADD COLUMN IF NOT EXISTS text TEXT',
+    'ALTER TABLE paragraph_comments ADD COLUMN IF NOT EXISTS work_id BIGINT',
+    'ALTER TABLE paragraph_comments ADD COLUMN IF NOT EXISTS body TEXT',
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'",
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ',
     'ALTER TABLE chapter_prices ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE purchases ADD COLUMN IF NOT EXISTS coins INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN NOT NULL DEFAULT TRUE',
@@ -89,6 +112,8 @@ async function migratePg(db: any) {
   for (const sql of alters) { try { await db.query(sql); } catch {} }
   try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
   try { await db.query('UPDATE works SET translit_allowed = FALSE WHERE publisher_id IS NOT NULL AND translit_allowed = TRUE'); } catch {}
+  // Старые комментарии main лежали в body — переносим в text (новая фича читает его).
+  try { await db.query("UPDATE paragraph_comments SET text = body WHERE (text IS NULL OR text = '') AND body IS NOT NULL"); } catch {}
   try {
     const pending = await db.query(
       `SELECT w.id, w.title, u.display_name FROM works w JOIN users u ON u.id = w.author_id
@@ -157,7 +182,7 @@ export async function one<T = Row>(sql: string, params: unknown[] = []): Promise
   return rows[0] ?? null;
 }
 
-/** Хелперы, привязанные к одной транзакции (клиенту PG или общему SQLite). */
+/** Хелперы, привязанные к одной транзакции (klijentу PG или общему SQLite). */
 export type Tx = {
   query: <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
   one: <T = Row>(sql: string, params?: unknown[]) => Promise<T | null>;

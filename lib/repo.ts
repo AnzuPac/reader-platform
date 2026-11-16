@@ -1,10 +1,14 @@
 import { normalizeSr } from './sr';
 import { query, one, initSchema } from './db';
+import {
+  backfillSearchNorm, searchTokens, TRANSLIT_ALLOWED_SQL, PARAGRAPH_COMMENTS_SQL,
+} from './search';
 
 export type WorkCard = {
   id: number; slug: string; title: string; description: string; cover_path: string | null;
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string; type?: string; kind?: string; category?: string;
+  is_classic?: number; publisher_id?: number | null;
 };
 
 export type ChapterRow = {
@@ -15,20 +19,38 @@ export type ChapterRow = {
 let ready = false;
 async function ensure() { if (!ready) { await initSchema(); ready = true; } }
 
-export async function listWorks(opts: { q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number; classic?: boolean; fanfic?: boolean } = {}): Promise<WorkCard[]> {
+export type ListWorksOpts = {
+  q?: string; genre?: string; type?: string; sort?: string; limit?: number; offset?: number;
+  /** Тип издания: издательская, самиздат, фанфик, классика (ТЗ 4.4). */
+  source?: string;
+  free?: boolean; subscribed?: boolean; classic?: boolean; fanfic?: boolean;
+  completion?: string;
+  tag?: string;
+  excludeTags?: string[];
+};
+
+export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
   await ensure();
   const q = (opts.q || '').trim();
   const genre = (opts.genre || '').trim();
   const wtype = (opts.type || '').trim();
+  const source = (opts.source || '').trim();
+  const completion = (opts.completion || '').trim();
+  const tag = (opts.tag || '').trim();
+  const excludeTags = (opts.excludeTags || []).map((t) => t.trim()).filter(Boolean);
   const sort = (opts.sort || 'new').trim();
   const limit = Math.min(opts.limit ?? 24, 60);
   const offset = opts.offset ?? 0;
   const params: unknown[] = [];
   const where: string[] = ["w.status = 'published'"];
   if (q) {
-    const nq = normalizeSr(q);
-    params.push(`%${nq}%`);
-    where.push(`(w.search_norm LIKE $${params.length} OR lower(w.title) LIKE $${params.length} OR lower(u.display_name) LIKE $${params.length})`);
+    // Старые строки могли не иметь ключа — дозаполняем перед поиском.
+    await backfillSearchNorm();
+    const tokens = searchTokens(q);
+    for (const token of tokens) {
+      params.push(`%${token}%`);
+      where.push(`w.search_norm LIKE $${params.length}`);
+    }
   }
   if (opts.classic) where.push('w.is_classic = 1');
   if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
@@ -36,6 +58,32 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
   if (wtype === 'novel' || wtype === 'comic') {
     params.push(wtype);
     where.push(`w.type = $${params.length}`);
+  }
+  if (source === 'publisher') where.push('w.publisher_id IS NOT NULL');
+  if (source === 'selfpub') where.push("w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = 0");
+  if (source === 'fanfic') where.push("w.kind = 'fanfic'");
+  if (source === 'classic') where.push('w.is_classic = 1');
+  if (opts.free) {
+    where.push(`EXISTS (SELECT 1 FROM chapters c WHERE c.work_id = w.id
+                         AND c.status = 'published' AND c.access = 'free')`);
+  }
+  if (opts.subscribed) {
+    where.push(`EXISTS (SELECT 1 FROM chapters c WHERE c.work_id = w.id
+                         AND c.status = 'published' AND c.access = 'subscribers')`);
+  }
+  if (completion === 'completed' || completion === 'ongoing') {
+    params.push(completion);
+    where.push(`w.completion = $${params.length}`);
+  }
+  if (tag) {
+    params.push(tag);
+    where.push(`EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
+                        WHERE wt.work_id = w.id AND t.slug = $${params.length})`);
+  }
+  if (excludeTags.length) {
+    const placeholders = excludeTags.map((t) => { params.push(t); return `$${params.length}`; });
+    where.push(`NOT EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
+                             WHERE wt.work_id = w.id AND t.slug IN (${placeholders.join(',')}))`);
   }
   if (genre) {
     params.push(genre);
@@ -52,7 +100,9 @@ export async function listWorks(opts: { q?: string; genre?: string; type?: strin
     sort === 'words' ? 'w.words_total DESC' :
     'w.published_at DESC NULLS LAST';
   const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-                      w.age_rating, w.completion, w.cover_path, w.type, w.kind, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, u.display_name AS author_name
+                 w.age_rating, w.completion, w.cover_path, w.type, w.kind,
+                 CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
+                 w.is_classic, w.publisher_id, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id
                 WHERE ${where.join(' AND ')}
                 ORDER BY ${order} LIMIT $${limIdx} OFFSET $${offIdx}`;
@@ -82,10 +132,13 @@ export async function getChapter(id: number) {
   return one<{
     id: number; work_id: number; number: number; title: string; content: string;
     access: string; price_cents: number; word_count: number; work_slug: string; work_title: string;
-    font_family: string | null; font_path: string | null; work_type: string; translit_allowed: number; paragraph_comments_enabled: number;
+    font_family: string | null; font_path: string | null; work_type: string;
+    translit_allowed: number; paragraph_comments_enabled: number;
   }>(
     `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.price_cents, c.word_count,
-            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type, w.translit_allowed, w.paragraph_comments_enabled
+            w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type,
+            ${TRANSLIT_ALLOWED_SQL} AS translit_allowed,
+            ${PARAGRAPH_COMMENTS_SQL} AS paragraph_comments_enabled
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1 AND c.status = 'published'`, [id]
   );

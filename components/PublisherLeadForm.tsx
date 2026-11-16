@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-/** Форма заявки для издателей. После успеха показывает подтверждение на экране. */
+/** Форма prijave для издателей. После успеха показывает подтверждение на экране. */
 export default function PublisherLeadForm() {
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '' });
   const [busy, setBusy] = useState(false);
