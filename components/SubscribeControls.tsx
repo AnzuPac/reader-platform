@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-/** Отмена подписки в 2 нажатия и семейные профили (до 5). */
+/** Otkaži подписки в 2 нажатия и семейные профили (до 5). */
 export default function SubscribeControls({
   active,
   planCode,

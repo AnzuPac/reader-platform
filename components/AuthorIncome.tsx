@@ -35,7 +35,7 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
         body: JSON.stringify({ workId: work.id, exclusivity: !work.exclusivity }),
       });
       if (!r.ok) { setMsg('Не удалось изменить ставку.'); return; }
-      setMsg(!work.exclusivity ? 'Эксклюзив включён: 80% автору.' : 'Эксклюзив выключен: 70% автору.');
+      setMsg(!work.exclusivity ? 'Ekskluzivitet включён: 80% автору.' : 'Ekskluzivitet выключен: 70% автору.');
       await load();
     } finally { setBusy(false); }
   }
@@ -90,7 +90,7 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
               disabled={busy}
               onClick={() => toggle(w)}
             >
-              {w.exclusivity ? 'Убрать эксклюзив' : 'Включить эксклюзив (80%)'}
+              {w.exclusivity ? 'Убрать эксклюзив' : 'Uključi ekskluzivitet (80%)'}
             </button>
           </li>
         ))}

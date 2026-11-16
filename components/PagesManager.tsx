@@ -26,7 +26,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chapterId, ids: next.map((p) => p.id) }),
     });
-    setMsg(r.ok ? 'Порядок сохранён' : 'Ошибка сохранения порядка');
+    setMsg(r.ok ? 'Порядок сохранён' : 'Greška сохранения порядка');
     await load();
   }
 
@@ -45,7 +45,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
   async function remove(id: number) {
     const r = await fetch(`/api/author/pages?id=${id}`, { method: 'DELETE' });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Удалено, осталось ${j.total}` : 'Ошибка удаления');
+    setMsg(r.ok ? `Удалено, осталось ${j.total}` : 'Greška удаления');
     await load();
   }
 
@@ -93,7 +93,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
                   <div className="flex gap-1">
                     <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'up')} title="Выше">↑</button>
                     <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'down')} title="Ниже">↓</button>
-                    <button className="text-mist hover:text-hot" onClick={() => remove(p.id)} title="Удалить">✕</button>
+                    <button className="text-mist hover:text-hot" onClick={() => remove(p.id)} title="Obriši">✕</button>
                   </div>
                 </div>
               </div>

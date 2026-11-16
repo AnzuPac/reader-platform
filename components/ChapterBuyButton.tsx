@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 /**
  * Покупка glave за монеты с согласием по Закону о защите потребителей (4.8):
  * чекбокс «согласен потерять право отказа» — без него кнопка неактивна.
- * Автопокупка выключена: каждое открытие платной glave — явное действие.
+ * Automatska kupovina je isključena: каждое открытие платной glave — явное действие.
  */
 export default function ChapterBuyButton({
   chapterId,

@@ -68,7 +68,7 @@ export default function AdminPublishersPage() {
       setMsg(`Издательство создано (#${r.publisherId})${r.memberUserId ? ', владелец привязан' : ''}`);
       setName(''); setContactEmail(''); setOwnerEmail(''); setCommission(25);
       await loadAll();
-    } else setMsg(`Ошибка: ${r.error || 'не удалось'}`);
+    } else setMsg(`Greška: ${r.error || 'не удалось'}`);
   }
 
   async function attachWork(e: React.FormEvent) {
@@ -84,7 +84,7 @@ export default function AdminPublishersPage() {
     if (r.ok) {
       setMsg(`Произведение привязано${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
       await loadAll();
-    } else setMsg(`Ошибка: ${r.error || 'не удалось'}`);
+    } else setMsg(`Greška: ${r.error || 'не удалось'}`);
   }
 
   async function markLead(id: number, status: string) {
@@ -104,7 +104,7 @@ export default function AdminPublishersPage() {
       <div className="card mb-6 flex flex-wrap items-center gap-2 p-4">
         <input className="input max-w-sm" type="password" placeholder="ADMIN_TOKEN"
           value={token} onChange={(e) => setToken(e.target.value)} />
-        <button className="btn btn-primary" onClick={saveToken}>Войти</button>
+        <button className="btn btn-primary" onClick={saveToken}>Prijava</button>
         <span className="text-sm muted">{msg}</span>
       </div>
 
@@ -114,7 +114,7 @@ export default function AdminPublishersPage() {
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase muted">
               <tr>
-                <th className="px-4 py-3">Название</th>
+                <th className="px-4 py-3">Naslov</th>
                 <th className="px-4 py-3">Комиссия</th>
                 <th className="px-4 py-3">Книг</th>
                 <th className="px-4 py-3">Владелец</th>
@@ -149,7 +149,7 @@ export default function AdminPublishersPage() {
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         <form onSubmit={createPublisher} className="card space-y-3 p-4">
           <h2 className="font-semibold">Новое издательство</h2>
-          <input className="input" placeholder="Название" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input className="input" placeholder="Naslov" value={name} onChange={(e) => setName(e.target.value)} required />
           <input className="input" type="email" placeholder="Контактный email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
           <input className="input" type="email" placeholder="Email владельца (привязать)" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
           <label className="block text-sm muted">

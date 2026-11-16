@@ -12,7 +12,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
     e.preventDefault();
     const r = await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     const j = await r.json().catch(() => ({}));
-    setMsgName(r.ok ? 'Сохранено' : 'Ошибка: ' + (j.error || r.status));
+    setMsgName(r.ok ? 'Сохранено' : 'Greška: ' + (j.error || r.status));
   }
 
   async function savePw(e: React.FormEvent) {
@@ -23,7 +23,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) { setMsgPw('Пароль изменён'); setCur(''); setNext(''); }
-    else setMsgPw(j.error === 'wrong_password' ? 'Текущий пароль неверный' : 'Ошибка: ' + (j.error || r.status));
+    else setMsgPw(j.error === 'wrong_password' ? 'Текущий пароль неверный' : 'Greška: ' + (j.error || r.status));
   }
 
   return (
@@ -37,7 +37,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
         <div className="font-semibold">Имя или ник</div>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="flex items-center gap-3">
-          <button className="btn btn-primary">Сохранить</button>
+          <button className="btn btn-primary">Sačuvaj</button>
           {msgName ? <span className="text-sm text-hot">{msgName}</span> : null}
         </div>
       </form>

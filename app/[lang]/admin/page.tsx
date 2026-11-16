@@ -70,32 +70,32 @@ export default function AdminPage() {
 
   async function workAction(slg: string, action: string) {
     const r = await fetch('/api/admin/work-status', { method: 'POST', headers: headers(), body: JSON.stringify({ slug: slg, action }) });
-    setMsg(r.ok ? `Произведение: ${action}` : 'Ошибка');
+    setMsg(r.ok ? `Произведение: ${action}` : 'Greška');
     await loadAll();
   }
 
   async function confirmPayment(id: number) {
     const r = await fetch('/api/admin/payment', { method: 'POST', headers: headers(), body: JSON.stringify({ paymentId: id }) });
-    setMsg(r.ok ? 'Оплата подтверждена, подписка выдана' : 'Ошибка подтверждения');
+    setMsg(r.ok ? 'Оплата подтверждена, подписка выдана' : 'Greška подтверждения');
     await loadAll();
   }
 
   async function confirmPurchase(id: number) {
     const r = await fetch('/api/admin/purchases', { method: 'POST', headers: headers(), body: JSON.stringify({ purchaseId: id, action: 'confirm' }) });
-    setMsg(r.ok ? 'Покупка подтверждена, доступ выдан' : 'Ошибка подтверждения покупки');
+    setMsg(r.ok ? 'Покупка подтверждена, доступ выдан' : 'Greška подтверждения покупки');
     await loadAll();
   }
 
   async function confirmDonation(id: number) {
     const r = await fetch('/api/admin/donation', { method: 'POST', headers: headers(), body: JSON.stringify({ donationId: id }) });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'RSD'}` : 'Ошибка подтверждения доната');
+    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'RSD'}` : 'Greška подтверждения доната');
     await loadAll();
   }
 
   async function commentAction(id: number, action: string) {
     const r = await fetch('/api/admin/comment', { method: 'POST', headers: headers(), body: JSON.stringify({ id, action }) });
-    setMsg(r.ok ? `Комментарий: ${action}` : 'Ошибка');
+    setMsg(r.ok ? `Комментарий: ${action}` : 'Greška');
     await loadAll();
   }
 
@@ -103,7 +103,7 @@ export default function AdminPage() {
     e.preventDefault();
     const r = await fetch('/api/admin/work', { method: 'POST', headers: headers(), body: JSON.stringify({ title, description: desc, ageRating: age }) });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Произведение создано: ' + j.work.slug : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Произведение создано: ' + j.work.slug : 'Greška: ' + (j.error || r.status));
     setTitle(''); setDesc(''); await loadAll();
   }
 
@@ -114,7 +114,7 @@ export default function AdminPage() {
       body: JSON.stringify({ workSlug: slug, number, title: chTitle, content, access }),
     });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Глава ${j.chapter.number} добавлена` : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? `Глава ${j.chapter.number} добавлена` : 'Greška: ' + (j.error || r.status));
     setChTitle(''); setContent('');
   }
 
@@ -126,7 +126,7 @@ export default function AdminPage() {
     fd.append('file', coverFile);
     const r = await fetch('/api/admin/cover', { method: 'POST', headers: { 'x-admin-token': token }, body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена: ' + j.cover : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Обложка загружена: ' + j.cover : 'Greška: ' + (j.error || r.status));
   }
 
   const Tab = ({ id, label, count }: { id: typeof tab; label: string; count?: number }) => (
@@ -145,7 +145,7 @@ export default function AdminPage() {
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">
         <input className="input max-w-xs" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен доступа" />
-        <button className="btn btn-ghost" onClick={saveToken}>Сохранить токен</button>
+        <button className="btn btn-ghost" onClick={saveToken}>Sačuvaj токен</button>
         {msg ? <span className="text-sm text-hot">{msg}</span> : null}
       </div>
 
@@ -250,10 +250,10 @@ export default function AdminPage() {
         <div className="space-y-5">
           <form onSubmit={createWork} className="card space-y-3 p-4">
             <h2 className="font-semibold">Новое произведение</h2>
-            <input className="input" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <textarea className="input" rows={3} placeholder="Описание" value={desc} onChange={(e) => setDesc(e.target.value)} />
+            <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <textarea className="input" rows={3} placeholder="Opis" value={desc} onChange={(e) => setDesc(e.target.value)} />
             <div className="flex items-center gap-3 text-sm">
-              <span className="muted">Возраст:</span>
+              <span className="muted">Uzrast:</span>
               {[0, 16, 18].map((a) => (
                 <label key={a} className="flex items-center gap-1">
                   <input type="radio" checked={age === a} onChange={() => setAge(a)} /> {a}
@@ -270,7 +270,7 @@ export default function AdminPage() {
               {works.map((w) => <option key={w.id} value={w.slug}>{w.title}</option>)}
             </select>
             <input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} />
-            <button className="btn btn-primary">Загрузить обложку</button>
+            <button className="btn btn-primary">Otpremi обложку</button>
           </form>
 
           <form onSubmit={createChapter} className="card space-y-3 p-4">
@@ -281,11 +281,11 @@ export default function AdminPage() {
             </select>
             <div className="flex gap-2">
               <input className="input max-w-[110px]" type="number" min={1} value={number} onChange={(e) => setNumber(Number(e.target.value))} />
-              <input className="input" placeholder="Название glave" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
+              <input className="input" placeholder="Naslov glave" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
             </div>
             <textarea className="input" rows={8} placeholder="Текст glave" value={content} onChange={(e) => setContent(e.target.value)} />
             <select className="input max-w-[200px]" value={access} onChange={(e) => setAccess(e.target.value)}>
-              <option value="free">Бесплатно</option>
+              <option value="free">Besplatno</option>
               <option value="subscribers">Подписчики</option>
               <option value="paid">Платная</option>
             </select>

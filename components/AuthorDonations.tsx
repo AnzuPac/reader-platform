@@ -41,7 +41,7 @@ export default function AuthorDonations() {
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        setMsg(j.error === 'nothing_to_pay' ? 'Нет доступной суммы.' : 'Ошибка заявки: ' + (j.error || r.status));
+        setMsg(j.error === 'nothing_to_pay' ? 'Нет доступной суммы.' : 'Greška заявки: ' + (j.error || r.status));
         return;
       }
       setMsg(`Заявка #${j.payoutId} на ${money(j.amount_cents, j.currency)} создана.`);
@@ -83,7 +83,7 @@ export default function AuthorDonations() {
 
       {msg ? <p className="mb-3 text-sm text-brand">{msg}</p> : null}
 
-      <h3 className="mb-2 text-sm font-semibold">История донатов</h3>
+      <h3 className="mb-2 text-sm font-semibold">Istorija донатов</h3>
       <ul className="divide-y divide-line text-sm">
         {data.history.map((h) => (
           <li key={h.id} className="flex flex-wrap items-center gap-2 py-2">

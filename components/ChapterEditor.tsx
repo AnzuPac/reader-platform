@@ -80,7 +80,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/import', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка импорта: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška импорта: ' + (j.error || r.status)); return; }
     editor?.commands.setContent(j.html || '');
     setMsg(`Импортировано: ${j.words} слов`);
     e.target.value = '';
@@ -95,7 +95,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/image', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška: ' + (j.error || r.status)); return; }
     insertImage(j.url);
     setMsg('Иллюстрация вставлена');
     e.target.value = '';
@@ -109,7 +109,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    setMsg(r.ok ? 'Глава опубликована' : 'Ошибка публикации: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Глава опубликована' : 'Greška публикации: ' + (j.error || r.status));
     await loadChapters();
   }
 
@@ -124,7 +124,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/font', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка шрифта: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška шрифта: ' + (j.error || r.status)); return; }
     setMsg(`Font «${j.family}» загружен и применён к произведению`);
     e.target.value = '';
   }
@@ -140,7 +140,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка сохранения: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška сохранения: ' + (j.error || r.status)); return; }
     setMsg(`Сохранено: глава ${j.chapter.number}, ${j.words} слов`);
     await loadChapters();
   }
@@ -158,9 +158,9 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input className="input max-w-[110px]" type="number" min={1} value={number}
                  onChange={(e) => setNumber(Number(e.target.value))} />
-          <input className="input flex-1" placeholder="Название glave" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input className="input flex-1" placeholder="Naslov glave" value={title} onChange={(e) => setTitle(e.target.value)} />
           <select className="input max-w-[190px]" value={access} onChange={(e) => setAccess(e.target.value)}>
-            <option value="free">Бесплатно</option>
+            <option value="free">Besplatno</option>
             <option value="subscribers">Подписчики</option>
             <option value="paid">Платная</option>
           </select>
@@ -196,7 +196,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Сохранить главу</button>
+          <button className="btn btn-primary" onClick={save} disabled={busy}>Sačuvaj главу</button>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
           <input ref={importRef} type="file" accept=".docx,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />

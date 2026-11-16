@@ -23,7 +23,7 @@ export default function WorkSettings({
     fd.append('file', file);
     const r = await fetch('/api/author/cover', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена' : 'Ошибка обложки: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Обложка загружена' : 'Greška обложки: ' + (j.error || r.status));
     e.target.value = '';
   }
 
@@ -34,7 +34,7 @@ export default function WorkSettings({
       body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion }),
     });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Сохранено' : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Сохранено' : 'Greška: ' + (j.error || r.status));
   }
 
   if (!open) {
@@ -49,11 +49,11 @@ export default function WorkSettings({
         <span className="font-semibold">Настройки произведения</span>
         <button type="button" className="text-sm muted hover:text-ink" onClick={() => setOpen(false)}>свернуть</button>
       </div>
-      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Название" />
-      <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Описание" />
+      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Naslov" />
+      <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opis" />
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <label className="flex items-center gap-2">
-          Возраст:
+          Uzrast:
           <select className="input max-w-[100px]" value={age} onChange={(e) => setAge(Number(e.target.value))}>
             <option value={0}>0+</option>
             <option value={16}>16+</option>
@@ -68,7 +68,7 @@ export default function WorkSettings({
             <option value="hiatus">Пауза</option>
           </select>
         </label>
-        <button className="btn btn-primary">Сохранить</button>
+        <button className="btn btn-primary">Sačuvaj</button>
         <label className="btn btn-ghost cursor-pointer">
           Обложка
           <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadCover} />

@@ -30,7 +30,7 @@ export default function GlossaryEditor({ workSlug }: { workSlug: string }) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workSlug, lang, term, translation }),
     });
-    if (!r.ok) { setMsg('Ошибка сохранения'); return; }
+    if (!r.ok) { setMsg('Greška сохранения'); return; }
     setTerm(''); setTranslation(''); setMsg('Термин сохранён');
     await load();
   }
