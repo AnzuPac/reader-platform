@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, chapterId, pages: saved.length, total: cnt?.n ?? 0 });
 }
 
-/** Список страниц главы для управления. */
+/** Lista страниц главы для управления. */
 export async function GET(req: Request) {
   const s = await requireAuthor();
   if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });

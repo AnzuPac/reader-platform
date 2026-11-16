@@ -46,7 +46,7 @@ async function migrateSqlite(db: any) {
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
   try { db.exec('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
-  // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
+  // Экономика v0.2: старые tarifaы выключаем, цены глав переводим в монеты.
   try { db.exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { db.exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {

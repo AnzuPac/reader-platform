@@ -12,7 +12,7 @@ export default function AuthorWorks({ lang }: { lang: string }) {
 
   async function load() {
     const r = await fetch('/api/author/work');
-    if (!r.ok) { setMsg('Нет доступа: нужна роль автора'); return; }
+    if (!r.ok) { setMsg('Nema pristupa: potrebna je uloga autora'); return; }
     const j = await r.json();
     setWorks(j.works || []);
   }
@@ -25,8 +25,8 @@ export default function AuthorWorks({ lang }: { lang: string }) {
       body: JSON.stringify({ title, description: desc }),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
-    setTitle(''); setDesc(''); setMsg('Черновик создан');
+    if (!r.ok) { setMsg('Greška: ' + (j.error || r.status)); return; }
+    setTitle(''); setDesc(''); setMsg('Nacrt napravljen');
     await load();
   }
 
@@ -34,9 +34,9 @@ export default function AuthorWorks({ lang }: { lang: string }) {
     <div className="space-y-6">
       <form onSubmit={create} className="card space-y-3 p-5">
         <h2 className="font-semibold">Новое произведение</h2>
-        <input className="input" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea className="input" rows={3} placeholder="Описание" value={desc} onChange={(e) => setDesc(e.target.value)} />
-        <button className="btn btn-primary">Создать черновик</button>
+        <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <textarea className="input" rows={3} placeholder="Naslov" value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <button className="btn btn-primary">Создать nacrt</button>
       </form>
 
       {msg ? <p className="text-sm text-hot">{msg}</p> : null}

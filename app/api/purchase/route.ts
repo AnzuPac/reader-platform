@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   await initSchema();
 
   // Главы продаются только за монеты (ТЗ 4.8): явное согласие обязательно,
-  // автопокупка выключена, лимит месяца проверяется в purchaseChapterWithCoins.
+  // автопокупка isključenа, лимит месяца проверяется в purchaseChapterWithCoins.
   if (chapterId) {
     const buy = await purchaseChapterWithCoins(s.uid, chapterId, { consent: Boolean(b?.consent) });
     if (!buy.ok) {

@@ -46,7 +46,7 @@ export default function AdminPublishersPage() {
       fetch('/api/admin/publishers', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/publisher-leads', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
     ]);
-    if (p.error) { setMsg('Токен не принят'); return; }
+    if (p.error) { setMsg('Token nije prihvaćen'); return; }
     setPublishers(p.publishers || []);
     setWorks(p.works || []);
     setLeads(l.leads || []);
@@ -65,10 +65,10 @@ export default function AdminPublishersPage() {
       body: JSON.stringify({ name, contactEmail, ownerEmail, commissionPct: commission }),
     }).then((x) => x.json()).catch(() => ({}));
     if (r.ok) {
-      setMsg(`Издательство создано (#${r.publisherId})${r.memberUserId ? ', владелец привязан' : ''}`);
+      setMsg(`Издательство создано (#${r.publisherId})${r.memberUserId ? ', vlasnik povezan' : ''}`);
       setName(''); setContactEmail(''); setOwnerEmail(''); setCommission(25);
       await loadAll();
-    } else setMsg(`Ошибка: ${r.error || 'не удалось'}`);
+    } else setMsg(`Greška: ${r.error || 'nije uspelo'}`);
   }
 
   async function attachWork(e: React.FormEvent) {
@@ -84,7 +84,7 @@ export default function AdminPublishersPage() {
     if (r.ok) {
       setMsg(`Произведение привязано${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
       await loadAll();
-    } else setMsg(`Ошибка: ${r.error || 'не удалось'}`);
+    } else setMsg(`Greška: ${r.error || 'nije uspelo'}`);
   }
 
   async function markLead(id: number, status: string) {
@@ -98,13 +98,13 @@ export default function AdminPublishersPage() {
     <main className="mx-auto max-w-6xl px-5 py-10">
       <h1 className="mb-2 text-2xl font-bold">Издательства</h1>
       <p className="mb-6 text-sm muted">
-        Комиссия площадки, привязка владельца и произведений, заявки с лендинга.
+        Комиссия площадки, привязка владельца и произведений, prijave с лендинга.
       </p>
 
       <div className="card mb-6 flex flex-wrap items-center gap-2 p-4">
         <input className="input max-w-sm" type="password" placeholder="ADMIN_TOKEN"
           value={token} onChange={(e) => setToken(e.target.value)} />
-        <button className="btn btn-primary" onClick={saveToken}>Войти</button>
+        <button className="btn btn-primary" onClick={saveToken}>Prijavi se</button>
         <span className="text-sm muted">{msg}</span>
       </div>
 
@@ -114,7 +114,7 @@ export default function AdminPublishersPage() {
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase muted">
               <tr>
-                <th className="px-4 py-3">Название</th>
+                <th className="px-4 py-3">Naslov</th>
                 <th className="px-4 py-3">Комиссия</th>
                 <th className="px-4 py-3">Книг</th>
                 <th className="px-4 py-3">Владелец</th>
@@ -149,9 +149,9 @@ export default function AdminPublishersPage() {
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         <form onSubmit={createPublisher} className="card space-y-3 p-4">
           <h2 className="font-semibold">Новое издательство</h2>
-          <input className="input" placeholder="Название" value={name} onChange={(e) => setName(e.target.value)} required />
-          <input className="input" type="email" placeholder="Контактный email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-          <input className="input" type="email" placeholder="Email владельца (привязать)" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
+          <input className="input" placeholder="Naslov" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input className="input" type="email" placeholder="Kontakt email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+          <input className="input" type="email" placeholder="Email vlasnika (poveži)" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
           <label className="block text-sm muted">
             Комиссия площадки, %
             <input className="input mt-1" type="number" min={0} max={100} value={commission} onChange={(e) => setCommission(Number(e.target.value))} />
@@ -173,7 +173,7 @@ export default function AdminPublishersPage() {
             <option value="">— без издательства —</option>
             {publishers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <input className="input" type="number" min={0} step="0.01" placeholder="Цена книги, RSD (пусто — не менять)"
+          <input className="input" type="number" min={0} step="0.01" placeholder="Cena knjige, RSD (prazno — ne menjati)"
             value={priceEur} onChange={(e) => setPriceEur(e.target.value)} />
           <button className="btn btn-primary">Привязать</button>
         </form>

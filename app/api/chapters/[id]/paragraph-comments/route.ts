@@ -40,7 +40,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   }
 
   // Скрытые комментарии видит только тот, кто может их показать обратно
-  // (автор произведения, модератор, админ) — иначе скрытие нечем отменить.
+  // (автор произведения, модератор, админ) — иначе skrivenие нечем отменить.
   const comments = await listParagraphComments(chapterId, { includeHidden: canModerate });
   return NextResponse.json({ enabled: true, comments, canModerate }, { headers: NO_STORE });
 }

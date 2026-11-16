@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-/** Отмена подписки в 2 нажатия и семейные профили (до 5). */
+/** Otkaži подписки в 2 нажатия и семейные профили (до 5). */
 export default function SubscribeControls({
   active,
   planCode,
@@ -56,7 +56,7 @@ export default function SubscribeControls({
       if (!r.ok) {
         setMsg(
           j.error === 'limit_reached' ? `Достигнут лимит: ${maxProfiles} профилей, включая владельца.`
-            : j.error === 'user_not_found' ? 'Пользователь не найден.'
+            : j.error === 'user_not_found' ? 'Korisnik nije pronađen.'
             : 'Не удалось добавить профиль.'
         );
         return;

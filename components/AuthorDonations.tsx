@@ -23,7 +23,7 @@ export default function AuthorDonations() {
   async function load() {
     const r = await fetch('/api/author/donations');
     if (!r.ok) {
-      setMsg('Нет доступа: нужна роль автора');
+      setMsg('Nema pristupa: potrebna je uloga autora');
       return;
     }
     setData(await r.json());
@@ -41,7 +41,7 @@ export default function AuthorDonations() {
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        setMsg(j.error === 'nothing_to_pay' ? 'Нет доступной суммы.' : 'Ошибка заявки: ' + (j.error || r.status));
+        setMsg(j.error === 'nothing_to_pay' ? 'Нет доступной суммы.' : 'Greška prijave: ' + (j.error || r.status));
         return;
       }
       setMsg(`Заявка #${j.payoutId} на ${money(j.amount_cents, j.currency)} создана.`);
@@ -55,7 +55,7 @@ export default function AuthorDonations() {
     <section className="card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-bold">Dobijeno</h2>
-        <span className="text-sm muted">Донаты читателей</span>
+        <span className="text-sm muted">Donacije čitalaca</span>
       </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -88,7 +88,7 @@ export default function AuthorDonations() {
         {data.history.map((h) => (
           <li key={h.id} className="flex flex-wrap items-center gap-2 py-2">
             <span className="font-semibold">{money(h.amount_cents, h.currency)}</span>
-            <span className="muted">→ автору {money(h.author_cents, h.currency)}</span>
+            <span className="muted">→ autoru {money(h.author_cents, h.currency)}</span>
             <span className="flex-1 truncate text-xs muted">
               {h.donor_name} · {h.work_title}{h.chapter_number ? ` · глава ${h.chapter_number}` : ''}
               {h.message ? ` — «${h.message}»` : ''}

@@ -12,7 +12,7 @@ export default function AccountForm({ initialName, email, role }: { initialName:
     e.preventDefault();
     const r = await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     const j = await r.json().catch(() => ({}));
-    setMsgName(r.ok ? 'Сохранено' : 'Ошибка: ' + (j.error || r.status));
+    setMsgName(r.ok ? 'Sačuvano' : 'Greška: ' + (j.error || r.status));
   }
 
   async function savePw(e: React.FormEvent) {
@@ -22,14 +22,14 @@ export default function AccountForm({ initialName, email, role }: { initialName:
       body: JSON.stringify({ current: cur, next }),
     });
     const j = await r.json().catch(() => ({}));
-    if (r.ok) { setMsgPw('Пароль изменён'); setCur(''); setNext(''); }
-    else setMsgPw(j.error === 'wrong_password' ? 'Текущий пароль неверный' : 'Ошибка: ' + (j.error || r.status));
+    if (r.ok) { setMsgPw('Lozinka promenjena'); setCur(''); setNext(''); }
+    else setMsgPw(j.error === 'wrong_password' ? 'Trenutna lozinka nije ispravna' : 'Greška: ' + (j.error || r.status));
   }
 
   return (
     <div className="space-y-5">
       <div className="card p-5 text-sm muted">
-        <div>Почта: <span className="text-ink">{email}</span></div>
+        <div>Pošta: <span className="text-ink">{email}</span></div>
         <div>Роль: <span className="text-ink">{role}</span></div>
       </div>
 
@@ -37,14 +37,14 @@ export default function AccountForm({ initialName, email, role }: { initialName:
         <div className="font-semibold">Имя или ник</div>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="flex items-center gap-3">
-          <button className="btn btn-primary">Сохранить</button>
+          <button className="btn btn-primary">Sačuvaj</button>
           {msgName ? <span className="text-sm text-hot">{msgName}</span> : null}
         </div>
       </form>
 
       <form onSubmit={savePw} className="card space-y-3 p-5">
         <div className="font-semibold">Смена пароля</div>
-        <input className="input" type="password" placeholder="Текущий пароль" value={cur} onChange={(e) => setCur(e.target.value)} />
+        <input className="input" type="password" placeholder="Trenutna lozinka" value={cur} onChange={(e) => setCur(e.target.value)} />
         <input className="input" type="password" placeholder="Новый пароль (мин. 8)" value={next} onChange={(e) => setNext(e.target.value)} />
         <div className="flex items-center gap-3">
           <button className="btn btn-primary">Изменить пароль</button>

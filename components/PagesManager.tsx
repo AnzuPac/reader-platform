@@ -26,7 +26,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chapterId, ids: next.map((p) => p.id) }),
     });
-    setMsg(r.ok ? 'Порядок сохранён' : 'Ошибка сохранения порядка');
+    setMsg(r.ok ? 'Redosled sačuvan' : 'Greška čuvanja redosleda');
     await load();
   }
 
@@ -45,7 +45,7 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
   async function remove(id: number) {
     const r = await fetch(`/api/author/pages?id=${id}`, { method: 'DELETE' });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Удалено, осталось ${j.total}` : 'Ошибка удаления');
+    setMsg(r.ok ? `Uklonjeno, ostalo ${j.total}` : 'Greška brisanja');
     await load();
   }
 
@@ -87,13 +87,13 @@ export default function PagesManager({ workSlug }: { workSlug: string }) {
                   dragId === p.id ? 'border-brand opacity-60' : 'border-line'
                 }`}
               >
-                <img src={p.file_path} alt={`Стр. ${p.page_no}`} className="mb-1 h-28 w-full rounded object-cover" loading="lazy" />
+                <img src={p.file_path} alt={`Str. ${p.page_no}`} className="mb-1 h-28 w-full rounded object-cover" loading="lazy" />
                 <div className="flex items-center justify-between px-1 text-xs">
                   <span className="muted">{i + 1}</span>
                   <div className="flex gap-1">
-                    <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'up')} title="Выше">↑</button>
+                    <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'up')} title="Iznad">↑</button>
                     <button className="text-mist hover:text-brand" onClick={() => move(p.id, 'down')} title="Ниже">↓</button>
-                    <button className="text-mist hover:text-hot" onClick={() => remove(p.id)} title="Удалить">✕</button>
+                    <button className="text-mist hover:text-hot" onClick={() => remove(p.id)} title="Obriši">✕</button>
                   </div>
                 </div>
               </div>

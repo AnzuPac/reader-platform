@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 type Theme = 'dark' | 'light' | 'sepia';
 
 const THEMES: Record<Theme, { bg: string; fg: string; label: string }> = {
-  dark: { bg: '#150f21', fg: '#e4ddf2', label: 'Тёмная' },
-  light: { bg: '#ffffff', fg: '#1f2329', label: 'Светлая' },
-  sepia: { bg: '#f4ecd8', fg: '#3a3226', label: 'Сепия' },
+  dark: { bg: '#150f21', fg: '#e4ddf2', label: 'Tamna' },
+  light: { bg: '#ffffff', fg: '#1f2329', label: 'Svetla' },
+  sepia: { bg: '#f4ecd8', fg: '#3a3226', label: 'Tamna' },
 };
 
 const FONTS = [
@@ -99,7 +99,7 @@ export default function ReaderSettings() {
         </div>
       ) : null}
 
-      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title="Настройки чтения">
+      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title="Podešavanja čitanja">
         Aa
       </button>
     </div>

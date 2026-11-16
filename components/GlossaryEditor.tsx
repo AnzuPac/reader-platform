@@ -30,8 +30,8 @@ export default function GlossaryEditor({ workSlug }: { workSlug: string }) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workSlug, lang, term, translation }),
     });
-    if (!r.ok) { setMsg('Ошибка сохранения'); return; }
-    setTerm(''); setTranslation(''); setMsg('Термин сохранён');
+    if (!r.ok) { setMsg('Greška čuvanja'); return; }
+    setTerm(''); setTranslation(''); setMsg('Termin sačuvan');
     await load();
   }
 
@@ -51,8 +51,8 @@ export default function GlossaryEditor({ workSlug }: { workSlug: string }) {
         <select className="input max-w-[90px]" value={lang} onChange={(e) => setLang(e.target.value)}>
           {LANGS.map((x) => <option key={x.code} value={x.code}>{x.label}</option>)}
         </select>
-        <input className="input max-w-[190px]" placeholder="Термин в оригинале" value={term} onChange={(e) => setTerm(e.target.value)} />
-        <input className="input max-w-[190px]" placeholder="Перевод" value={translation} onChange={(e) => setTranslation(e.target.value)} />
+        <input className="input max-w-[190px]" placeholder="Termin u originalu" value={term} onChange={(e) => setTerm(e.target.value)} />
+        <input className="input max-w-[190px]" placeholder="Prevod" value={translation} onChange={(e) => setTranslation(e.target.value)} />
         <button className="btn btn-primary">Добавить</button>
       </form>
 

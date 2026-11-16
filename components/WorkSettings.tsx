@@ -23,7 +23,7 @@ export default function WorkSettings({
     fd.append('file', file);
     const r = await fetch('/api/author/cover', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена' : 'Ошибка обложки: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Обложка загружена' : 'Greška korica: ' + (j.error || r.status));
     e.target.value = '';
   }
 
@@ -34,7 +34,7 @@ export default function WorkSettings({
       body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion }),
     });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Сохранено' : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Sačuvano' : 'Greška: ' + (j.error || r.status));
   }
 
   if (!open) {
@@ -49,8 +49,8 @@ export default function WorkSettings({
         <span className="font-semibold">Настройки произведения</span>
         <button type="button" className="text-sm muted hover:text-ink" onClick={() => setOpen(false)}>свернуть</button>
       </div>
-      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Название" />
-      <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Описание" />
+      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Naslov" />
+      <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Naslov" />
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <label className="flex items-center gap-2">
           Возраст:
@@ -68,7 +68,7 @@ export default function WorkSettings({
             <option value="hiatus">Пауза</option>
           </select>
         </label>
-        <button className="btn btn-primary">Сохранить</button>
+        <button className="btn btn-primary">Sačuvaj</button>
         <label className="btn btn-ghost cursor-pointer">
           Обложка
           <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadCover} />

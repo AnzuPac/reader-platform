@@ -10,11 +10,11 @@ import Underline from '@tiptap/extension-underline';
 type Chapter = { id: number; number: number; title: string; access: string; status: string; word_count: number };
 
 const FONTS = [
-  { label: 'Georgia (книжный)', value: 'Georgia, serif' },
-  { label: 'Inter (современный)', value: 'Inter, system-ui, sans-serif' },
+  { label: 'Georgia (knjiški)', value: 'Georgia, serif' },
+  { label: 'Inter (savremeni)', value: 'Inter, system-ui, sans-serif' },
   { label: 'Times New Roman', value: '"Times New Roman", serif' },
   { label: 'Verdana', value: 'Verdana, sans-serif' },
-  { label: 'Courier (машинописный)', value: '"Courier New", monospace' },
+  { label: 'Courier (pisaći)', value: '"Courier New", monospace' },
 ];
 
 export default function ChapterEditor({ workSlug }: { workSlug: string }) {
@@ -80,7 +80,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/import', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка импорта: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška uvoza: ' + (j.error || r.status)); return; }
     editor?.commands.setContent(j.html || '');
     setMsg(`Импортировано: ${j.words} слов`);
     e.target.value = '';
@@ -95,9 +95,9 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/image', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
+    if (!r.ok) { setMsg('Greška: ' + (j.error || r.status)); return; }
     insertImage(j.url);
-    setMsg('Иллюстрация вставлена');
+    setMsg('Ilustracija ubačena');
     e.target.value = '';
   }
 
@@ -109,7 +109,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    setMsg(r.ok ? 'Глава опубликована' : 'Ошибка публикации: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Глава опубликована' : 'Greška objave: ' + (j.error || r.status));
     await loadChapters();
   }
 
@@ -124,8 +124,8 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const r = await fetch('/api/author/font', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка шрифта: ' + (j.error || r.status)); return; }
-    setMsg(`Шрифт «${j.family}» загружен и применён к произведению`);
+    if (!r.ok) { setMsg('Greška fonta: ' + (j.error || r.status)); return; }
+    setMsg('Greška fonta: ');
     e.target.value = '';
   }
 
@@ -140,8 +140,8 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Ошибка сохранения: ' + (j.error || r.status)); return; }
-    setMsg(`Сохранено: глава ${j.chapter.number}, ${j.words} слов`);
+    if (!r.ok) { setMsg('Greška čuvanja: ' + (j.error || r.status)); return; }
+    setMsg(`Sačuvano: glava ${j.chapter.number}, ${j.words} reči`);
     await loadChapters();
   }
 
@@ -158,7 +158,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input className="input max-w-[110px]" type="number" min={1} value={number}
                  onChange={(e) => setNumber(Number(e.target.value))} />
-          <input className="input flex-1" placeholder="Название главы" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input className="input flex-1" placeholder="Naslov glave" value={title} onChange={(e) => setTitle(e.target.value)} />
           <select className="input max-w-[190px]" value={access} onChange={(e) => setAccess(e.target.value)}>
             <option value="free">Бесплатно</option>
             <option value="subscribers">Подписчики</option>
@@ -171,23 +171,23 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
 
         {editor ? (
           <div className="mb-2 flex flex-wrap gap-1">
-            <B onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Жирный"><b>B</b></B>
-            <B onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Курсив"><i>I</i></B>
-            <B onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Подчёркнутый"><u>U</u></B>
-            <B onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Зачёркнутый"><s>S</s></B>
+            <B onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Podebljano"><b>B</b></B>
+            <B onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Kurziv"><i>I</i></B>
+            <B onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Podvučeno"><u>U</u></B>
+            <B onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Precrtano"><s>S</s></B>
             <span className="mx-1 w-px bg-line" />
             <B onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })}>H1</B>
             <B onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}>H2</B>
             <B onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}>H3</B>
             <span className="mx-1 w-px bg-line" />
-            <B onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Список">•</B>
+            <B onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Lista">•</B>
             <B onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Нумерация">1.</B>
-            <B onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Цитата">❝</B>
+            <B onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Citat">❝</B>
             <span className="mx-1 w-px bg-line" />
             <B onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })}>⟸</B>
             <B onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })}>↔</B>
-            <B onClick={() => imageRef.current?.click()} title="Иллюстрация">🖼</B>
-            <B onClick={() => importRef.current?.click()} title="Импорт .docx / .md / .txt">📄 Импорт</B>
+            <B onClick={() => imageRef.current?.click()} title="Ilustracija">🖼</B>
+            <B onClick={() => importRef.current?.click()} title="Uvoz .docx / .md / .txt">📄 Импорт</B>
           </div>
         ) : null}
 
@@ -196,13 +196,13 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button className="btn btn-primary" onClick={save} disabled={busy}>Сохранить главу</button>
+          <button className="btn btn-primary" onClick={save} disabled={busy}>Sačuvaj главу</button>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
           <input ref={importRef} type="file" accept=".docx,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />
           <input ref={fontRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={uploadFont} />
           <div className="flex items-center gap-2">
-            <input className="input max-w-[150px]" placeholder="Имя шрифта" value={fontName} onChange={(e) => setFontName(e.target.value)} />
+            <input className="input max-w-[150px]" placeholder="Ime fonta" value={fontName} onChange={(e) => setFontName(e.target.value)} />
             <button className="btn btn-ghost" onClick={() => fontRef.current?.click()} disabled={busy}>Свой шрифт</button>
           </div>
           <span className="text-sm muted">{editor ? editor.storage.characterCount?.words?.() ?? '' : ''}</span>

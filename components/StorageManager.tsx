@@ -20,7 +20,7 @@ export default function StorageManager() {
 
   async function load() {
     const r = await fetch('/api/storage');
-    if (!r.ok) { setMsg('Нужно войти в аккаунт'); return; }
+    if (!r.ok) { setMsg('Potrebna je prijava'); return; }
     const j = await r.json();
     setQuota(j.quota); setFiles(j.files || []);
   }
@@ -29,19 +29,19 @@ export default function StorageManager() {
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Загружаю…');
+    setBusy(true); setMsg('Učitavam…');
     const fd = new FormData();
     fd.append('file', file);
     const r = await fetch('/api/storage', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     e.target.value = '';
-    if (r.status === 401) { setMsg('Нужно войти в аккаунт'); return; }
+    if (r.status === 401) { setMsg('Potrebna je prijava'); return; }
     if (!r.ok) {
-      setMsg(j.error === 'quota_exceeded' ? 'Не хватает места в хранилище' : 'Ошибка загрузки: ' + (j.error || r.status));
+      setMsg(j.error === 'quota_exceeded' ? 'Nema dovoljno prostora' : 'Greška pri otpremanju: ' + (j.error || r.status));
       return;
     }
-    setQuota(j.quota); setMsg('Файл загружен'); await load();
+    setQuota(j.quota); setMsg('Fajl je otpremljen'); await load();
   }
 
   async function remove(id: number) {
@@ -58,7 +58,7 @@ export default function StorageManager() {
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-semibold">Хранилище</span>
           <span className="muted">
-            {quota ? `${fmt(quota.used)} из ${fmt(quota.limit)} · тариф ${quota.plan}` : '—'}
+            {quota ? `${fmt(quota.used)} od ${fmt(quota.limit)} · tarifa ${quota.plan}` : '—'}
           </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-[#221a35]">
@@ -66,7 +66,7 @@ export default function StorageManager() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button className="btn btn-primary" onClick={() => ref.current?.click()} disabled={busy}>
-            {busy ? 'Загружаю…' : 'Загрузить скан или файл'}
+            {busy ? 'Učitavam…' : 'Otpremi sken ili fajl'}
           </button>
           <input ref={ref} type="file" accept=".pdf,.epub,.docx,.txt,image/*" className="hidden" onChange={upload} />
           {msg ? <span className="text-sm text-hot">{msg}</span> : null}

@@ -22,7 +22,7 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
 
   async function load() {
     const r = await fetch('/api/author/income');
-    if (!r.ok) { setMsg('Нет доступа: нужна роль автора'); return; }
+    if (!r.ok) { setMsg('Nema pristupa: potrebna je uloga autora'); return; }
     setData(await r.json());
   }
   useEffect(() => { load(); }, []);
@@ -35,7 +35,7 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
         body: JSON.stringify({ workId: work.id, exclusivity: !work.exclusivity }),
       });
       if (!r.ok) { setMsg('Не удалось изменить ставку.'); return; }
-      setMsg(!work.exclusivity ? 'Эксклюзив включён: 80% автору.' : 'Эксклюзив выключен: 70% автору.');
+      setMsg(!work.exclusivity ? 'Ekskluzivitet uključen: 80% autoru.' : 'Ekskluzivitet isključen: 70% autoru.');
       await load();
     } finally { setBusy(false); }
   }
@@ -90,7 +90,7 @@ export default function AuthorIncome({ initial }: { initial?: Income | null }) {
               disabled={busy}
               onClick={() => toggle(w)}
             >
-              {w.exclusivity ? 'Убрать эксклюзив' : 'Включить эксклюзив (80%)'}
+              {w.exclusivity ? 'Ukloni ekskluzivu' : 'Uključi ekskluzivitet (80%)'}
             </button>
           </li>
         ))}

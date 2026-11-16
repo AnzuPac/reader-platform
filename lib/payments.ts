@@ -62,7 +62,7 @@ export async function createPurchaseCheckout(opts: {
   return { mode: 'stripe', url: session.url as string };
 }
 
-/** Донат автору: Stripe Checkout в режиме payment. */
+/** Донат autoru: Stripe Checkout в режиме payment. */
 export async function createDonationCheckout(opts: {
   donationId: number;
   amountCents: number;

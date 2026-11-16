@@ -2,10 +2,10 @@ import { query, one, initSchema } from './db';
 import { PARAGRAPH_COMMENTS_SQL, flag } from './search';
 
 /**
- * Комментарии к абзацам (ТЗ 4.6, 5.4).
+ * Komentari к абзацам (ТЗ 4.6, 5.4).
  *
  * Доступны только там, где это разрешено правообладателем: самиздат и фанфики.
- * Для издательских книг и классики выключены и на чтении, и на записи —
+ * Для издательских книг и классики isključenы и на чтении, и на записи —
  * проверка одна и та же (works.paragraph_comments_enabled через дефолт).
  */
 
@@ -81,7 +81,7 @@ export async function addParagraphComment(input: {
   return { ok: true, id: rows[0].id };
 }
 
-/** Скрыть/показать комментарий: автор произведения, модератор или админ. */
+/** Sakrij/показать комментарий: автор произведения, модератор или админ. */
 export async function setParagraphCommentHidden(input: {
   commentId: number; hidden: boolean; actorId: number; actorRole: string;
 }): Promise<HideResult> {

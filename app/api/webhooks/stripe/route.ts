@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, purchase: res.ok, already: res.ok ? res.already : false });
     }
 
-    // Донат автору: подтверждение оплаты и начисление доли автора.
+    // Донат autoru: подтверждение оплаты и начисление доли автора.
     const donationId = Number(session?.metadata?.donationId);
     if (donationId) {
       await initSchema();

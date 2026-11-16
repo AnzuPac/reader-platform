@@ -65,37 +65,37 @@ export default function AdminPage() {
   async function saveToken() {
     localStorage.setItem('admin_token', token);
     await loadAll(token);
-    setMsg('Токен сохранён');
+    setMsg('Token sačuvan');
   }
 
   async function workAction(slg: string, action: string) {
     const r = await fetch('/api/admin/work-status', { method: 'POST', headers: headers(), body: JSON.stringify({ slug: slg, action }) });
-    setMsg(r.ok ? `Произведение: ${action}` : 'Ошибка');
+    setMsg(r.ok ? `Произведение: ${action}` : 'Greška');
     await loadAll();
   }
 
   async function confirmPayment(id: number) {
     const r = await fetch('/api/admin/payment', { method: 'POST', headers: headers(), body: JSON.stringify({ paymentId: id }) });
-    setMsg(r.ok ? 'Оплата подтверждена, подписка выдана' : 'Ошибка подтверждения');
+    setMsg(r.ok ? 'Plaćanje potvrđeno, pretplata izdata' : 'Greška potvrde');
     await loadAll();
   }
 
   async function confirmPurchase(id: number) {
     const r = await fetch('/api/admin/purchases', { method: 'POST', headers: headers(), body: JSON.stringify({ purchaseId: id, action: 'confirm' }) });
-    setMsg(r.ok ? 'Покупка подтверждена, доступ выдан' : 'Ошибка подтверждения покупки');
+    setMsg(r.ok ? 'Kupovina potvrđena, pristup odobren' : 'Greška potvrde kupovine');
     await loadAll();
   }
 
   async function confirmDonation(id: number) {
     const r = await fetch('/api/admin/donation', { method: 'POST', headers: headers(), body: JSON.stringify({ donationId: id }) });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Донат подтверждён, автору ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'RSD'}` : 'Ошибка подтверждения доната');
+    setMsg(r.ok ? `Донат подтверждён, autoru ${((j.authorCents || 0) / 100).toFixed(2)} ${j.currency || 'RSD'}` : 'Greška potvrde donacije');
     await loadAll();
   }
 
   async function commentAction(id: number, action: string) {
     const r = await fetch('/api/admin/comment', { method: 'POST', headers: headers(), body: JSON.stringify({ id, action }) });
-    setMsg(r.ok ? `Комментарий: ${action}` : 'Ошибка');
+    setMsg(r.ok ? `Komentar: ${action}` : 'Greška');
     await loadAll();
   }
 
@@ -103,7 +103,7 @@ export default function AdminPage() {
     e.preventDefault();
     const r = await fetch('/api/admin/work', { method: 'POST', headers: headers(), body: JSON.stringify({ title, description: desc, ageRating: age }) });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Произведение создано: ' + j.work.slug : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Delo napravljeno: ' + j.work.slug : 'Greška: ' + (j.error || r.status));
     setTitle(''); setDesc(''); await loadAll();
   }
 
@@ -114,7 +114,7 @@ export default function AdminPage() {
       body: JSON.stringify({ workSlug: slug, number, title: chTitle, content, access }),
     });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? `Глава ${j.chapter.number} добавлена` : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? `Глава ${j.chapter.number} добавлена` : 'Greška: ' + (j.error || r.status));
     setChTitle(''); setContent('');
   }
 
@@ -126,7 +126,7 @@ export default function AdminPage() {
     fd.append('file', coverFile);
     const r = await fetch('/api/admin/cover', { method: 'POST', headers: { 'x-admin-token': token }, body: fd });
     const j = await r.json().catch(() => ({}));
-    setMsg(r.ok ? 'Обложка загружена: ' + j.cover : 'Ошибка: ' + (j.error || r.status));
+    setMsg(r.ok ? 'Обложка загружена: ' + j.cover : 'Greška: ' + (j.error || r.status));
   }
 
   const Tab = ({ id, label, count }: { id: typeof tab; label: string; count?: number }) => (
@@ -138,24 +138,24 @@ export default function AdminPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
-      <h1 className="mb-5 text-2xl font-bold">Админка</h1>
+      <h1 className="mb-5 text-2xl font-bold">Administracija</h1>
       <p className="mb-4 text-sm muted">
-        <a className="text-brand hover:underline" href="/sr/admin/publishers">Издательства и заявки →</a>
+        <a className="text-brand hover:underline" href="/sr/admin/publishers">Издательства и prijave →</a>
       </p>
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">
-        <input className="input max-w-xs" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен доступа" />
-        <button className="btn btn-ghost" onClick={saveToken}>Сохранить токен</button>
+        <input className="input max-w-xs" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pristupni token" />
+        <button className="btn btn-ghost" onClick={saveToken}>Sačuvaj токен</button>
         {msg ? <span className="text-sm text-hot">{msg}</span> : null}
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
         <Tab id="review" label="На проверке" count={review.length} />
-        <Tab id="payments" label="Оплаты" count={payments.length} />
-        <Tab id="purchases" label="Покупки" count={purchases.length} />
-        <Tab id="donations" label="Донаты" count={donations.length} />
-        <Tab id="comments" label="Комментарии" count={comments.length} />
-        <Tab id="content" label="Контент" />
+        <Tab id="payments" label="Plaćanja" count={payments.length} />
+        <Tab id="purchases" label="Kupovine" count={purchases.length} />
+        <Tab id="donations" label="Donacije" count={donations.length} />
+        <Tab id="comments" label="Komentari" count={comments.length} />
+        <Tab id="content" label="Sadržaj" />
       </div>
 
       {tab === 'review' ? (
@@ -166,7 +166,7 @@ export default function AdminPage() {
                 <span className="flex-1 font-medium">{w.title}</span>
                 <span className="text-xs muted">{w.author}</span>
                 <button className="btn btn-primary" onClick={() => workAction(w.slug, 'publish')}>Опубликовать</button>
-                <button className="btn btn-ghost" onClick={() => workAction(w.slug, 'hide')}>Скрыть</button>
+                <button className="btn btn-ghost" onClick={() => workAction(w.slug, 'hide')}>Sakrij</button>
               </li>
             ))}
             {review.length === 0 ? <li className="px-4 py-4 text-sm muted">Нет произведений на проверке</li> : null}
@@ -197,7 +197,7 @@ export default function AdminPage() {
                 <span className="flex-1">
                   #{p.id} · {p.user} ({p.email})
                   <span className="block text-xs muted">
-                    {p.work || '—'}{p.chapter ? ` · ${p.chapter} (гл. ${p.chapter_number})` : ' · вся книга'} · {p.provider}
+                    {p.work || '—'}{p.chapter ? ` · ${p.chapter} (gl. ${p.chapter_number})` : ' · вся книга'} · {p.provider}
                   </span>
                 </span>
                 <span className="text-sm">{(p.amount_cents / 100).toFixed(2)} {p.currency}</span>
@@ -216,7 +216,7 @@ export default function AdminPage() {
               <li key={d.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <span className="flex-1">
                   #{d.id} · {d.user} → {d.author}
-                  <span className="block text-xs muted">{d.work} · {d.message || 'без сообщения'}</span>
+                  <span className="block text-xs muted">{d.work} · {d.message || 'bez poruke'}</span>
                 </span>
                 <span className="text-sm">{(d.amount_cents / 100).toFixed(2)} {d.currency}</span>
                 <button className="btn btn-primary" onClick={() => confirmDonation(d.id)}>Подтвердить</button>
@@ -236,7 +236,7 @@ export default function AdminPage() {
                 <div className="mb-2 text-sm" dangerouslySetInnerHTML={{ __html: c.body }} />
                 <div className="flex gap-2 text-xs">
                   <button className="text-mist hover:text-brand" onClick={() => commentAction(c.id, 'show')}>показать</button>
-                  <button className="text-mist hover:text-brand" onClick={() => commentAction(c.id, 'hide')}>скрыть</button>
+                  <button className="text-mist hover:text-brand" onClick={() => commentAction(c.id, 'hide')}>skrivenь</button>
                   <button className="text-mist hover:text-hot" onClick={() => commentAction(c.id, 'delete')}>удалить</button>
                 </div>
               </li>
@@ -250,8 +250,8 @@ export default function AdminPage() {
         <div className="space-y-5">
           <form onSubmit={createWork} className="card space-y-3 p-4">
             <h2 className="font-semibold">Новое произведение</h2>
-            <input className="input" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <textarea className="input" rows={3} placeholder="Описание" value={desc} onChange={(e) => setDesc(e.target.value)} />
+            <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <textarea className="input" rows={3} placeholder="Naslov" value={desc} onChange={(e) => setDesc(e.target.value)} />
             <div className="flex items-center gap-3 text-sm">
               <span className="muted">Возраст:</span>
               {[0, 16, 18].map((a) => (
@@ -270,7 +270,7 @@ export default function AdminPage() {
               {works.map((w) => <option key={w.id} value={w.slug}>{w.title}</option>)}
             </select>
             <input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} />
-            <button className="btn btn-primary">Загрузить обложку</button>
+            <button className="btn btn-primary">Otpremi обложку</button>
           </form>
 
           <form onSubmit={createChapter} className="card space-y-3 p-4">
@@ -281,9 +281,9 @@ export default function AdminPage() {
             </select>
             <div className="flex gap-2">
               <input className="input max-w-[110px]" type="number" min={1} value={number} onChange={(e) => setNumber(Number(e.target.value))} />
-              <input className="input" placeholder="Название главы" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
+              <input className="input" placeholder="Naslov glave" value={chTitle} onChange={(e) => setChTitle(e.target.value)} />
             </div>
-            <textarea className="input" rows={8} placeholder="Текст главы" value={content} onChange={(e) => setContent(e.target.value)} />
+            <textarea className="input" rows={8} placeholder="Текст glave" value={content} onChange={(e) => setContent(e.target.value)} />
             <select className="input max-w-[200px]" value={access} onChange={(e) => setAccess(e.target.value)}>
               <option value="free">Бесплатно</option>
               <option value="subscribers">Подписчики</option>

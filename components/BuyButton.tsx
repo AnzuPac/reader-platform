@@ -8,7 +8,7 @@ function money(cents: number, currency: string): string {
 
 /**
  * Кнопка разовой покупки. Работает и со Stripe (переход на Checkout),
- * и в ручном режиме (заявка уходит админу, доступ откроется после подтверждения).
+ * и в ручном режиме (заявка уходит админу, доступ откроется после potvrde).
  */
 export default function BuyButton({
   workId,

@@ -7,7 +7,7 @@ type Script = 'lat' | 'cir';
 
 const LABEL: Record<Lang, string> = { sr: 'SR', en: 'EN', ru: 'RU' };
 
-/** Лимит текста комментария к абзацу: тот же, что проверяет lib/paragraph-comments.ts. */
+/** Лимит текста комментария na pasus: тот же, что проверяет lib/paragraph-comments.ts. */
 const PC_MAX = 1000;
 
 type ParagraphComment = {
@@ -55,7 +55,7 @@ export default function ChapterBody({
   const [errorText, setErrorText] = useState('');
   const [translitDenied, setTranslitDenied] = useState(false);
 
-  /* === Комментарии к абзацам (ТЗ 4.6, 5.4) === */
+  /* === Komentari к абзацам (ТЗ 4.6, 5.4) === */
   const [pcItems, setPcItems] = useState<ParagraphComment[]>([]);
   const [pcCanModerate, setPcCanModerate] = useState(false);
   const [pcActive, setPcActive] = useState<number | null>(null);
@@ -102,7 +102,7 @@ export default function ChapterBody({
 
   const pcUrl = `/api/chapters/${chapterId}/paragraph-comments`;
 
-  /** Список комментариев главы. Скрытые приходят только тем, кто может их вернуть. */
+  /** Lista комментариев главы. Скрытые приходят только тем, кто может их вернуть. */
   const loadParagraphComments = useCallback(async () => {
     if (!paragraphCommentsEnabled) return;
     try {
@@ -127,7 +127,7 @@ export default function ChapterBody({
 
   const blocks = useMemo(() => splitParagraphs(content), [content]);
 
-  /** Комментарии по абзацам: скрытые не считаем и не показываем без прав. */
+  /** Komentari по абзацам: skrivenые не считаем и не показываем без прав. */
   const pcByParagraph = useMemo(() => {
     const map = new Map<number, ParagraphComment[]>();
     for (const c of pcItems) {
@@ -149,7 +149,7 @@ export default function ChapterBody({
     e.preventDefault();
     const text = pcDraft.trim();
     if (pcSending) return;
-    if (!text) { setPcMsg('Введите текст комментария.'); return; }
+    if (!text) { setPcMsg('Unesite tekst komentara.'); return; }
     if (text.length > PC_MAX) { setPcMsg(`Максимум ${PC_MAX} символов.`); return; }
     setPcSending(true);
     setPcMsg('');
@@ -161,10 +161,10 @@ export default function ChapterBody({
       });
       const j = await r.json().catch(() => ({}));
       if (r.status === 401) { setPcMsg('Войдите, чтобы оставить комментарий.'); return; }
-      if (r.status === 403) { setPcMsg('Комментарии отключены правообладателем.'); return; }
+      if (r.status === 403) { setPcMsg('Komentari isključeni od strane nosioca prava.'); return; }
       if (!r.ok) {
         setPcMsg(
-          j.error === 'bad_text' ? `Текст пустой или длиннее ${PC_MAX} символов.`
+          j.error === 'bad_text' ? `Tekst je prazan ili duži od ${PC_MAX} karaktera.`
             : j.error === 'bad_index' ? 'Неверный номер абзаца.'
             : 'Не удалось отправить комментарий.'
         );
@@ -173,7 +173,7 @@ export default function ChapterBody({
       setPcDraft('');
       await loadParagraphComments();
     } catch {
-      setPcMsg('Ошибка сети. Попробуйте ещё раз.');
+      setPcMsg('Greška mreže. Pokušajte ponovo.');
     } finally {
       setPcSending(false);
     }
@@ -189,12 +189,12 @@ export default function ChapterBody({
         body: JSON.stringify({ commentId: c.id, hidden: !c.hidden }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.status === 401) { setPcMsg('Войдите, чтобы модерировать комментарии.'); return; }
+      if (r.status === 401) { setPcMsg('Prijavite se da biste moderirali komentare.'); return; }
       if (r.status === 403) { setPcMsg('Нет прав: скрывать может автор произведения или модератор.'); return; }
-      if (!r.ok) { setPcMsg(j.error === 'not_found' ? 'Комментарий не найден.' : 'Не удалось изменить видимость.'); return; }
+      if (!r.ok) { setPcMsg(j.error === 'not_found' ? 'Komentar nije pronađen.' : 'Не удалось изменить видимость.'); return; }
       await loadParagraphComments();
     } catch {
-      setPcMsg('Ошибка сети. Попробуйте ещё раз.');
+      setPcMsg('Greška mreže. Pokušajte ponovo.');
     } finally {
       setPcBusyId(null);
     }
@@ -218,13 +218,13 @@ export default function ChapterBody({
         body: JSON.stringify({ chapterId, lang: target }),
       });
       const j = await r.json();
-      if (!r.ok) { setNote('Перевод не удался: ' + (j.error || r.status)); return; }
+      if (!r.ok) { setNote('Prevod nije uspeo: ' + (j.error || r.status)); return; }
       setContent(j.content);
       setLang(target);
       setScript(null);
-      setNote(j.cached ? 'Перевод из кэша' : 'Переведено ИИ');
+      setNote(j.cached ? 'Prevod iz keša' : 'Preveo AI');
     } catch {
-      setNote('Перевод не удался');
+      setNote('Prevod nije uspeo');
     } finally {
       setBusy(null);
     }
@@ -267,7 +267,7 @@ export default function ChapterBody({
     );
   }
 
-  /** Сколько видимых (не скрытых) комментариев у абзаца — число на иконке. */
+  /** Сколько vidljivih (не skrivenых) комментариев у абзаца — число на иконке. */
   function visibleCount(index: number): number {
     return (pcByParagraph.get(index) ?? []).filter((c) => !c.hidden).length;
   }
@@ -278,8 +278,8 @@ export default function ChapterBody({
     return (
       <div className="pc-panel mb-5 rounded-xl border border-line bg-panel p-3 text-sm font-sans">
         <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-          <span className="font-semibold text-mist">Комментарии к абзацу {index + 1}</span>
-          <span className="muted">{visible ? `${visible} видимых` : 'пока пусто'}</span>
+          <span className="font-semibold text-mist">Komentari na pasus {index + 1}</span>
+          <span className="muted">{visible ? `${visible} vidljivih` : 'za sada prazno'}</span>
         </div>
 
         {list.length ? (
@@ -289,7 +289,7 @@ export default function ChapterBody({
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
                   <span className="font-semibold text-ink">{c.author}</span>
                   <span className="muted">{formatWhen(c.created_at)}</span>
-                  {c.hidden ? <span className="badge-hot">скрыт</span> : null}
+                  {c.hidden ? <span className="badge-hot">skriven</span> : null}
                   {pcCanModerate ? (
                     <button
                       type="button"
@@ -297,7 +297,7 @@ export default function ChapterBody({
                       onClick={() => void toggleHidden(c)}
                       disabled={pcBusyId === c.id}
                     >
-                      {pcBusyId === c.id ? '…' : c.hidden ? 'Показать' : 'Скрыть'}
+                      {pcBusyId === c.id ? '…' : c.hidden ? 'Prikaži' : 'Sakrij'}
                     </button>
                   ) : null}
                 </div>
@@ -314,13 +314,13 @@ export default function ChapterBody({
             className="input"
             rows={2}
             maxLength={PC_MAX}
-            placeholder="Ваш комментарий к абзацу…"
+            placeholder="Vaš komentar na pasus…"
             value={pcDraft}
             onChange={(e) => setPcDraft(e.target.value)}
           />
           <div className="flex flex-wrap items-center gap-3">
             <button className="btn btn-primary" disabled={pcSending || !pcDraft.trim()}>
-              {pcSending ? 'Отправка…' : 'Отправить'}
+              {pcSending ? 'Šaljem…' : 'Pošalji'}
             </button>
             <span className="text-xs muted">{pcDraft.length}/{PC_MAX}</span>
             {pcMsg ? <span className="text-xs text-hot">{pcMsg}</span> : null}
@@ -333,7 +333,7 @@ export default function ChapterBody({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-        <span className="muted">Читать на:</span>
+        <span className="muted">Čitaj на:</span>
         {(['sr', 'en', 'ru'] as Lang[]).map((code) => (
           <button
             key={code}
@@ -396,8 +396,8 @@ export default function ChapterBody({
                     className={`pc-icon${visibleCount(idx) ? ' has-comments' : ''}${pcActive === idx ? ' active' : ''}`}
                     onClick={() => togglePanel(idx)}
                     aria-expanded={pcActive === idx}
-                    aria-label={`Комментарии к абзацу ${idx + 1}`}
-                    title={visibleCount(idx) ? `Комментарии: ${visibleCount(idx)}` : 'Комментировать абзац'}
+                    aria-label={`Komentari na pasus ${idx + 1}`}
+                    title={visibleCount(idx) ? `Komentari: ${visibleCount(idx)}` : 'Комментировать абзац'}
                   >
                     {visibleCount(idx) ? `💬 ${visibleCount(idx)}` : '💬'}
                   </button>
