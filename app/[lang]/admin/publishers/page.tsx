@@ -82,7 +82,7 @@ export default function AdminPublishersPage() {
       method: 'POST', headers: headers(), body: JSON.stringify(body),
     }).then((x) => x.json()).catch(() => ({}));
     if (r.ok) {
-      setMsg(`Delo povezano${r.priceCents != null ? `, цена ${Math.round(r.priceCents / 100)} RSD` : ''}`);
+      setMsg(`Delo povezano${r.priceCents != null ? `, cena ${Math.round(r.priceCents / 100)} RSD` : ''}`);
       await loadAll();
     } else setMsg(`Greška: ${r.error || 'nije uspelo'}`);
   }
