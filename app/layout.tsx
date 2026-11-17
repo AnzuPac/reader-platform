@@ -3,7 +3,7 @@ import '../styles/bookverse.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Čitaonica',
+  title: 'terolibrary',
   description: 'Romani i priče — čitaj besplatno, podrži autore pretplatom.',
 };
 

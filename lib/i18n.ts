@@ -9,7 +9,7 @@ export function isLang(v: string): v is Lang {
 type Dict = Record<string, string>;
 
 const sr: Dict = {
-  brand: 'Čitaonica',
+  brand: 'terolibrary',
   nav_home: 'Početna',
   nav_catalog: 'Katalog',
   nav_library: 'Moja biblioteka',
@@ -61,7 +61,7 @@ const en: Dict = {
 };
 
 const ru: Dict = {
-  brand: 'Čitaonica',
+  brand: 'terolibrary',
   nav_home: 'Početna',
   nav_catalog: 'Katalog',
   nav_library: 'Moja biblioteka',
