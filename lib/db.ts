@@ -156,7 +156,12 @@ async function initPg() {
   const { Pool } = await import('pg');
   pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
   const schema = readFileSync(path.join(process.cwd(), 'db', 'schema.sql'), 'utf8');
-  await pgPool.query(schema);
+  try {
+    await pgPool.query(schema);
+  } catch (e: any) {
+    // Таблицы уже созданы при первом старте — повторный прогон схемы безопасно пропускаем.
+    if (e?.code !== '42P07') throw e;
+  }
   await migratePg(pgPool);
   return pgPool;
 }
