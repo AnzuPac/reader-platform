@@ -19,6 +19,7 @@ const FONTS = [
 
 export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [edits, setEdits] = useState<Array<{ id: number; chapter_number: number; title: string; status: string; comment: string | null }>>([]);
   const [number, setNumber] = useState(1);
   const [title, setTitle] = useState('');
   const [access, setAccess] = useState('free');
@@ -50,6 +51,13 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     setChapters(j.chapters || []);
   }
   useEffect(() => { loadChapters(); }, [workSlug]);
+  useEffect(() => { loadEdits(); }, []);
+  async function loadEdits() {
+    const r = await fetch('/api/author/chapter-edit');
+    if (!r.ok) return;
+    const j = await r.json().catch(() => ({}));
+    setEdits(j.requests || []);
+  }
 
   async function openChapter(n: number) {
     const r = await fetch(`/api/author/chapter?work=${encodeURIComponent(workSlug)}`);
@@ -134,15 +142,22 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     setBusy(true); setMsg('');
     const body = editor.getHTML();
     const wrapped = `<div style="font-family:${font}">${body}</div>`;
-    const r = await fetch('/api/author/chapter', {
+    const meta = chapters.find((c) => c.number === number);
+    const published = meta?.status === 'published';
+    const r = await fetch(published ? '/api/author/chapter-edit' : '/api/author/chapter', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workSlug, number, title, content: wrapped, access }),
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) { setMsg('Greška сохранения: ' + (j.error || r.status)); return; }
-    setMsg(`Сохранено: глава ${j.chapter.number}, ${j.words} слов`);
-    await loadChapters();
+    if (published) {
+      setMsg(`Izmena poslata na moderaciju (zahtev ${j.requestId}). Glava ostaje objavljena do odluke.`);
+      await loadEdits();
+    } else {
+      setMsg(`Sačuvano: глава ${j.chapter.number}, ${j.words} слов`);
+      await loadChapters();
+    }
   }
 
   const B = ({ on, active, children, onClick, title: ttl }: any) => (
@@ -223,6 +238,24 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
             </li>
           ))}
           {chapters.length === 0 ? <li className="px-4 py-3 text-sm muted">Пока нет глав</li> : null}
+        </ul>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="border-b border-line px-4 py-3 font-semibold">
+          Заявки на правку ({edits.filter((e) => e.status === 'pending').length} на модерации)
+        </div>
+        <ul className="divide-y divide-line">
+          {edits.slice(0, 10).map((e) => (
+            <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+              <span className="w-8 muted">{e.chapter_number}</span>
+              <span className="flex-1">{e.title}</span>
+              <span className={e.status === 'approved' ? 'text-xs text-brand' : e.status === 'rejected' ? 'text-xs text-hot' : 'text-xs muted'}>
+                {e.status === 'pending' ? 'на модерации' : e.status === 'approved' ? 'одобрено' : 'отклонено'}
+              </span>
+            </li>
+          ))}
+          {edits.length === 0 ? <li className="px-4 py-3 text-sm muted">Заявок пока нет</li> : null}
         </ul>
       </div>
     </div>

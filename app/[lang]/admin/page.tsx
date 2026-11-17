@@ -22,7 +22,7 @@ export default function AdminPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [msg, setMsg] = useState('');
-  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'donations' | 'comments' | 'content'>('review');
+  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'donations' | 'comments' | 'content' | 'edits'>('review');
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [access, setAccess] = useState('free');
   const [coverSlug, setCoverSlug] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [edits, setEdits] = useState<Array<{ id: number; work_title: string; chapter_number: number; title: string; word_count: number; author: string }>>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('admin_token') || '';
@@ -46,13 +47,14 @@ export default function AdminPage() {
   }
 
   async function loadAll(tk = token) {
-    const [w, rv, pay, buys, cm, dn] = await Promise.all([
+    const [w, rv, pay, buys, cm, dn, ed] = await Promise.all([
       fetch('/api/admin/work', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/works?status=review', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/payments?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/purchases?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/comment', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/donation?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/admin/chapter-edits', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
     ]);
     setWorks(w.works || []);
     setReview(rv.works || []);
@@ -60,6 +62,17 @@ export default function AdminPage() {
     setPurchases(buys.purchases || []);
     setComments(cm.comments || []);
     setDonations(dn.donations || []);
+    setEdits(ed.requests || []);
+  }
+
+  async function decideEdit(id: number, action: 'approve' | 'reject') {
+    const r = await fetch('/api/admin/chapter-edits', {
+      method: 'POST', headers: headers(), body: JSON.stringify({ id, action }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
+    setMsg(action === 'approve' ? 'Правка одобрена и применена' : 'Заявка отклонена');
+    await loadAll();
   }
 
   async function saveToken() {
@@ -155,6 +168,7 @@ export default function AdminPage() {
         <Tab id="purchases" label="Покупки" count={purchases.length} />
         <Tab id="donations" label="Донаты" count={donations.length} />
         <Tab id="comments" label="Комментарии" count={comments.length} />
+        <Tab id="edits" label="Правки глав" count={edits.length} />
         <Tab id="content" label="Контент" />
       </div>
 
@@ -303,6 +317,24 @@ export default function AdminPage() {
               ))}
             </ul>
           </div>
+        </div>
+      ) : null}
+      {tab === 'edits' ? (
+        <div className="card overflow-hidden">
+          <div className="border-b border-line px-4 py-3 font-semibold">Заявки на правку опубликованных глав</div>
+          <ul className="divide-y divide-line">
+            {edits.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <span className="text-sm muted">{e.work_title} · гл. {e.chapter_number}</span>
+                <span className="flex-1 text-sm">
+                  {e.title} <span className="muted">({e.word_count} слов, {e.author})</span>
+                </span>
+                <button className="btn btn-primary" onClick={() => decideEdit(e.id, 'approve')}>Одобрить</button>
+                <button className="btn btn-ghost" onClick={() => decideEdit(e.id, 'reject')}>Отклонить</button>
+              </li>
+            ))}
+            {edits.length === 0 ? <li className="px-4 py-3 text-sm muted">Заявок нет</li> : null}
+          </ul>
         </div>
       ) : null}
     </main>

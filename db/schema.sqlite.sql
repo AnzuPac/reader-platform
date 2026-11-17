@@ -668,3 +668,19 @@ CREATE TABLE IF NOT EXISTS pool_ledger (
   cents       INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS pool_ledger_run_idx ON pool_ledger(pool_run_id);
+
+-- Заявки на правку уже опубликованных глав: автор предлагает — админ решает.
+CREATE TABLE IF NOT EXISTS chapter_edit_requests (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id   BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  author_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title        TEXT NOT NULL DEFAULT '',
+  content      TEXT NOT NULL DEFAULT '',
+  word_count   INTEGER NOT NULL DEFAULT 0,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  comment      TEXT,
+  reviewer_id  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS chapter_edit_requests_status_idx ON chapter_edit_requests(status, created_at);
