@@ -120,7 +120,7 @@ export async function createDonation(
   let currency = currencyRow?.currency || 'RSD';
   if (chapter) {
     const cp = await one<{ currency: string }>(
-      'SELECT currency FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
+      'SELECT currency FROM chapter_prices WHERE chapter_id = $1 AND active = TRUE',
       [chapter.id]
     );
     if (cp?.currency) currency = cp.currency;

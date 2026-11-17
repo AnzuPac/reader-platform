@@ -52,7 +52,7 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
       where.push(`w.search_norm LIKE $${params.length}`);
     }
   }
-  if (opts.classic) where.push('w.is_classic = 1');
+  if (opts.classic) where.push('w.is_classic = TRUE');
   if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
   if (opts.fanfic === false) where.push("w.kind = 'original'");
   if (wtype === 'novel' || wtype === 'comic') {
@@ -60,9 +60,9 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     where.push(`w.type = $${params.length}`);
   }
   if (source === 'publisher') where.push('w.publisher_id IS NOT NULL');
-  if (source === 'selfpub') where.push("w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = 0");
+  if (source === 'selfpub') where.push("w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = FALSE");
   if (source === 'fanfic') where.push("w.kind = 'fanfic'");
-  if (source === 'classic') where.push('w.is_classic = 1');
+  if (source === 'classic') where.push('w.is_classic = TRUE');
   if (opts.free) {
     where.push(`EXISTS (SELECT 1 FROM chapters c WHERE c.work_id = w.id
                          AND c.status = 'published' AND c.access = 'free')`);

@@ -1,0 +1,4 @@
+terolibrary.com, www.terolibrary.com {
+	encode gzip zstd
+	reverse_proxy app:3020
+}

@@ -25,7 +25,7 @@ export async function deleteAccount(uid: number): Promise<{ ok: true }> {
     `UPDATE users SET email = 'deleted+' || id || '@invalid', display_name = 'Obrisan nalog',
             password_hash = NULL, deleted_at = now() WHERE id = $1`, [uid]
   );
-  await query('UPDATE comments SET hidden = 1 WHERE user_id = $1', [uid]).catch(() => {});
+  await query('UPDATE comments SET hidden = TRUE WHERE user_id = $1', [uid]).catch(() => {});
   await query('DELETE FROM refresh_tokens WHERE user_id = $1', [uid]).catch(() => {});
   await query('DELETE FROM family_members WHERE member_user_id = $1 OR owner_user_id = $1', [uid]).catch(() => {});
   return { ok: true };

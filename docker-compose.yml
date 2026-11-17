@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: reader
-      POSTGRES_PASSWORD: change-me
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: reader
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -20,18 +20,36 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://reader:change-me@db:5432/reader
-      SITE_URL: https://example.com
-      JWT_SECRET: change-me-to-a-long-random-string-32chars
-      ADMIN_TOKEN: change-me-admin-token
-      OLLAMA_URL: http://host.docker.internal:11434
-    ports:
-      - "3020:3020"
+      DATABASE_URL: postgres://reader:${POSTGRES_PASSWORD}@db:5432/reader
+      SITE_URL: ${SITE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@terolibrary.com}
+    expose:
+      - "3020"
     volumes:
       - uploads:/app/public/uploads
       - storage:/app/data/storage
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_URL: ${SITE_URL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
 
 volumes:
   pgdata:
   uploads:
   storage:
+  caddy_data:
+  caddy_config:

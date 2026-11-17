@@ -14,7 +14,7 @@ export async function isSubscriber(userId: number | null): Promise<boolean> {
 export async function getAdSlot(code: string): Promise<{ html: string; title: string } | null> {
   await initSchema();
   const row = await one<{ html: string; title: string }>(
-    'SELECT html, title FROM ad_slots WHERE code = $1 AND active = 1', [code]
+    'SELECT html, title FROM ad_slots WHERE code = $1 AND active = TRUE', [code]
   );
   return row && row.html ? row : null;
 }

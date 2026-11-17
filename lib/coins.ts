@@ -119,13 +119,13 @@ export async function refundCoins(userId: number, coins: number, refId: string |
 
 export async function listCoinPackages(): Promise<CoinPackage[]> {
   return query<CoinPackage>(
-    'SELECT code, coins, price_rsd, bonus_coins FROM coin_packages WHERE active = 1 ORDER BY coins'
+    'SELECT code, coins, price_rsd, bonus_coins FROM coin_packages WHERE active = TRUE ORDER BY coins'
   );
 }
 
 export async function getCoinPackage(code: string): Promise<CoinPackage | null> {
   return one<CoinPackage>(
-    'SELECT code, coins, price_rsd, bonus_coins FROM coin_packages WHERE code = $1 AND active = 1', [code]
+    'SELECT code, coins, price_rsd, bonus_coins FROM coin_packages WHERE code = $1 AND active = TRUE', [code]
   );
 }
 

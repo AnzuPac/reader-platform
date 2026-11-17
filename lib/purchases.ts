@@ -87,7 +87,7 @@ export async function effectiveChapterPrice(ch: {
   id: number; work_id: number; price_cents: number;
 }): Promise<ChapterPrice | null> {
   const cp = await one<{ coins: number; amount_cents: number }>(
-    'SELECT coins, amount_cents FROM chapter_prices WHERE chapter_id = $1 AND active = 1',
+    'SELECT coins, amount_cents FROM chapter_prices WHERE chapter_id = $1 AND active = TRUE',
     [ch.id]
   );
   let coins = Number(cp?.coins || 0);
@@ -110,7 +110,7 @@ export async function chapterPriceSummary(workId: number): Promise<{
   const bookCoins = book ? wholeCoins(book.amount_cents) : null;
   const row = await one<{ s: number }>(
     `SELECT COALESCE(SUM(
-              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = 1 AND cp.coins > 0
+              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = TRUE AND cp.coins > 0
                    THEN cp.coins
                    ELSE CAST(ROUND(c.price_cents / 100.0) AS INTEGER) END), 0) AS s
        FROM chapters c
@@ -130,7 +130,7 @@ export async function chapterPriceSummary(workId: number): Promise<{
 async function otherChaptersCoins(workId: number, exceptChapterId: number): Promise<number> {
   const row = await one<{ s: number }>(
     `SELECT COALESCE(SUM(
-              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = 1 AND cp.coins > 0
+              CASE WHEN cp.chapter_id IS NOT NULL AND cp.active = TRUE AND cp.coins > 0
                    THEN cp.coins
                    ELSE CAST(ROUND(c.price_cents / 100.0) AS INTEGER) END), 0) AS s
        FROM chapters c

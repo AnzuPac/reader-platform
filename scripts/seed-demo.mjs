@@ -18,6 +18,8 @@ const CHAPTER_PRICE_CENTS = CHAPTER_COINS * 100;
 const ENV = process.env.DATABASE_URL ? 'pg' : 'sqlite';
 let db;
 let pg;
+// PostgreSQL: BOOLEAN → TRUE/FALSE; SQLite: INTEGER 1/0.
+const BOOL = (v) => (ENV === 'pg' ? (v ? 'TRUE' : 'FALSE') : (v ? 1 : 0));
 
 function toPg(sql) {
   let i = 0;
@@ -43,7 +45,12 @@ async function init() {
   if (ENV === 'pg') {
     const { Pool } = await import('pg');
     pg = new Pool({ connectionString: process.env.DATABASE_URL });
-    await pg.query(schema);
+    try {
+      await pg.query(schema);
+    } catch (e) {
+      // Таблицы уже создал сервер при старте (initSchema) — это нормально.
+      if (e?.code !== '42P07') throw e;
+    }
   } else {
     const { DatabaseSync } = await import('node:sqlite');
     const dir = process.env.SQLITE_DIR || path.join(root, 'data');
@@ -64,7 +71,7 @@ async function init() {
   }
 
   // v0.2: старые тарифы выключаем, семейный — 5 профилей (после схемы).
-  try { await exec("UPDATE plans SET active = 0 WHERE code IN ('free','reader','reader_plus')"); } catch {}
+  try { await exec(`UPDATE plans SET active = ${BOOL(false)} WHERE code IN ('free','reader','reader_plus')`); } catch {}
   try { await exec("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
 }
 
@@ -73,12 +80,12 @@ const hash = bcrypt.hashSync(PASSWORD, 10);
 async function upsertUser(email, displayName, role) {
   const rows = await q(
     `INSERT INTO users (email, password_hash, display_name, role, locale, email_verified)
-     VALUES (?,?,?,?,'sr',1)
+     VALUES (?,?,?,?,'sr',${BOOL(true)})
      ON CONFLICT(email) DO UPDATE SET
        password_hash = excluded.password_hash,
        display_name = excluded.display_name,
        role = excluded.role,
-       email_verified = 1
+       email_verified = ${BOOL(true)}
      RETURNING id`,
     [email, hash, displayName, role]
   );
@@ -223,10 +230,10 @@ async function ensureAuthorEarning(authorId, workId, purchaseId, amount, pct) {
 async function setChapterCoins(chapterId, coins) {
   await q(
     `INSERT INTO chapter_prices (chapter_id, coins, amount_cents, currency, active)
-     VALUES (?,?,?,'RSD',1)
+     VALUES (?,?,?,'RSD',${BOOL(true)})
      ON CONFLICT(chapter_id) DO UPDATE SET
        coins = excluded.coins, amount_cents = excluded.amount_cents,
-       currency = 'RSD', active = 1`,
+       currency = 'RSD', active = ${BOOL(true)}`,
     [chapterId, coins, coins * 100]
   );
   await q('UPDATE chapters SET price_cents = ? WHERE id = ?', [coins * 100, chapterId]);

@@ -17,6 +17,6 @@ export async function GET(req: Request) {
   }
 
   await query('UPDATE email_tokens SET used_at = now() WHERE id = $1', [row.id]);
-  await query('UPDATE users SET email_verified = 1 WHERE id = $1', [row.user_id]);
+  await query('UPDATE users SET email_verified = TRUE WHERE id = $1', [row.user_id]);
   return NextResponse.redirect(new URL('/sr?verified=1', url.origin));
 }

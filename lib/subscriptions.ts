@@ -34,7 +34,7 @@ export type SubscriptionRow = {
 export async function listPlans(): Promise<PlanRow[]> {
   return query<PlanRow>(
     `SELECT code, name, price_cents, currency, period, max_profiles, active
-       FROM plans WHERE active = 1 ORDER BY price_cents`
+       FROM plans WHERE active = TRUE ORDER BY price_cents`
   );
 }
 
@@ -118,7 +118,7 @@ export async function cancelSubscription(userId: number): Promise<{ ok: boolean;
   const sub = await activeSubscription(userId);
   if (!sub) return { ok: false, error: 'not_found' };
   await query(
-    `UPDATE subscriptions SET status = 'canceled', auto_renew = 0, canceled_at = now()
+    `UPDATE subscriptions SET status = 'canceled', auto_renew = FALSE, canceled_at = now()
       WHERE id = $1 AND status = 'active'`,
     [sub.id]
   );
@@ -132,7 +132,7 @@ export async function dueRenewalReminders(days = RENEWAL_REMINDER_DAYS): Promise
     : "datetime('now', '+' || $1 || ' days')";
   return query<SubscriptionRow>(
     `SELECT * FROM subscriptions
-      WHERE status = 'active' AND auto_renew = 1 AND reminder_sent_at IS NULL
+      WHERE status = 'active' AND auto_renew = TRUE AND reminder_sent_at IS NULL
         AND current_period_end > now()
         AND current_period_end <= ${p}
       ORDER BY current_period_end`,
