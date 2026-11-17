@@ -12,12 +12,23 @@ export async function GET() {
   const s = await requireAuthor();
   if (!s) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   await initSchema();
+  // Границы периода — строками в формате SQLite/ISO, чтобы работало и на PostgreSQL.
+  const cut = (days: number) => new Date(Date.now() - days * 86400000).toISOString().slice(0, 19).replace('T', ' ');
+  const cut7 = cut(7);
+  const cut30 = cut(30);
   const works = await query(
     `SELECT w.id, w.slug, w.title, w.type, w.status, w.completion, w.words_total, w.cover_path, w.updated_at,
             w.views_total,
             (SELECT CAST(COUNT(*) AS INTEGER) FROM chapters c WHERE c.work_id = w.id AND c.status = 'published') AS chapters,
-            (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p WHERE p.work_id = w.id) AS readers
-       FROM works w WHERE w.author_id = $1 ORDER BY w.updated_at DESC`, [s.uid]
+            (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p WHERE p.work_id = w.id) AS readers,
+            (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p
+              WHERE p.work_id = w.id AND p.updated_at >= $2) AS readers7,
+            (SELECT CAST(COUNT(DISTINCT p.user_id) AS INTEGER) FROM reading_progress p
+              WHERE p.work_id = w.id AND p.updated_at >= $3) AS readers30,
+            (SELECT CAST(COUNT(*) AS INTEGER) FROM ratings r WHERE r.work_id = w.id) AS likes,
+            (SELECT CAST(COUNT(*) AS INTEGER) FROM bookmarks b JOIN chapters c ON c.id = b.chapter_id
+              WHERE c.work_id = w.id) AS bookmarks
+       FROM works w WHERE w.author_id = $1 ORDER BY w.updated_at DESC`, [s.uid, cut7, cut30]
   );
   return NextResponse.json({ works });
 }

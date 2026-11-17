@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-type Work = { id: number; slug: string; title: string; status: string; words_total: number; updated_at: string; views_total: number; chapters: number; readers: number };
+type Work = { id: number; slug: string; title: string; status: string; words_total: number; updated_at: string; views_total: number; chapters: number; readers: number; readers7?: number; readers30?: number; likes?: number; bookmarks?: number };
 
 export default function AuthorWorks({ lang }: { lang: string }) {
   const [works, setWorks] = useState<Work[]>([]);
@@ -43,11 +43,21 @@ export default function AuthorWorks({ lang }: { lang: string }) {
 
       <div className="card overflow-hidden">
         <div className="border-b border-line px-5 py-3 font-semibold">Мои произведения</div>
+        <div className="border-b border-line px-5 py-2 text-xs muted">
+          Всего по произведениям: читателей {works.reduce((a, w) => a + (w.readers || 0), 0)} ·
+          за 7 дней {works.reduce((a, w) => a + (w.readers7 || 0), 0)} ·
+          за 30 дней {works.reduce((a, w) => a + (w.readers30 || 0), 0)} ·
+          лайков {works.reduce((a, w) => a + (w.likes || 0), 0)} ·
+          закладок {works.reduce((a, w) => a + (w.bookmarks || 0), 0)}
+        </div>
         <ul className="divide-y divide-line">
           {works.map((w) => (
             <li key={w.id} className="flex items-center gap-3 px-5 py-3">
               <span className="flex-1 font-medium">{w.title}</span>
-              <span className="text-xs muted">{w.chapters} гл · {w.words_total} слов · 👁 {w.views_total} · 👤 {w.readers}</span>
+              <span className="text-xs muted">
+                {w.chapters} гл · {w.words_total} слов · 👁 {w.views_total} · 👤 {w.readers}
+                <br />7 дн: {w.readers7 ?? 0} · 30 дн: {w.readers30 ?? 0} · ★ {w.likes ?? 0} · 🔖 {w.bookmarks ?? 0}
+              </span>
               <span className="text-xs muted">{w.status}</span>
               <Link href={`/${lang}/author/${w.slug}`} className="btn btn-ghost">Редактор</Link>
             </li>

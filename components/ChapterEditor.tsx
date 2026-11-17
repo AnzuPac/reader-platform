@@ -187,7 +187,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
             <B onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })}>⟸</B>
             <B onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })}>↔</B>
             <B onClick={() => imageRef.current?.click()} title="Иллюстрация">🖼</B>
-            <B onClick={() => importRef.current?.click()} title="Импорт .docx / .md / .txt">📄 Импорт</B>
+            <B onClick={() => importRef.current?.click()} title="Импорт .docx / .pdf / .md / .txt">📄 Импорт</B>
           </div>
         ) : null}
 
@@ -198,7 +198,7 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button className="btn btn-primary" onClick={save} disabled={busy}>Sačuvaj главу</button>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
-          <input ref={importRef} type="file" accept=".docx,.md,.markdown,.txt" className="hidden" onChange={onImport} />
+          <input ref={importRef} type="file" accept=".docx,.pdf,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />
           <input ref={fontRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={uploadFont} />
           <div className="flex items-center gap-2">

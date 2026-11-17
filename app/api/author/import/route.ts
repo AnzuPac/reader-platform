@@ -3,6 +3,7 @@ import mammoth from 'mammoth';
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 import { requireAuthor } from '@/lib/author';
+import { pdfToHtml } from '@/lib/pdf';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,16 @@ export async function POST(req: Request) {
       html = await marked.parse(buf.toString('utf8'));
     } else if (name.endsWith('.txt')) {
       html = buf.toString('utf8').split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+    } else if (name.endsWith('.pdf')) {
+      // PDF: переносим именно текст. Сканы без текстового слоя честно отклоняем.
+      const r = await pdfToHtml(buf);
+      if (!r.ok) {
+        return NextResponse.json(
+          { error: r.error === 'no_text' ? 'pdf_no_text' : 'pdf_failed' },
+          { status: 422 }
+        );
+      }
+      html = r.html;
     } else {
       return NextResponse.json({ error: 'unsupported' }, { status: 415 });
     }
