@@ -32,23 +32,27 @@ export default async function CatalogPage({
     works = [];
   }
 
-  const items: CatalogWork[] = works.map((w) => {
-    const category: CatalogWork['category'] =
-      w.kind === 'fanfic' ? 'fanfic' : w.type === 'comic' ? 'manga' : 'book';
-    return {
-      id: w.id,
-      slug: w.slug,
-      title: w.title,
-      author: w.author_name,
-      description: w.description || '',
-      category,
-      genre: category === 'manga' ? 'Манга · стрип' : category === 'fanfic' ? 'Фанфик' : 'Књига',
-      badge: w.is_classic ? 'Класика' : w.completion === 'completed' ? 'Завршено' : undefined,
-      rating: Number(w.rating_avg) || 0,
-      completion: w.completion,
-      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
-    };
-  });
+  const isTestSlug = (slug: string) =>
+    /^(edit-work-|ed-work-|st-work-|tr-work-|ead-work-)/.test(slug) || /-\d{13}$/.test(slug);
+
+  const items: CatalogWork[] = works
+    .filter((w) => !isTestSlug(w.slug))
+    .map((w) => {
+      const category: CatalogWork['category'] =
+        w.kind === 'fanfic' ? 'fanfic' : w.type === 'comic' ? 'manga' : 'book';
+      return {
+        id: w.id,
+        slug: w.slug,
+        title: w.title,
+        author: w.author_name,
+        description: w.description || '',
+        category,
+        rating: Number(w.rating_avg) || 0,
+        classic: Boolean(w.is_classic),
+        completed: w.completion === 'completed',
+        tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
+      };
+    });
 
   return <BookverseCatalog lang={l} works={items} initialQuery={q} initialSection={initialSection} />;
 }
