@@ -6,6 +6,7 @@ import AuthorDonations from '@/components/AuthorDonations';
 import AuthorIncome from '@/components/AuthorIncome';
 import { authorIncome } from '@/lib/earnings';
 import EpubImportForm from '@/components/EpubImportForm';
+import AuthorStats from '@/components/AuthorStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,9 @@ export default async function AuthorPage({ params }: { params: Promise<{ lang: s
       <h1 className="mb-6 text-2xl font-bold">Кабинет автора</h1>
       <EpubImportForm />
       <AuthorWorks lang={l} />
+      <div className="mt-8">
+        <AuthorStats />
+      </div>
       <div className="mt-8">
         <AuthorIncome initial={income} />
       </div>
