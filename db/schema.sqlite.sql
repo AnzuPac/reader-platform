@@ -684,3 +684,19 @@ CREATE TABLE IF NOT EXISTS chapter_edit_requests (
   reviewed_at  TEXT
 );
 CREATE INDEX IF NOT EXISTS chapter_edit_requests_status_idx ON chapter_edit_requests(status, created_at);
+
+-- Заявки на перевод: автор просит, ИИ переводит, человек проверяет.
+CREATE TABLE IF NOT EXISTS translation_requests (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id   BIGINT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  target_lang  TEXT NOT NULL CHECK (target_lang IN ('sr','en','ru')),
+  requested_by BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status       TEXT NOT NULL DEFAULT 'requested'
+               CHECK (status IN ('requested','ai_done','approved','rejected')),
+  model        TEXT,
+  reviewer_id  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  comment      TEXT,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS translation_requests_status_idx ON translation_requests(status, created_at);

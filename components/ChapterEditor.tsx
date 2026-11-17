@@ -20,6 +20,7 @@ const FONTS = [
 export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [edits, setEdits] = useState<Array<{ id: number; chapter_number: number; title: string; status: string; comment: string | null }>>([]);
+  const [translationReqs, setTranslationReqs] = useState<Array<{ id: number; chapter_number: number; target_lang: string; status: string }>>([]);
   const [number, setNumber] = useState(1);
   const [title, setTitle] = useState('');
   const [access, setAccess] = useState('free');
@@ -52,6 +53,24 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   }
   useEffect(() => { loadChapters(); }, [workSlug]);
   useEffect(() => { loadEdits(); }, []);
+  useEffect(() => { loadTranslationReqs(); }, []);
+  async function loadTranslationReqs() {
+    const r = await fetch('/api/author/translation');
+    if (!r.ok) return;
+    const j = await r.json().catch(() => ({}));
+    setTranslationReqs(j.requests || []);
+  }
+
+  async function requestTranslation(chapterId: number, lang: string) {
+    const r = await fetch('/api/author/translation', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapterId, targetLang: lang }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? 'Zahtev za prevod poslat' : 'Greška prevoda: ' + (j.error || r.status));
+    await loadTranslationReqs();
+  }
+
   async function loadEdits() {
     const r = await fetch('/api/author/chapter-edit');
     if (!r.ok) return;
@@ -235,9 +254,31 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
                 {c.title || `Glava ${c.number}`}
               </button>
               <span className="text-xs muted">{c.word_count} слов · {c.status}{c.access !== 'free' ? ' 🔒' : ''}</span>
+              <select className="input max-w-[64px] text-xs" defaultValue="en"
+                onChange={(e) => requestTranslation(c.id, e.target.value)} title="Заявка на перевод">
+                <option value="en">EN</option>
+                <option value="ru">RU</option>
+                <option value="sr">SR</option>
+              </select>
             </li>
           ))}
           {chapters.length === 0 ? <li className="px-4 py-3 text-sm muted">Пока нет глав</li> : null}
+        </ul>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="border-b border-line px-4 py-3 font-semibold">Переводы ({translationReqs.filter((t) => t.status !== 'approved' && t.status !== 'rejected').length} в работе)</div>
+        <ul className="divide-y divide-line">
+          {translationReqs.slice(0, 10).map((t) => (
+            <li key={t.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+              <span className="w-8 muted">{t.chapter_number}</span>
+              <span className="flex-1">{t.target_lang.toUpperCase()}</span>
+              <span className={t.status === 'approved' ? 'text-xs text-brand' : t.status === 'rejected' ? 'text-xs text-hot' : 'text-xs muted'}>
+                {t.status === 'requested' ? 'ждёт ИИ' : t.status === 'ai_done' ? 'на проверке' : t.status === 'approved' ? 'готово' : 'отклонено'}
+              </span>
+            </li>
+          ))}
+          {translationReqs.length === 0 ? <li className="px-4 py-3 text-sm muted">Заявок на перевод нет</li> : null}
         </ul>
       </div>
 

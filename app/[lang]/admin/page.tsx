@@ -22,7 +22,7 @@ export default function AdminPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [msg, setMsg] = useState('');
-  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'donations' | 'comments' | 'content' | 'edits'>('review');
+  const [tab, setTab] = useState<'review' | 'payments' | 'purchases' | 'donations' | 'comments' | 'content' | 'edits' | 'translations'>('review');
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [coverSlug, setCoverSlug] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [edits, setEdits] = useState<Array<{ id: number; work_title: string; chapter_number: number; title: string; word_count: number; author: string }>>([]);
+  const [trs, setTrs] = useState<Array<{ id: number; work_title: string; chapter_number: number; target_lang: string; status: string; model: string | null }>>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('admin_token') || '';
@@ -47,7 +48,7 @@ export default function AdminPage() {
   }
 
   async function loadAll(tk = token) {
-    const [w, rv, pay, buys, cm, dn, ed] = await Promise.all([
+    const [w, rv, pay, buys, cm, dn, ed, tr] = await Promise.all([
       fetch('/api/admin/work', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/works?status=review', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/payments?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
@@ -55,6 +56,7 @@ export default function AdminPage() {
       fetch('/api/admin/comment', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/donation?status=pending', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
       fetch('/api/admin/chapter-edits', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/admin/translations', { headers: headers(tk) }).then((r) => r.json()).catch(() => ({})),
     ]);
     setWorks(w.works || []);
     setReview(rv.works || []);
@@ -63,6 +65,7 @@ export default function AdminPage() {
     setComments(cm.comments || []);
     setDonations(dn.donations || []);
     setEdits(ed.requests || []);
+    setTrs(tr.requests || []);
   }
 
   async function decideEdit(id: number, action: 'approve' | 'reject') {
@@ -72,6 +75,16 @@ export default function AdminPage() {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status)); return; }
     setMsg(action === 'approve' ? 'Правка одобрена и применена' : 'Заявка отклонена');
+    await loadAll();
+  }
+
+  async function decideTranslation(id: number, action: 'run' | 'approve' | 'reject') {
+    const r = await fetch('/api/admin/translations', {
+      method: 'POST', headers: headers(), body: JSON.stringify({ id, action }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg('Ошибка: ' + (j.error || r.status) + (j.detail ? ' — ' + j.detail : '')); return; }
+    setMsg(action === 'run' ? 'ИИ перевёл, черновик готов' : action === 'approve' ? 'Перевод одобрен' : 'Перевод отклонён');
     await loadAll();
   }
 
@@ -169,6 +182,7 @@ export default function AdminPage() {
         <Tab id="donations" label="Донаты" count={donations.length} />
         <Tab id="comments" label="Комментарии" count={comments.length} />
         <Tab id="edits" label="Правки глав" count={edits.length} />
+        <Tab id="translations" label="Переводы" count={trs.length} />
         <Tab id="content" label="Контент" />
       </div>
 
@@ -319,6 +333,31 @@ export default function AdminPage() {
           </div>
         </div>
       ) : null}
+      {tab === 'translations' ? (
+        <div className="card overflow-hidden">
+          <div className="border-b border-line px-4 py-3 font-semibold">Переводы: ИИ-черновик и проверка</div>
+          <ul className="divide-y divide-line">
+            {trs.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                <span className="muted">{t.work_title} · гл. {t.chapter_number}</span>
+                <span className="font-semibold">{t.target_lang.toUpperCase()}</span>
+                <span className="flex-1 muted">{t.status === 'requested' ? 'ждёт ИИ' : t.status === 'ai_done' ? `черновик готов${t.model ? ' · ' + t.model : ''}` : t.status}</span>
+                {t.status === 'requested' ? (
+                  <button className="btn btn-primary" onClick={() => decideTranslation(t.id, 'run')}>Перевести ИИ</button>
+                ) : null}
+                {t.status === 'ai_done' ? (
+                  <>
+                    <button className="btn btn-primary" onClick={() => decideTranslation(t.id, 'approve')}>Одобрить</button>
+                    <button className="btn btn-ghost" onClick={() => decideTranslation(t.id, 'reject')}>Отклонить</button>
+                  </>
+                ) : null}
+              </li>
+            ))}
+            {trs.length === 0 ? <li className="px-4 py-3 text-sm muted">Очередь пуста</li> : null}
+          </ul>
+        </div>
+      ) : null}
+
       {tab === 'edits' ? (
         <div className="card overflow-hidden">
           <div className="border-b border-line px-4 py-3 font-semibold">Заявки на правку опубликованных глав</div>
