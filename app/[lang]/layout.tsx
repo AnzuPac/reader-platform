@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { isLang, t, LANGS, type Lang } from '@/lib/i18n';
+import Chrome from '@/components/Chrome';
 
 export default async function LangLayout({
   children,
@@ -14,8 +15,8 @@ export default async function LangLayout({
   const l = lang as Lang;
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-line bg-[#120e1c]/90 backdrop-blur">
+    <Chrome header={(
+<header className="sticky top-0 z-40 border-b border-line bg-[#120e1c]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">
           <Link href={`/${l}`} className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">✦</span>
@@ -53,10 +54,8 @@ export default async function LangLayout({
           </div>
         </div>
       </header>
-
-      {children}
-
-      <footer className="mt-16 border-t border-line bg-[#150f21]">
+      )} footer={(
+<footer className="mt-16 border-t border-line bg-[#150f21]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-5 py-8 text-sm text-mist">
           <span className="font-semibold text-ink">{t(l, 'brand')}</span>
           <Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link>
@@ -65,6 +64,8 @@ export default async function LangLayout({
           <span className="ml-auto">© {new Date().getFullYear()}</span>
         </div>
       </footer>
-    </div>
+      )}>
+      {children}
+    </Chrome>
   );
 }
