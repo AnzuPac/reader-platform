@@ -140,9 +140,11 @@ export async function getChapter(id: number) {
     access: string; price_cents: number; word_count: number; work_slug: string; work_title: string;
     font_family: string | null; font_path: string | null; work_type: string;
     translit_allowed: number; paragraph_comments_enabled: number;
+    tts_allowed: number;
   }>(
     `SELECT c.id, c.work_id, c.number, c.title, c.content, c.access, c.price_cents, c.word_count,
             w.slug AS work_slug, w.title AS work_title, w.font_family, w.font_path, w.type AS work_type,
+            w.tts_allowed,
             ${TRANSLIT_ALLOWED_SQL} AS translit_allowed,
             ${PARAGRAPH_COMMENTS_SQL} AS paragraph_comments_enabled
        FROM chapters c JOIN works w ON w.id = c.work_id

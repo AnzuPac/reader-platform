@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { isLang, t, LANGS, type Lang } from '@/lib/i18n';
 import Chrome from '@/components/Chrome';
 import SessionKeeper from '@/components/SessionKeeper';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 
 export default async function LangLayout({
   children,
@@ -67,6 +68,7 @@ export default async function LangLayout({
       </footer>
       )}>
       <SessionKeeper />
+      <ServiceWorkerRegister />
       {children}
     </Chrome>
   );
