@@ -34,7 +34,7 @@ export default async function LibraryPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ tab?: string; status?: string; category?: string }>;
+  searchParams: Promise<{ tab?: string; status?: string; category?: string; q?: string; sort?: string }>;
 }) {
   const { lang } = await params;
   const sp = await searchParams;
@@ -45,6 +45,8 @@ export default async function LibraryPage({
   const tab: Tab = rawTab === 'history' || rawTab === 'bookmarks' || rawTab === 'purchased' ? rawTab : 'saved';
   const rawStatus = typeof sp.status === 'string' ? sp.status : '';
   const category = sp.category === 'book' || sp.category === 'fanfic' || sp.category === 'manga' ? sp.category : 'all';
+  const search = typeof sp.q === 'string' ? sp.q.trim() : '';
+  const sort = sp.sort === 'title' || sp.sort === 'author' ? sp.sort : 'added';
   const status: LibraryStatus | undefined = isLibraryStatus(rawStatus) ? rawStatus : undefined;
 
   if (!session) {
@@ -65,7 +67,7 @@ export default async function LibraryPage({
   }
 
   const items = (await listLibrary(session.uid, status)) as unknown as (LibItem & { category?: string })[];
-  const filteredItems = category === 'all' ? items : items.filter((item) => item.category === category);
+  const filteredItems = items.filter((item) => (category === 'all' || item.category === category) && (!search || `${item.title} ${item.author_name}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()))).sort((a,b) => sort === 'title' ? a.title.localeCompare(b.title) : sort === 'author' ? a.author_name.localeCompare(b.author_name) : new Date(b.added_at).getTime() - new Date(a.added_at).getTime());
   const counts = await libraryCounts(session.uid);
   const cont = await getContinueReading(session.uid);
   const purchased = await listPurchasedWorks(session.uid);
@@ -102,9 +104,17 @@ export default async function LibraryPage({
             ru: { all: 'Все', book: 'Книги', fanfic: 'Фанфики', manga: 'Манга / комиксы' },
             en: { all: 'All', book: 'Books', fanfic: 'Fan fiction', manga: 'Manga / comics' },
           };
-          return <Link key={cat} href={`/${l}/library?tab=${tab}${status ? `&status=${status}` : ''}${cat !== 'all' ? `&category=${cat}` : ''}`} className={`btn ${category === cat ? 'btn-primary' : 'btn-ghost'}`}>{labels[l][cat]}</Link>;
+          return <Link key={cat} href={`/${l}/library?tab=${tab}${status ? `&status=${status}` : ''}${cat !== 'all' ? `&category=${cat}` : ''}${search ? `&q=${encodeURIComponent(search)}` : ''}&sort=${sort}`} className={`btn ${category === cat ? 'btn-primary' : 'btn-ghost'}`}>{labels[l][cat]}</Link>;
         })}
       </nav>
+
+      {tab === 'saved' ? <form method="get" className="library-toolbar card mb-5 flex flex-wrap items-center gap-3 p-3">
+        <input type="hidden" name="tab" value="saved"/><input type="hidden" name="category" value={category}/>{status ? <input type="hidden" name="status" value={status}/> : null}
+        <label className="library-search"><span aria-hidden="true">⌕</span><input name="q" defaultValue={search} placeholder={l === 'ru' ? 'Поиск по названию или автору' : l === 'en' ? 'Search title or author' : 'Pretraga naslova ili autora'}/></label>
+        <label className="library-sort"><span>{l === 'ru' ? 'Сортировка' : l === 'en' ? 'Sort' : 'Sortiranje'}</span><select name="sort" defaultValue={sort}><option value="added">{l === 'ru' ? 'Недавно добавлено' : l === 'en' ? 'Recently added' : 'Nedavno dodato'}</option><option value="title">{l === 'ru' ? 'Название' : l === 'en' ? 'Title' : 'Naslov'}</option><option value="author">{l === 'ru' ? 'Автор' : l === 'en' ? 'Author' : 'Autor'}</option></select></label>
+        <button className="btn btn-primary" type="submit">{l === 'ru' ? 'Применить' : l === 'en' ? 'Apply' : 'Primeni'}</button>
+        {search ? <Link className="btn btn-ghost" href={`/${l}/library?tab=saved${category !== 'all' ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}`}>{l === 'ru' ? 'Сбросить' : l === 'en' ? 'Clear' : 'Poništi'}</Link> : null}
+      </form> : null}
 
       {cont ? (
         <Link href={`/${l}/read/${cont.chapter_id}`} className="card mb-6 flex items-center gap-4 p-4 hover:border-brand">
@@ -185,13 +195,13 @@ export default async function LibraryPage({
       {tab === 'saved' ? (
         <>
           <nav className="mb-4 flex flex-wrap gap-2">
-            <Link href={`/${l}/library?tab=saved${category !== 'all' ? `&category=${category}` : ''}`} className={`btn ${!status ? 'btn-primary' : 'btn-ghost'}`}>
+            <Link href={`/${l}/library?tab=saved${category !== 'all' ? `&category=${category}` : ''}${search ? `&q=${encodeURIComponent(search)}` : ''}&sort=${sort}`} className={`btn ${!status ? 'btn-primary' : 'btn-ghost'}`}>
               {l === 'ru' ? 'Все' : l === 'en' ? 'All' : 'Sve'}
             </Link>
             {LIBRARY_STATUSES.map((st) => (
               <Link
                 key={st}
-                href={`/${l}/library?tab=saved&status=${st}${category !== 'all' ? `&category=${category}` : ''}`}
+                href={`/${l}/library?tab=saved&status=${st}${category !== 'all' ? `&category=${category}` : ''}${search ? `&q=${encodeURIComponent(search)}` : ''}&sort=${sort}`}
                 className={`btn ${status === st ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {STATUS_LABELS[l][st]} {counts[st] > 0 ? counts[st] : ''}

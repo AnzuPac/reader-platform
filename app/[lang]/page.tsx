@@ -9,197 +9,46 @@ type Card = {
   id: number; slug: string; title: string; author_name: string;
   cover_path: string | null; rating_avg: string; completion: string; type?: string; kind?: string;
 };
-
 const TXT: Record<Lang, {
-  hello: string; continueReading: string; continueBtn: string;
-  fresh: string; freshSub: string; popular: string; popularSub: string;
-  allCatalog: string; books: string; comics: string; fanfics: string; empty: string;
-  heroTitle: string; heroText: string; discover: string; search: string; genres: string;
-  recommendations: string; top: string; browseAll: string; manga: string;
+  hello: string; continueReading: string; continueBtn: string; freshSub: string;
+  allCatalog: string; books: string; fanfics: string; manga: string; empty: string;
+  rec: string; top: string; newLabel: string; popularLabel: string; weekly: string;
+  discover: string; heroTitle: string; heroText: string;
 }> = {
-  sr: {
-    hello: 'Dobro došli nazad', continueReading: 'Nastavi čitanje', continueBtn: 'Nastavi',
-    fresh: 'Novo na platformi', freshSub: 'Sveže objavljeno — prvo poglavlje obično besplatno',
-    popular: 'Najčitanije', popularSub: 'Ono što čitaoci najviše otvaraju',
-    allCatalog: 'Ceo katalog', books: 'Knjige', comics: 'Stripovi', fanfics: 'Fanfikcija',
-    empty: 'Još nema objavljenih dela u ovom izboru.',
-    heroTitle: 'Priče koje ostaju sa tobom', heroText: 'Otkrij knjige, stripove i fanfikciju. Pronađi sledeće omiljeno čitanje.', discover: 'Istraži katalog', search: 'Naslov, autor ili fandom…', genres: 'Istraži po žanru',
-    recommendations: 'Preporuke', top: 'Nedeljni top', browseAll: 'Sva dela', manga: 'Manga i stripovi',
-  },
-  ru: {
-    hello: 'С возвращением', continueReading: 'Продолжить чтение', continueBtn: 'Дальше',
-    fresh: 'Новое на платформе', freshSub: 'Свежие публикации — первая глава обычно бесплатна',
-    popular: 'Самое читаемое', popularSub: 'То, что читатели открывают чаще всего',
-    allCatalog: 'Весь каталог', books: 'Книги', comics: 'Комиксы', fanfics: 'Фанфики',
-    empty: 'В этой подборке пока нет опубликованных произведений.',
-    heroTitle: 'Истории, которые остаются с тобой', heroText: 'Открой книги, комиксы и фанфики. Найди своё следующее любимое чтение.', discover: 'Исследовать каталог', search: 'Название, автор или фандом…', genres: 'Популярные жанры',
-    recommendations: 'Рекомендации', top: 'Топ недели', browseAll: 'Все произведения', manga: 'Манга и комиксы',
-  },
-  en: {
-    hello: 'Welcome back', continueReading: 'Continue reading', continueBtn: 'Continue',
-    fresh: 'New on the platform', freshSub: 'Freshly published — the first chapter is usually free',
-    popular: 'Most read', popularSub: 'What readers open the most',
-    allCatalog: 'Full catalog', books: 'Books', comics: 'Comics', fanfics: 'Fan fiction',
-    empty: 'No published works in this selection yet.',
-    heroTitle: 'Stories that stay with you', heroText: 'Discover books, comics and fan fiction. Find your next favourite read.', discover: 'Explore catalog', search: 'Title, author or fandom…', genres: 'Explore by genre',
-    recommendations: 'Recommended', top: 'Weekly top', browseAll: 'Browse all', manga: 'Manga & comics',
-  },
+  sr: { hello:'Dobro došli nazad', continueReading:'Nastavi čitanje', continueBtn:'Nastavi', freshSub:'Otkrij sledeću priču za sebe', allCatalog:'Ceo katalog', books:'Knjige', fanfics:'Fan-fikcija', manga:'Manga i stripovi', empty:'Još nema dela u ovom izboru.', rec:'Preporuke', top:'Top čitanja', newLabel:'Novo', popularLabel:'Popularno', weekly:'Najčitanije ove nedelje', discover:'Otkrij', heroTitle:'Priča koja te čeka.', heroText:'Pronađi knjige, fanfikciju i mangu. Sačuvaj omiljeno i nastavi tačno tamo gde si stao.' },
+  ru: { hello:'С возвращением', continueReading:'Продолжить чтение', continueBtn:'Продолжить', freshSub:'Найди следующую историю для себя', allCatalog:'Весь каталог', books:'Книги', fanfics:'Фанфики', manga:'Манга и комиксы', empty:'В этой подборке пока нет произведений.', rec:'Рекомендации', top:'Топ читаемого', newLabel:'Новинки', popularLabel:'Популярное', weekly:'Самое читаемое за неделю', discover:'Открыть', heroTitle:'История, которая тебя ждёт.', heroText:'Находи книги, фанфики и мангу. Сохраняй любимое и продолжай чтение с того места, где остановился.' },
+  en: { hello:'Welcome back', continueReading:'Continue reading', continueBtn:'Continue', freshSub:'Discover your next story', allCatalog:'Full catalog', books:'Books', fanfics:'Fan fiction', manga:'Manga & comics', empty:'No works in this selection yet.', rec:'Recommended', top:'Top reads', newLabel:'New', popularLabel:'Popular', weekly:'Most read this week', discover:'Explore', heroTitle:'A story is waiting.', heroText:'Discover books, fan fiction and manga. Save your favourites and continue exactly where you left off.' },
 };
-
-function Grid({ items, lang, empty }: { items: Card[]; lang: Lang; empty: string }) {
-  if (items.length === 0) return <div className="card p-6 text-center text-sm muted">{empty}</div>;
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {items.map((w) => (
-        <Link key={w.id} href={`/${lang}/work/${w.slug}`} className="work-card group">
-          <div className="cover cover-sm relative overflow-hidden">
-            {w.cover_path ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={w.cover_path} alt={w.title} loading="lazy" className="h-full w-full object-cover" />
-            ) : (
-              <span className="relative line-clamp-3">{w.title}</span>
-            )}
-          </div>
-          <div className="work-card-title line-clamp-2 group-hover:text-brand">{w.title}</div>
-          <div className="work-card-author line-clamp-1">{w.author_name}</div>
-        </Link>
-      ))}
-    </div>
-  );
+function WorkCard({w,lang,accent}:{w:Card;lang:Lang;accent:string}) {
+  return <Link href={`/${lang}/work/${w.slug}`} className={`tl-home-card ${accent}`}>
+    <div className="tl-home-cover">{w.cover_path ? <img src={w.cover_path} alt={w.title} loading="lazy"/> : <div className="tl-cover-placeholder"><span>TEROLIBRARY</span><strong>{w.title}</strong><small>{w.author_name}</small></div>}</div>
+    <div className="tl-home-card-info"><div className="tl-home-card-meta"><span>{w.completion === 'completed' ? (lang==='ru'?'Завершено':lang==='en'?'Completed':'Završeno') : (lang==='ru'?'В процессе':lang==='en'?'Ongoing':'U toku')}</span><span>★ {Number(w.rating_avg||0).toFixed(1)}</span></div><h3>{w.title}</h3><p>{w.author_name}</p></div>
+  </Link>;
 }
-
-/** Блок категории: рекомендации (новое) + топ по прочтениям. */
-function CategoryBlock({
-  title, recommendations, top, lang, empty, href, accent, recLabel, topLabel, browseAll,
-}: {
-  title: string; recommendations: Card[]; top: Card[]; lang: Lang; empty: string;
-  href: string; accent: string; recLabel: string; topLabel: string; browseAll: string;
-}) {
-  const sep = href.includes('?') ? '&' : '?';
-  return (
-    <section className={`mb-10 rounded-2xl border p-4 sm:p-6 ${accent}`}>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
-        <Link className="btn btn-ghost text-sm" href={href}>{browseAll} →</Link>
-      </div>
-
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold">{recLabel}</h3>
-          <Link href={`${href}${sep}filter=fresh`} className="text-sm text-brand hover:underline">→</Link>
-        </div>
-        <Grid items={recommendations} lang={lang} empty={empty} />
-      </div>
-
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold">{topLabel}</h3>
-          <Link href={`${href}${sep}filter=popular`} className="text-sm text-brand hover:underline">→</Link>
-        </div>
-        <Grid items={top} lang={lang} empty={empty} />
-      </div>
-    </section>
-  );
+function WorkRow({title,subtitle,items,lang,href,accent,empty}:{title:string;subtitle:string;items:Card[];lang:Lang;href:string;accent:string;empty:string}) {
+ return <section className={`tl-home-section ${accent}`}><div className="tl-section-heading"><div><div className="tl-section-eyebrow">{subtitle}</div><h2>{title}</h2></div><Link className="tl-section-more" href={href}>{lang==='ru'?'Все произведения':lang==='en'?'Browse all':'Sva dela'} <span>→</span></Link></div>{items.length?<div className="tl-home-grid">{items.map(w=><WorkCard key={w.id} w={w} lang={lang} accent={accent}/>)}</div>:<div className="tl-home-empty">{empty}</div>}</section>;
 }
-
-export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params;
-  const l = (isLang(lang) ? lang : 'sr') as Lang;
-  const x = TXT[l];
-
-  const session = await readSession();
-  const cont = session ? await getContinueReading(session.uid).catch(() => null) : null;
-
-  const [booksFresh, booksTop, fanficFresh, fanficTop, mangaFresh, mangaTop] = await Promise.all([
-    listWorks({ type: 'novel', fanfic: false, sort: 'new', limit: 4 }).catch(() => []),
-    listWorks({ type: 'novel', fanfic: false, sort: 'views', limit: 4 }).catch(() => []),
-    listWorks({ fanfic: true, sort: 'new', limit: 4 }).catch(() => []),
-    listWorks({ fanfic: true, sort: 'views', limit: 4 }).catch(() => []),
-    listWorks({ type: 'comic', sort: 'new', limit: 4 }).catch(() => []),
-    listWorks({ type: 'comic', sort: 'views', limit: 4 }).catch(() => []),
-  ]);
-
-  return (
-    <main id="main" className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
-      <section className="relative mb-8 overflow-hidden rounded-3xl border border-[#e5dfed] bg-gradient-to-br from-[#f1edf8] via-white to-[#f7f1ee] p-6 sm:p-10 lg:p-12">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-[#d9cbea]/50 blur-3xl" />
-        <div className="relative max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[.18em] text-brand">TeroLibrary · digital library</p>
-          <h1 className="max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">{x.heroTitle}</h1>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-mist sm:text-base">{x.heroText}</p>
-          <form action={`/${l}/catalog`} className="mt-6 flex max-w-xl flex-col gap-2 sm:flex-row">
-            <input className="input flex-1 bg-white" name="q" placeholder={x.search} />
-            <button className="btn btn-primary" type="submit">⌕ {x.discover}</button>
-          </form>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {[x.books, x.comics, x.fanfics].map((label, i) => <Link key={label} href={`/${l}/catalog${i === 1 ? '?kind=comic' : i === 2 ? '?kind=fanfic' : ''}`} className="rounded-full border border-[#ded6e9] bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#55466f] hover:border-brand">{label} ↗</Link>)}
-          </div>
-        </div>
-      </section>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-extrabold sm:text-2xl">
-            {session ? `${x.hello}, ${session.name}` : t(l, 'brand')}
-          </h2>
-          <p className="mt-1 text-sm muted">{x.freshSub}</p>
-        </div>
-        <Link href={`/${l}/catalog`} className="btn btn-primary">{x.allCatalog} →</Link>
-      </div>
-
-      {cont ? (
-        <Link
-          href={`/${l}/read/${cont.chapter_id}`}
-          className="card mb-8 flex items-center gap-4 p-4 hover:border-brand"
-        >
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/20 text-lg">📖</span>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs muted">{x.continueReading} · {cont.percent}%</div>
-            <div className="line-clamp-1 font-semibold">
-              {cont.work_title} — {cont.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${cont.number}`}
-            </div>
-          </div>
-          <span className="btn btn-primary">{x.continueBtn}</span>
-        </Link>
-      ) : null}
-
-      <CategoryBlock
-        title={`📚 ${x.books}`}
-        recommendations={booksFresh as unknown as Card[]}
-        top={booksTop as unknown as Card[]}
-        lang={l}
-        empty={x.empty}
-        href={`/${l}/catalog`}
-        accent="home-category-books"
-        recLabel={x.recommendations}
-        topLabel={x.top}
-        browseAll={x.browseAll}
-      />
-
-      <CategoryBlock
-        title={`✦ ${x.fanfics}`}
-        recommendations={fanficFresh as unknown as Card[]}
-        top={fanficTop as unknown as Card[]}
-        lang={l}
-        empty={x.empty}
-        href={`/${l}/catalog?kind=fanfic`}
-        accent="home-category-fanfics"
-        recLabel={x.recommendations}
-        topLabel={x.top}
-        browseAll={x.browseAll}
-      />
-
-      <CategoryBlock
-        title={`▣ ${x.manga}`}
-        recommendations={mangaFresh as unknown as Card[]}
-        top={mangaTop as unknown as Card[]}
-        lang={l}
-        empty={x.empty}
-        href={`/${l}/catalog?kind=comic`}
-        accent="home-category-manga"
-        recLabel={x.recommendations}
-        topLabel={x.top}
-        browseAll={x.browseAll}
-      />
-    </main>
-  );
+export default async function HomePage({params}:{params:Promise<{lang:string}>}) {
+ const {lang}=await params; const l=(isLang(lang)?lang:'sr') as Lang; const x=TXT[l];
+ const session=await readSession(); const cont=session?await getContinueReading(session.uid).catch(()=>null):null;
+ const [booksFresh,booksTop,fanficFresh,fanficTop,mangaFresh,mangaTop]=await Promise.all([
+  listWorks({type:'novel',fanfic:false,sort:'new',limit:5}).catch(()=>[]),
+  listWorks({type:'novel',fanfic:false,sort:'views',limit:5}).catch(()=>[]),
+  listWorks({fanfic:true,sort:'new',limit:5}).catch(()=>[]),
+  listWorks({fanfic:true,sort:'views',limit:5}).catch(()=>[]),
+  listWorks({type:'comic',sort:'new',limit:5}).catch(()=>[]),
+  listWorks({type:'comic',sort:'views',limit:5}).catch(()=>[]),
+ ]);
+ const cat=(type:string)=>`/${l}/catalog?type=${type}`;
+ return <main id="main" className="tl-home">
+  <section className="tl-home-hero"><div className="tl-home-hero-copy"><span className="tl-home-kicker">{x.discover} · TEROLIBRARY</span><h1>{session?`${x.hello}, ${session.name}`:x.heroTitle}</h1><p>{x.heroText}</p><Link className="tl-home-hero-button" href={`/${l}/catalog`}>{x.allCatalog} <span>→</span></Link></div><div className="tl-home-hero-art" aria-hidden="true"><span className="tl-art-orbit tl-art-orbit-one"/><span className="tl-art-orbit tl-art-orbit-two"/><span className="tl-art-book tl-art-book-one"/><span className="tl-art-book tl-art-book-two"/><span className="tl-art-book tl-art-book-three">✦</span></div></section>
+  <nav className="tl-home-category-nav" aria-label="Categories"><Link href={cat('book')} className="tl-home-category books"><span>📚</span>{x.books}<b>→</b></Link><Link href={cat('fanfic')} className="tl-home-category fanfics"><span>✦</span>{x.fanfics}<b>→</b></Link><Link href={cat('manga')} className="tl-home-category manga"><span>▣</span>{x.manga}<b>→</b></Link></nav>
+  {cont?<Link href={`/${l}/read/${cont.chapter_id}`} className="tl-home-continue"><span className="tl-home-continue-icon">◉</span><span className="tl-home-continue-copy"><small>{x.continueReading} · {cont.percent}%</small><strong>{cont.work_title} — {cont.chapter_title||`${l==='ru'?'Глава':l==='en'?'Chapter':'Glava'} ${cont.number}`}</strong></span><span className="tl-home-continue-button">{x.continueBtn} →</span></Link>:null}
+  <WorkRow title={x.books} subtitle={x.rec} items={booksFresh as Card[]} lang={l} href={cat('book')} accent="tl-books" empty={x.empty}/>
+  <WorkRow title={x.weekly} subtitle={x.top} items={booksTop as Card[]} lang={l} href={`${cat('book')}&filter=popular`} accent="tl-books tl-top" empty={x.empty}/>
+  <WorkRow title={x.fanfics} subtitle={x.rec} items={fanficFresh as Card[]} lang={l} href={cat('fanfic')} accent="tl-fanfics" empty={x.empty}/>
+  <WorkRow title={x.weekly} subtitle={x.top} items={fanficTop as Card[]} lang={l} href={`${cat('fanfic')}&filter=popular`} accent="tl-fanfics tl-top" empty={x.empty}/>
+  <WorkRow title={x.manga} subtitle={x.rec} items={mangaFresh as Card[]} lang={l} href={cat('manga')} accent="tl-manga" empty={x.empty}/>
+  <WorkRow title={x.weekly} subtitle={x.top} items={mangaTop as Card[]} lang={l} href={`${cat('manga')}&filter=popular`} accent="tl-manga tl-top" empty={x.empty}/>
+ </main>;
 }
