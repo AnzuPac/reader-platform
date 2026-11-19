@@ -252,31 +252,21 @@ export default function BookverseCatalog({
             <Link href={`/${lang}/library`} className="bv-switcher-link">{d.library}</Link>
           </div>
 
-          <section className="bv-hero">
-            <div className="bv-hero__content">
-              <div className="bv-eyebrow"><span />{copy.eyebrow}</div>
-              <h1>{copy.title}</h1>
-              <p>{copy.subtitle}</p>
-              <div className="bv-hero__actions">
-                <button className="bv-primary-button" onClick={() => go({ filter: 'forYou', page: 1 })}>{copy.action}<span>↗</span></button>
-                <button className="bv-text-link" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.viewAll} <span>→</span></button>
+          <section className="bv-catalog-intro">
+            <div className="bv-catalog-intro__eyebrow">{copy.eyebrow}</div>
+            <div className="bv-catalog-intro__heading">
+              <div>
+                <h1>{copy.title}</h1>
+                <p>{copy.subtitle}</p>
               </div>
+              <span className="bv-catalog-intro__count" aria-hidden="true">{section === 'books' ? 'BOOKS' : section === 'fanfics' ? 'FANFICTION' : 'MANGA & COMICS'}</span>
             </div>
-            <div className="bv-hero-art" aria-hidden="true">
-              <div className="bv-hero-art__halo" />
-              <div className="bv-hero-art__book bv-hero-art__book--back" />
-              <div className="bv-hero-art__book bv-hero-art__book--front">
-                <span>TEROLIBRARY</span><strong>THE<br />NEXT<br />CHAPTER</strong><small>YOUR STORY STARTS HERE</small>
-              </div>
-              <span className="bv-hero-art__spark bv-hero-art__spark--one">✦</span>
-              <span className="bv-hero-art__spark bv-hero-art__spark--two">✧</span>
-            </div>
-            <div className="bv-hero__index">{String(SECTION_IDS.indexOf(section) + 1).padStart(2, '0')} <span>/ 03</span></div>
           </section>
+
 
           <section className="bv-section-block">
             <div className="bv-section-heading">
-              <div><span className="bv-kicker">{d.catalogKicker}</span><h2>{d.catalogTitle}</h2><p>{copy.subtitle}</p></div>
+              <div><span className="bv-kicker">{d.catalogKicker}</span><h2>{lang === 'ru' ? 'Все произведения' : lang === 'en' ? 'Browse works' : 'Sva dela'}</h2><p>{lang === 'ru' ? 'Используйте фильтры, чтобы найти нужное' : lang === 'en' ? 'Use filters to find your next read' : 'Koristite filtere da pronađete sledeće čitanje'}</p></div>
               <button className="bv-view-all" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.wholeCatalog} <span>→</span></button>
             </div>
             <div className="bv-filter-row">
@@ -323,21 +313,6 @@ export default function BookverseCatalog({
               >
                 {lang === 'ru' ? 'Дальше' : 'Sledeća'} →
               </button>
-            </div>
-          </section>
-
-          <section className="bv-promo-row">
-            <div className="bv-promo-card bv-promo-card--author">
-              <div><span className="bv-kicker">{d.promoAuthorKicker}</span><h2>{d.promoAuthorTitle}</h2>
-                <p>{d.promoAuthorText}</p>
-                <Link href={`/${lang}/author`}>{d.promoAuthorLink} <span>→</span></Link></div>
-              <div className="bv-promo-card__symbol">✎</div>
-            </div>
-            <div className="bv-promo-card bv-promo-card--community">
-              <div><span className="bv-kicker">{d.promoLibKicker}</span><h2>{d.promoLibTitle}</h2>
-                <p>{d.promoLibText}</p>
-                <Link href={`/${lang}/library`}>{d.promoLibLink} <span>→</span></Link></div>
-              <div className="bv-promo-card__symbol">▤</div>
             </div>
           </section>
 
