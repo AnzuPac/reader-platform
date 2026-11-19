@@ -6,6 +6,9 @@ import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
 import CollectionAddButton from '@/components/CollectionAddButton';
+import ReviewForm from '@/components/ReviewForm';
+import ReportButton from '@/components/ReportButton';
+import { listReviews, myReview, reviewEligibility } from '@/lib/reviews';
 import BuyButton from '@/components/BuyButton';
 import { WorkCover } from '@/lib/cover';
 import RatingStars from '@/components/RatingStars';
@@ -47,6 +50,9 @@ export default async function WorkPage({
   const first = chapters[0];
   const genres = await workGenres(work.id);
   const related = await listRelatedWorks(work.id).catch(() => []);
+  const reviews = await listReviews(work.id).catch(() => []);
+  const eligibility = session ? await reviewEligibility(session.uid, work.id).catch(() => ({ eligible: false, percent: 0 })) : { eligible: false, percent: 0 };
+  const mine = session ? await myReview(session.uid, work.id).catch(() => null) : null;
   const price = await workPrice(work.id);
   const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
@@ -212,6 +218,48 @@ export default async function WorkPage({
           ) : null}
         </ol>
       </div>
+
+      <section className="mt-10">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">{l === 'ru' ? 'Отзывы' : l === 'en' ? 'Reviews' : 'Utisci'}</h2>
+          <ReportButton targetType="work" targetId={work.id} lang={l} />
+        </div>
+
+        {session ? (
+          <div className="mb-4">
+            <ReviewForm
+              workId={work.id}
+              lang={l}
+              eligible={eligibility.eligible}
+              percent={eligibility.percent}
+              initialBody={mine?.body || ''}
+              initialRating={mine?.rating || 0}
+            />
+          </div>
+        ) : null}
+
+        {reviews.length === 0 ? (
+          <div className="card p-6 text-center text-sm muted">
+            {l === 'ru' ? 'Отзывов пока нет.' : l === 'en' ? 'No reviews yet.' : 'Još nema utisaka.'}
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {reviews.map((r) => (
+              <li key={r.id} className="card p-4">
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs muted">
+                  <strong className="text-ink">{r.author}</strong>
+                  {r.rating ? <span>{'★'.repeat(Number(r.rating))}</span> : null}
+                  <span>{String(r.updated_at).slice(0, 10)}</span>
+                </div>
+                <p className="whitespace-pre-line text-sm">{r.body}</p>
+                <div className="mt-2">
+                  <ReportButton targetType="review" targetId={r.id} lang={l} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <Comments workId={work.id} />
       {related.length > 0 ? (

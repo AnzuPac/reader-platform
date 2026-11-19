@@ -180,6 +180,8 @@ export default function AdminPage() {
       <h1 className="mb-5 text-2xl font-bold">Админка</h1>
       <p className="mb-4 text-sm muted">
         <a className="text-brand hover:underline" href={`/${lang}/admin/publishers`}>Издательства и заявки →</a>
+        {' · '}
+        <a className="text-brand hover:underline" href={`/${lang}/admin/reports`}>Жалобы и модерация →</a>
       </p>
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">

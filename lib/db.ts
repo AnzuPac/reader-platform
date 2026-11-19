@@ -124,6 +124,33 @@ async function migrateSqlite(db: any) {
        added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        PRIMARY KEY (collection_id, work_id)
      )`,
+    // Отзывы: текст + оценка, только от читателей с прогрессом >= 10%.
+    `CREATE TABLE IF NOT EXISTS reviews (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+       rating SMALLINT,
+       body TEXT NOT NULL DEFAULT '',
+       status TEXT NOT NULL DEFAULT 'visible',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE (user_id, work_id)
+     )`,
+    `CREATE INDEX IF NOT EXISTS reviews_work_idx ON reviews(work_id, created_at DESC)`,
+    // Жалобы и очередь модерации.
+    `CREATE TABLE IF NOT EXISTS reports (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       reporter_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+       target_type TEXT NOT NULL,
+       target_id BIGINT NOT NULL,
+       reason TEXT NOT NULL,
+       comment TEXT,
+       status TEXT NOT NULL DEFAULT 'open',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       resolved_at TEXT,
+       resolved_by TEXT
+     )`,
+    `CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC)`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -234,6 +261,33 @@ async function migratePg(db: any) {
        value TEXT,
        updated_at TEXT NOT NULL
      )`,
+    // Отзывы: текст + оценка, только от читателей с прогрессом >= 10%.
+    `CREATE TABLE IF NOT EXISTS reviews (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+       rating SMALLINT,
+       body TEXT NOT NULL DEFAULT '',
+       status TEXT NOT NULL DEFAULT 'visible',
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       UNIQUE (user_id, work_id)
+     )`,
+    `CREATE INDEX IF NOT EXISTS reviews_work_idx ON reviews(work_id, created_at DESC)`,
+    // Жалобы и очередь модерации.
+    `CREATE TABLE IF NOT EXISTS reports (
+       id BIGSERIAL PRIMARY KEY,
+       reporter_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+       target_type TEXT NOT NULL,
+       target_id BIGINT NOT NULL,
+       reason TEXT NOT NULL,
+       comment TEXT,
+       status TEXT NOT NULL DEFAULT 'open',
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       resolved_at TIMESTAMPTZ,
+       resolved_by TEXT
+     )`,
+    `CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC)`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
