@@ -40,7 +40,11 @@ export function safeEqual(a: string, b: string): boolean {
 
 /** Админ-токен: пустое значение = доступ закрыт (никаких дефолтов). */
 export function getAdminToken(): string {
-  return (process.env.ADMIN_TOKEN || '').trim();
+  const token = (process.env.ADMIN_TOKEN || '').trim();
+  // В production короткий токен не считается токеном: админка закрыта,
+  // а не «немного защищена» (находка review-2, P1).
+  if (isProd() && token.length < MIN_SECRET_LEN) return '';
+  return token;
 }
 
 export const ADMIN_COOKIE = 'rd_admin';

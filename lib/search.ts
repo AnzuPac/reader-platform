@@ -41,16 +41,26 @@ export function searchTokens(q: string): string[] {
 }
 
 export async function refreshWorkSearchNorm(workId: number): Promise<void> {
-  const w = await one<{ title: string; author_name: string }>(
-    `SELECT w.title, u.display_name AS author_name
+  const w = await one<{ title: string; author_name: string; fandom?: string | null; pairing?: string | null; content_warnings?: string | null }>(
+    `SELECT w.title, u.display_name AS author_name, w.fandom, w.pairing, w.content_warnings
        FROM works w JOIN users u ON u.id = w.author_id WHERE w.id = $1`, [workId]
   );
   if (!w) return;
   const tags = await query<{ name: string }>(
     'SELECT t.name FROM work_tags wt JOIN tags t ON t.id = wt.tag_id WHERE wt.work_id = $1', [workId]
   );
+  const genres = await query<{ name_sr: string; name_en: string; name_ru: string }>(
+    `SELECT g.name_sr, g.name_en, g.name_ru
+       FROM work_genres wg JOIN genres g ON g.id = wg.genre_id WHERE wg.work_id = $1`, [workId]
+  );
+  // Ищем и по фандому/пейрингу/предупреждениям/жанрам: раньше поиск по ним
+  // не работал, хотя placeholder их обещал (review-2, P2).
+  const extra = [
+    w.fandom, w.pairing, w.content_warnings,
+    ...genres.flatMap((g) => [g.name_sr, g.name_en, g.name_ru]),
+  ].filter(Boolean) as string[];
   await query('UPDATE works SET search_norm = $2 WHERE id = $1',
-    [workId, composeSearchNorm(w.title, w.author_name, tags.map((t) => t.name))]);
+    [workId, composeSearchNorm(w.title, w.author_name, [...tags.map((t) => t.name), ...extra])]);
 }
 
 /** Дозаполняет ключ поиска (старые БД, сиды, прямые INSERT в тестах). */

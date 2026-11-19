@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ADMIN_COOKIE, getAdminToken, safeEqual } from '@/lib/secrets';
+import { clientKey, rateLimit } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,11 @@ const TTL = 60 * 60 * 8; // 8 часов
  * Токен больше не хранится в localStorage (его мог бы прочитать XSS).
  */
 export async function POST(req: Request) {
+  // Без лимита endpoint превращался в оракул для перебора админ-токена (review-2, P1).
+  const rl = await rateLimit(clientKey(req, 'admin-session'), 5, 5 * 60_000);
+  if (!rl.ok) {
+    return NextResponse.json({ ok: false, error: 'too_many_attempts', retryAfter: rl.retryAfter }, { status: 429 });
+  }
   const need = getAdminToken();
   if (!need) {
     return NextResponse.json(

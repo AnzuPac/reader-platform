@@ -1,4 +1,6 @@
 terolibrary.com, www.terolibrary.com {
 	encode gzip zstd
-	reverse_proxy app:3020
+	reverse_proxy app:3020 {
+		header_up X-Real-IP {remote_host}
+	}
 }

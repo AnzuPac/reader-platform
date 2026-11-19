@@ -48,7 +48,10 @@ export default async function CatalogPage({
     q,
     limit: PAGE_SIZE + 1, // +1 — чтобы честно узнать, есть ли следующая страница
     offset: (page - 1) * PAGE_SIZE,
-    sort: filter === 'popular' ? 'rating' : filter === 'fresh' ? 'new' : 'new',
+    // Popular — по прочтениям, Fresh — по дате, Completed — по оценке.
+    // Раньше Popular сортировал по рейтингу: книга с тремя пятёрками
+    // обгоняла ту, которую прочитали тысячи (review-2, P2).
+    sort: filter === 'popular' ? 'views' : filter === 'fresh' ? 'new' : 'rating',
   };
   if (genre) opts.genre = genre;
   if (source) opts.source = source;

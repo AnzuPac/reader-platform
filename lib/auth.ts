@@ -94,16 +94,16 @@ export async function rotateRefresh(): Promise<Session | null> {
   const token = jar.get(REFRESH_COOKIE)?.value;
   if (!token) return null;
 
-  const row = await one<{ id: number; user_id: number; expires_at: string }>(
-    'SELECT id, user_id, expires_at FROM refresh_tokens WHERE token_hash = $1 AND revoked_at IS NULL',
-    [hashToken(token)],
+  // Атомарное потребление: UPDATE ... RETURNING гарантирует, что токен
+  // заберёт только один параллельный запрос (находка review-2, P1).
+  const now = new Date().toISOString();
+  const row = await one<{ user_id: number }>(
+    `UPDATE refresh_tokens SET revoked_at = $1
+      WHERE token_hash = $2 AND revoked_at IS NULL AND expires_at > $1
+      RETURNING user_id`,
+    [now, hashToken(token)],
   ).catch(() => null);
   if (!row) return null;
-
-  const expires = new Date(row.expires_at).getTime();
-  if (!Number.isFinite(expires) || expires < Date.now()) return null;
-
-  await revokeRefreshToken(token);
 
   const u = await one<{ id: number; email: string; role: string; display_name: string; status: string }>(
     'SELECT id, email, role, display_name, status FROM users WHERE id = $1 AND deleted_at IS NULL',
