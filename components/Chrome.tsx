@@ -1,5 +1,4 @@
 'use client';
-import { usePathname } from 'next/navigation';
 
 /**
  * Общая шапка и подвал сайта. Каталог по макету BOOKVERSE несёт собственную
@@ -13,13 +12,11 @@ export default function Chrome({
   footer: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const path = usePathname() || '';
-  const bare = /\/catalog(\/|$)/.test(path);
   return (
-    <div className="min-h-screen">
-      {bare ? null : header}
+    <div className="tlp min-h-screen">
+      {header}
       {children}
-      {bare ? null : footer}
+      {footer}
     </div>
   );
 }

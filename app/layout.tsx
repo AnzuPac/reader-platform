@@ -1,4 +1,5 @@
 import './globals.css';
+import './prototype.css';
 import '../styles/bookverse.css';
 import '../styles/terolibrary-screens.css';
 import type { Metadata } from 'next';

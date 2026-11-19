@@ -7,49 +7,222 @@ export const dynamic = 'force-dynamic';
 
 type Card = {
   id: number; slug: string; title: string; author_name: string;
-  cover_path: string | null; rating_avg: string; completion: string; type?: string; kind?: string; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
+  cover_path: string | null; rating_avg: string; completion: string;
+  type?: string; kind?: string;
+  ai_usage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
 };
+
 const TXT: Record<Lang, {
-  hello: string; continueReading: string; continueBtn: string; freshSub: string;
-  allCatalog: string; books: string; fanfics: string; manga: string; empty: string;
-  rec: string; top: string; newLabel: string; popularLabel: string; weekly: string;
-  discover: string; heroTitle: string; heroText: string;
+  eyebrow: string; heroTitle: string; heroText: string; discover: string; subscribe: string;
+  continueReading: string; library: string; directions: string; directionsSub: string;
+  booksTitle: string; booksText: string; fanficsTitle: string; fanficsText: string;
+  mangaTitle: string; mangaText: string; allCatalog: string;
+  rec: string; top: string; topBooks: string; topFanfics: string; topManga: string;
+  rating: string; openCatalog: string; empty: string;
+  ctaTitle: string; ctaText: string; ctaBtn: string;
+  completed: string; ongoing: string;
 }> = {
-  sr: { hello:'Dobro došli nazad', continueReading:'Nastavi čitanje', continueBtn:'Nastavi', freshSub:'Otkrij sledeću priču za sebe', allCatalog:'Ceo katalog', books:'Knjige', fanfics:'Fan-fikcija', manga:'Manga i stripovi', empty:'Još nema dela u ovom izboru.', rec:'Preporuke', top:'Top čitanja', newLabel:'Novo', popularLabel:'Popularno', weekly:'Najčitanije ove nedelje', discover:'Otkrij', heroTitle:'Priča koja te čeka.', heroText:'Pronađi knjige, fanfikciju i mangu. Sačuvaj omiljeno i nastavi tačno tamo gde si stao.' },
-  ru: { hello:'С возвращением', continueReading:'Продолжить чтение', continueBtn:'Продолжить', freshSub:'Найди следующую историю для себя', allCatalog:'Весь каталог', books:'Книги', fanfics:'Фанфики', manga:'Манга и комиксы', empty:'В этой подборке пока нет произведений.', rec:'Рекомендации', top:'Топ читаемого', newLabel:'Новинки', popularLabel:'Популярное', weekly:'Самое читаемое за неделю', discover:'Открыть', heroTitle:'История, которая тебя ждёт.', heroText:'Находи книги, фанфики и мангу. Сохраняй любимое и продолжай чтение с того места, где остановился.' },
-  en: { hello:'Welcome back', continueReading:'Continue reading', continueBtn:'Continue', freshSub:'Discover your next story', allCatalog:'Full catalog', books:'Books', fanfics:'Fan fiction', manga:'Manga & comics', empty:'No works in this selection yet.', rec:'Recommended', top:'Top reads', newLabel:'New', popularLabel:'Popular', weekly:'Most read this week', discover:'Explore', heroTitle:'A story is waiting.', heroText:'Discover books, fan fiction and manga. Save your favourites and continue exactly where you left off.' },
+  sr: {
+    eyebrow: 'TVOJA SLEDEĆA PRIČA', heroTitle: 'Svetovi u koje se vraćaš', heroText: 'Knjige, fanfikcija, manga i autorske priče. Nađi omiljeno, sakupi biblioteku i prati nove glave.',
+    discover: 'Otvori katalog', subscribe: 'Pretplata',
+    continueReading: 'Nastavi čitanje', library: 'Moja biblioteka',
+    directions: 'Izaberi pravac', directionsSub: 'Tri kataloga · jedna platforma',
+    booksTitle: 'Knjige', booksText: 'Originalne priče, klasici i samizdat.',
+    fanficsTitle: 'Fanfikcija', fanficsText: 'Fandomi, AU, likovi i nova čitanja.',
+    mangaTitle: 'Manga i stripovi', mangaText: 'Manga, manhva, vebtuni i stripovi.',
+    allCatalog: 'Ceo katalog', rec: 'Preporuke', top: 'Top', topBooks: 'Top knjiga', topFanfics: 'Top fanfikcije', topManga: 'Top mange',
+    rating: 'Rang', openCatalog: 'U katalog', empty: 'U ovom izboru još nema dela.',
+    ctaTitle: 'Objavljuješ svoje priče?', ctaText: 'Autorski kabinet, statistika, čitaoci i isplate.', ctaBtn: 'Autorski kabinet',
+    completed: 'Završeno', ongoing: 'U toku',
+  },
+  ru: {
+    eyebrow: 'ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ', heroTitle: 'Миры, в которые хочется возвращаться', heroText: 'Книги, фанфики, манга и авторские истории. Найди любимое, собери библиотеку и следи за новыми главами.',
+    discover: 'Открыть каталог', subscribe: 'Подписка',
+    continueReading: 'Продолжить чтение', library: 'Моя библиотека',
+    directions: 'Выбери направление', directionsSub: 'Три каталога · одна платформа',
+    booksTitle: 'Книги', booksText: 'Оригинальные истории, классика и самиздат.',
+    fanficsTitle: 'Фанфики', fanficsText: 'Фандомы, AU, персонажи и новые прочтения.',
+    mangaTitle: 'Манга и стрипы', mangaText: 'Манга, манхва, вебтуны и комиксы.',
+    allCatalog: 'Весь каталог', rec: 'Рекомендации', top: 'Топ', topBooks: 'Топ книг', topFanfics: 'Топ фанфиков', topManga: 'Топ манги',
+    rating: 'Рейтинг', openCatalog: 'В каталог', empty: 'В этой подборке пока нет произведений.',
+    ctaTitle: 'Публикуешь свои истории?', ctaText: 'Авторский кабинет, статистика, читатели и выплаты.', ctaBtn: 'Кабинет автора',
+    completed: 'Завершено', ongoing: 'В процессе',
+  },
+  en: {
+    eyebrow: 'YOUR NEXT STORY', heroTitle: 'Worlds worth returning to', heroText: 'Books, fan fiction, manga and original stories. Find a favourite, build a library and follow new chapters.',
+    discover: 'Open catalog', subscribe: 'Subscription',
+    continueReading: 'Continue reading', library: 'My library',
+    directions: 'Choose a direction', directionsSub: 'Three catalogs · one platform',
+    booksTitle: 'Books', booksText: 'Original stories, classics and self-published.',
+    fanficsTitle: 'Fan fiction', fanficsText: 'Fandoms, AUs, characters and fresh takes.',
+    mangaTitle: 'Manga & comics', mangaText: 'Manga, manhwa, webtoons and comics.',
+    allCatalog: 'Full catalog', rec: 'Recommended', top: 'Top', topBooks: 'Top books', topFanfics: 'Top fan fiction', topManga: 'Top manga',
+    rating: 'Rating', openCatalog: 'Browse', empty: 'No works in this selection yet.',
+    ctaTitle: 'Have a story to publish?', ctaText: 'Creator studio, stats, readers and payouts.', ctaBtn: 'Creator studio',
+    completed: 'Completed', ongoing: 'Ongoing',
+  },
 };
-function WorkCard({w,lang,accent}:{w:Card;lang:Lang;accent:string}) {
-  return <Link href={`/${lang}/work/${w.slug}`} className={`tl-home-card ${accent}`}>
-    <div className="tl-home-cover">{w.cover_path ? <img src={w.cover_path} alt={w.title} loading="lazy"/> : <div className="tl-cover-placeholder"><span>TEROLIBRARY</span><strong>{w.title}</strong><small>{w.author_name}</small></div>}{w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}</div>
-    <div className="tl-home-card-info"><div className="tl-home-card-meta"><span>{w.completion === 'completed' ? (lang==='ru'?'Завершено':lang==='en'?'Completed':'Završeno') : (lang==='ru'?'В процессе':lang==='en'?'Ongoing':'U toku')}</span><span>★ {Number(w.rating_avg||0).toFixed(1)}</span></div><h3>{w.title}</h3><p>{w.author_name}</p></div>
-  </Link>;
+
+function tone(w: Card): string {
+  if (w.kind === 'fanfic') return 'purple';
+  if (w.type === 'comic') return 'orange';
+  return 'blue';
 }
-function WorkRow({title,subtitle,items,lang,href,accent,empty}:{title:string;subtitle:string;items:Card[];lang:Lang;href:string;accent:string;empty:string}) {
- return <section className={`tl-home-section ${accent}`}><div className="tl-section-heading"><div><div className="tl-section-eyebrow">{subtitle}</div><h2>{title}</h2></div><Link className="tl-section-more" href={href}>{lang==='ru'?'Все произведения':lang==='en'?'Browse all':'Sva dela'} <span>→</span></Link></div>{items.length?<div className="tl-home-grid">{items.map(w=><WorkCard key={w.id} w={w} lang={lang} accent={accent}/>)}</div>:<div className="tl-home-empty">{empty}</div>}</section>;
+
+function aiLabel(ai: Card['ai_usage'], l: Lang): { cls: string; text: string } | null {
+  if (!ai || ai === 'not_declared') return null;
+  if (ai === 'no_ai') return { cls: 'ai', text: l === 'ru' ? '✓ БЕЗ ИИ' : l === 'en' ? '✓ NO AI' : '✓ BEZ AI' };
+  if (ai === 'assisted') return { cls: 'ai assist', text: '✦ AI-ASSISTED' };
+  return { cls: 'ai gen', text: '✦ AI CONTENT' };
 }
-export default async function HomePage({params}:{params:Promise<{lang:string}>}) {
- const {lang}=await params; const l=(isLang(lang)?lang:'sr') as Lang; const x=TXT[l];
- const session=await readSession(); const cont=session?await getContinueReading(session.uid).catch(()=>null):null;
- const [booksFresh,booksTop,fanficFresh,fanficTop,mangaFresh,mangaTop]=await Promise.all([
-  listWorks({type:'novel',fanfic:false,sort:'new',limit:5}).catch(()=>[]),
-  listWorks({type:'novel',fanfic:false,sort:'views',limit:5}).catch(()=>[]),
-  listWorks({fanfic:true,sort:'new',limit:5}).catch(()=>[]),
-  listWorks({fanfic:true,sort:'views',limit:5}).catch(()=>[]),
-  listWorks({type:'comic',sort:'new',limit:5}).catch(()=>[]),
-  listWorks({type:'comic',sort:'views',limit:5}).catch(()=>[]),
- ]);
- const cat=(type:string)=>`/${l}/catalog?type=${type}`;
- return <main id="main" className="tl-home">
-  <section className="tl-home-hero"><div className="tl-home-hero-copy"><span className="tl-home-kicker">{x.discover} · TEROLIBRARY</span><h1>{session?`${x.hello}, ${session.name}`:x.heroTitle}</h1><p>{x.heroText}</p><Link className="tl-home-hero-button" href={`/${l}/catalog`}>{x.allCatalog} <span>→</span></Link></div><div className="tl-home-hero-art" aria-hidden="true"><span className="tl-art-orbit tl-art-orbit-one"/><span className="tl-art-orbit tl-art-orbit-two"/><span className="tl-art-book tl-art-book-one"/><span className="tl-art-book tl-art-book-two"/><span className="tl-art-book tl-art-book-three">✦</span></div></section>
-  <nav className="tl-home-category-nav" aria-label="Categories"><Link href={cat('book')} className="tl-home-category books"><span>📚</span>{x.books}<b>→</b></Link><Link href={cat('fanfic')} className="tl-home-category fanfics"><span>✦</span>{x.fanfics}<b>→</b></Link><Link href={cat('manga')} className="tl-home-category manga"><span>▣</span>{x.manga}<b>→</b></Link></nav>
-  {cont?<Link href={`/${l}/read/${cont.chapter_id}`} className="tl-home-continue"><span className="tl-home-continue-icon">◉</span><span className="tl-home-continue-copy"><small>{x.continueReading} · {cont.percent}%</small><strong>{cont.work_title} — {cont.chapter_title||`${l==='ru'?'Глава':l==='en'?'Chapter':'Glava'} ${cont.number}`}</strong></span><span className="tl-home-continue-button">{x.continueBtn} →</span></Link>:null}
-  <WorkRow title={x.books} subtitle={x.rec} items={booksFresh as Card[]} lang={l} href={cat('book')} accent="tl-books" empty={x.empty}/>
-  <WorkRow title={x.weekly} subtitle={x.top} items={booksTop as Card[]} lang={l} href={`${cat('book')}&filter=popular`} accent="tl-books tl-top" empty={x.empty}/>
-  <WorkRow title={x.fanfics} subtitle={x.rec} items={fanficFresh as Card[]} lang={l} href={cat('fanfic')} accent="tl-fanfics" empty={x.empty}/>
-  <WorkRow title={x.weekly} subtitle={x.top} items={fanficTop as Card[]} lang={l} href={`${cat('fanfic')}&filter=popular`} accent="tl-fanfics tl-top" empty={x.empty}/>
-  <WorkRow title={x.manga} subtitle={x.rec} items={mangaFresh as Card[]} lang={l} href={cat('manga')} accent="tl-manga" empty={x.empty}/>
-  <WorkRow title={x.weekly} subtitle={x.top} items={mangaTop as Card[]} lang={l} href={`${cat('manga')}&filter=popular`} accent="tl-manga tl-top" empty={x.empty}/>
-  <section className="tl-home-creator-cta"><div><span className="tl-home-kicker">TEROLIBRARY CREATOR STUDIO</span><h2>{l==='ru'?'Публикуешь свои истории?':l==='en'?'Have a story to publish?':'Pišeš svoju priču?'}</h2><p>{l==='ru'?'Авторский кабинет, главы, статистика читателей и инструменты публикации — в одном месте.':l==='en'?'A creator workspace for chapters, reader insights and publishing tools.':'Autorski kabinet, poglavlja, statistika čitalaca i alati za objavljivanje.'}</p></div><Link href={`/${l}/author`}>{l==='ru'?'Кабинет автора':l==='en'?'Creator studio':'Autorski kabinet'} <span>→</span></Link></section>
- </main>;
+
+function ProtoCard({ w, lang, x }: { w: Card; lang: Lang; x: (typeof TXT)[Lang] }) {
+  const ai = aiLabel(w.ai_usage, lang);
+  const rating = Number(w.rating_avg || 0);
+  return (
+    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }}>
+      <div className={`cover ${tone(w)}`}>
+        {ai ? <span className={ai.cls}>{ai.text}</span> : null}
+        <span className="tiny">TEROLIBRARY</span>
+        <span className="cover-title">{w.title}</span>
+        <span className="cover-author">{w.author_name}</span>
+      </div>
+      <div className="bookbody">
+        <div className="meta">
+          <span>{w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Манга' : lang === 'en' ? 'Manga' : 'Manga') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga')}</span>
+          <span className="rating">★ {rating.toFixed(1)}</span>
+        </div>
+        <h3>{w.title}</h3>
+        <div className="author">{w.author_name}</div>
+        <div className="tags">
+          <span className="status">{w.completion === 'completed' ? x.completed : x.ongoing}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function Grid({ items, lang, x }: { items: Card[]; lang: Lang; x: (typeof TXT)[Lang] }) {
+  if (!items.length) return <div className="muted" style={{ padding: 12 }}>{x.empty}</div>;
+  return <div className="grid">{items.map((w) => <ProtoCard key={w.id} w={w} lang={lang} x={x} />)}</div>;
+}
+
+export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const l = (isLang(lang) ? lang : 'sr') as Lang;
+  const x = TXT[l];
+
+  const session = await readSession();
+  const cont = session ? await getContinueReading(session.uid).catch(() => null) : null;
+
+  const [booksRec, booksTop, fanficRec, fanficTop, mangaRec, mangaTop] = await Promise.all([
+    listWorks({ type: 'novel', fanfic: false, sort: 'new', limit: 5 }).catch(() => []),
+    listWorks({ type: 'novel', fanfic: false, sort: 'views', limit: 5 }).catch(() => []),
+    listWorks({ fanfic: true, sort: 'new', limit: 5 }).catch(() => []),
+    listWorks({ fanfic: true, sort: 'views', limit: 5 }).catch(() => []),
+    listWorks({ type: 'comic', sort: 'new', limit: 5 }).catch(() => []),
+    listWorks({ type: 'comic', sort: 'views', limit: 5 }).catch(() => []),
+  ]);
+
+  const heroItems = [booksRec[0], fanficRec[0], mangaRec[0]].filter(Boolean) as Card[];
+
+  const cat = (kind: 'book' | 'fanfic' | 'manga') => `/${l}/catalog?kind=${kind}`;
+
+  const sections = [
+    { key: 'books', title: x.booksTitle, emoji: '📚', rec: booksRec as Card[], top: booksTop as Card[], href: cat('book'), topTitle: x.topBooks },
+    { key: 'fanfics', title: x.fanficsTitle, emoji: '✦', rec: fanficRec as Card[], top: fanficTop as Card[], href: cat('fanfic'), topTitle: x.topFanfics },
+    { key: 'manga', title: x.mangaTitle, emoji: '▣', rec: mangaRec as Card[], top: mangaTop as Card[], href: cat('manga'), topTitle: x.topManga },
+  ];
+
+  return (
+    <main id="main" className="shell">
+      <section className="hero">
+        <div>
+          <div className="eyebrow">{x.eyebrow}</div>
+          <h1>{session ? `${x.heroTitle}` : x.heroTitle}</h1>
+          <p>{x.heroText}</p>
+          <Link className="btn primary" href={`/${l}/catalog`}>{x.discover} →</Link>{' '}
+          <Link className="btn" href={`/${l}/subscribe`}>{x.subscribe}</Link>
+        </div>
+        <div className="heroart" aria-hidden="true">
+          {heroItems.map((w) => (
+            <div key={w.id} className={`cover ${tone(w)}`}>
+              <span className="tiny">TEROLIBRARY</span>
+              <span className="cover-title">{w.title}</span>
+              <span className="cover-author">{w.author_name}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {cont ? (
+        <div className="section">
+          <div className="sectionhead">
+            <h2>{x.continueReading}</h2>
+            <Link className="btn" href={`/${l}/library`}>{x.library} →</Link>
+          </div>
+          <div className="grid4">
+            <Link href={`/${l}/read/${cont.chapter_id}`} className="panel" style={{ display: 'block' }}>
+              <div className="eyebrow">{x.continueReading} · {cont.percent}%</div>
+              <h2 style={{ marginTop: 8 }}>{cont.work_title}</h2>
+              <p className="muted" style={{ marginTop: 6 }}>
+                {cont.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${cont.number}`}
+              </p>
+              <button className="btn primary" style={{ marginTop: 14 }}>{l === 'ru' ? 'Продолжить' : l === 'en' ? 'Continue' : 'Nastavi'} →</button>
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="section">
+        <div className="sectionhead">
+          <h2>{x.directions}</h2>
+          <span className="muted">{x.directionsSub}</span>
+        </div>
+        <div className="grid4">
+          <div className="panel">
+            <div className="eyebrow">BOOKS</div>
+            <h2>{x.booksTitle}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{x.booksText}</p>
+            <Link className="btn soft" style={{ marginTop: 12, display: 'inline-block' }} href={cat('book')}>{x.openCatalog} →</Link>
+          </div>
+          <div className="panel">
+            <div className="eyebrow" style={{ color: '#9061c4' }}>FANFICTION</div>
+            <h2>{x.fanficsTitle}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{x.fanficsText}</p>
+            <Link className="btn soft" style={{ marginTop: 12, display: 'inline-block' }} href={cat('fanfic')}>{x.openCatalog} →</Link>
+          </div>
+          <div className="panel">
+            <div className="eyebrow" style={{ color: '#df843b' }}>COMICS</div>
+            <h2>{x.mangaTitle}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{x.mangaText}</p>
+            <Link className="btn soft" style={{ marginTop: 12, display: 'inline-block' }} href={cat('manga')}>{x.openCatalog} →</Link>
+          </div>
+        </div>
+      </div>
+
+      {sections.map((s) => (
+        <div key={s.key} className="section">
+          <div className="sectionhead">
+            <h2>{s.emoji} {s.title} · {x.rec}</h2>
+            <Link className="btn" href={s.href}>{x.allCatalog} →</Link>
+          </div>
+          <Grid items={s.rec} lang={l} x={x} />
+          <div className="sectionhead" style={{ marginTop: 22 }}>
+            <h3>{s.topTitle}</h3>
+            <Link className="btn" href={`${s.href}&filter=popular`}>{x.rating} →</Link>
+          </div>
+          <Grid items={s.top} lang={l} x={x} />
+        </div>
+      ))}
+
+      <div className="section banner">
+        <div>
+          <h2>{x.ctaTitle}</h2>
+          <p>{x.ctaText}</p>
+        </div>
+        <Link className="btn primary" href={`/${l}/author`}>{x.ctaBtn} →</Link>
+      </div>
+    </main>
+  );
 }

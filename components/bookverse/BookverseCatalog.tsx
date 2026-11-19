@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { catalogDict, type CatalogDict } from '@/lib/bookverse-i18n';
+import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 
 export type SectionId = 'books' | 'fanfics' | 'comics';
@@ -18,66 +17,95 @@ export type CatalogWork = {
   category: 'book' | 'fanfic' | 'manga';
   rating: number;
   classic?: boolean;
+  aiUsage?: string;
   completed?: boolean;
   cover?: string | null;
-  tone: 'blue' | 'rose' | 'gold' | 'violet' | 'green' | 'orange';
-  aiUsage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
+  tone?: string;
 };
 
-const SECTION_IDS: SectionId[] = ['books', 'fanfics', 'comics'];
+export type CatalogGenre = { slug: string; name: string };
 
-/** Значение `kind` в URL для раздела каталога. */
 const SECTION_KIND: Record<SectionId, string> = { books: '', fanfics: 'fanfic', comics: 'comic' };
 
-const LANGS: { code: Lang; label: string }[] = [
-  { code: 'sr', label: 'SR' },
-  { code: 'ru', label: 'RU' },
-  { code: 'en', label: 'EN' },
-];
+const TXT: Record<Lang, {
+  books: string; fanfics: string; manga: string;
+  titles: Record<SectionId, string>; eyebrows: Record<SectionId, string>; descs: Record<SectionId, string>;
+  filters: string; all: string; popular: string; fresh: string; completed: string; rated: string;
+  sort: string; sortRecommend: string; sortPopular: string; sortNew: string; sortRating: string;
+  apply: string; reset: string; genre: string; tags: string; fandom: string; source: string; ai: string;
+  anyAi: string; noAi: string; assisted: string; generated: string;
+  sourcePublisher: string; sourceSelf: string; sourceClassic: string;
+  count: (n: number) => string; prev: string; next: string; empty: string;
+  activeFilters: string; remove: string; tagPlaceholder: string; fandomPlaceholder: string;
+}> = {
+  sr: {
+    books: 'Knjige', fanfics: 'Fanfikcija', manga: 'Manga',
+    titles: { books: 'Katalog knjiga', fanfics: 'Katalog fanfikcije', comics: 'Katalog mange i stripova' },
+    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
+    descs: { books: 'Originalne priče, klasici i samizdat.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.' },
+    filters: 'Filteri', all: 'Sve', popular: 'Popularno', fresh: 'Novo', completed: 'Završeno', rated: 'Visok rejting',
+    sort: 'Sortiranje', sortRecommend: 'Preporučeno', sortPopular: 'Popularno', sortNew: 'Najnovije', sortRating: 'Po rejtingu',
+    apply: 'Prikaži rezultate', reset: 'Resetuj', genre: 'Žanrovi', tags: 'Tagovi', fandom: 'Fandom', source: 'Izvor', ai: 'AI sadržaj',
+    anyAi: 'Bilo koji', noAi: 'Autor tvrdi: bez AI', assisted: 'AI delimično', generated: 'AI generisano',
+    sourcePublisher: 'Izdavač', sourceSelf: 'Samizdat', sourceClassic: 'Klasici',
+    count: (n) => `Pronađeno ${n} dela`, prev: 'Nazad', next: 'Napred', empty: 'Ništa nije pronađeno po ovim filterima.',
+    activeFilters: 'Aktivni filteri', remove: 'Ukloni', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Naziv fandoma',
+  },
+  ru: {
+    books: 'Книги', fanfics: 'Фанфики', manga: 'Манга',
+    titles: { books: 'Каталог книг', fanfics: 'Каталог фанфиков', comics: 'Каталог манги и комиксов' },
+    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
+    descs: { books: 'Оригинальные истории, классика и самиздат.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.' },
+    filters: 'Фильтры', all: 'Все', popular: 'Популярное', fresh: 'Новинки', completed: 'Завершённые', rated: 'Высокий рейтинг',
+    sort: 'Сортировка', sortRecommend: 'Рекомендованные', sortPopular: 'Популярные', sortNew: 'Сначала новые', sortRating: 'По рейтингу',
+    apply: 'Показать результаты', reset: 'Сбросить', genre: 'Жанры', tags: 'Теги', fandom: 'Фандом', source: 'Источник', ai: 'AI-контент',
+    anyAi: 'Любой', noAi: 'Автор заявляет: без ИИ', assisted: 'ИИ использовался частично', generated: 'ИИ-генерация',
+    sourcePublisher: 'Издательство', sourceSelf: 'Самиздат', sourceClassic: 'Классика',
+    count: (n) => `Найдено ${n} произведений`, prev: 'Назад', next: 'Вперёд', empty: 'По этим фильтрам ничего не найдено.',
+    activeFilters: 'Активные фильтры', remove: 'Убрать', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Название фандома',
+  },
+  en: {
+    books: 'Books', fanfics: 'Fan fiction', manga: 'Manga',
+    titles: { books: 'Book catalog', fanfics: 'Fan fiction catalog', comics: 'Manga & comics catalog' },
+    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
+    descs: { books: 'Original stories, classics and self-published.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.' },
+    filters: 'Filters', all: 'All', popular: 'Popular', fresh: 'New', completed: 'Completed', rated: 'Top rated',
+    sort: 'Sort', sortRecommend: 'Recommended', sortPopular: 'Popular', sortNew: 'Newest', sortRating: 'By rating',
+    apply: 'Show results', reset: 'Reset', genre: 'Genres', tags: 'Tags', fandom: 'Fandom', source: 'Source', ai: 'AI content',
+    anyAi: 'Any', noAi: 'Author declares: no AI', assisted: 'AI partially used', generated: 'AI generated',
+    sourcePublisher: 'Publisher', sourceSelf: 'Self-published', sourceClassic: 'Classics',
+    count: (n) => `Found ${n} works`, prev: 'Prev', next: 'Next', empty: 'Nothing matches these filters.',
+    activeFilters: 'Active filters', remove: 'Remove', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Fandom name',
+  },
+};
 
-function Cover({ work, series }: { work: CatalogWork; series: string }) {
-  const [broken, setBroken] = useState(false);
-  const src = work.cover ? (work.cover.startsWith('http') ? work.cover : work.cover) : '';
-  // Реальная обложка, если она есть; декоративная заглушка — только как fallback.
-  if (src && !broken) {
-    return (
-      <div className="bv-cover bv-cover--image">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={work.title} loading="lazy" onError={() => setBroken(true)} />
-        {work.aiUsage && work.aiUsage !== 'not_declared' ? <span className={`bv-ai-badge bv-ai-badge--${work.aiUsage}`}>{work.aiUsage === 'no_ai' ? '✓ БЕЗ ИИ' : work.aiUsage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
-      </div>
-    );
-  }
-  return (
-    <div className={`bv-cover bv-cover--${work.tone}`} aria-label={work.title}>
-      <span className="bv-cover__ornament" />
-      {work.aiUsage && work.aiUsage !== 'not_declared' ? <span className={`bv-ai-badge bv-ai-badge--${work.aiUsage}`}>{work.aiUsage === 'no_ai' ? '✓ БЕЗ ИИ' : work.aiUsage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
-      <span className="bv-cover__series">{series}</span>
-      <span className="bv-cover__title">{work.title}</span>
-      <span className="bv-cover__author">{work.author}</span>
-    </div>
-  );
+function aiBadge(ai: string | undefined, t: (typeof TXT)[Lang]) {
+  if (!ai || ai === 'not_declared') return null;
+  if (ai === 'no_ai') return <span className="ai">✓ {t.noAi.split(':')[0]}</span>;
+  if (ai === 'assisted') return <span className="ai assist">✦ AI</span>;
+  return <span className="ai gen">✦ AI</span>;
 }
 
-function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d: CatalogDict; percent?: number }) {
-  const genre = work.category === 'manga' ? d.genreManga : work.category === 'fanfic' ? d.genreFanfic : d.genreBook;
-  const badge = work.classic ? d.badgeClassic : work.completed ? d.badgeCompleted : '';
+function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang] }) {
+  const tone = w.tone || (w.category === 'manga' ? 'orange' : w.category === 'fanfic' ? 'purple' : 'blue');
   return (
-    <Link className="bv-work-card" href={`/${lang}/work/${work.slug}`}>
-      <Cover work={work} series="TEROLIBRARY ORIGINAL" />
-      {/* Прогресс чтения на карточке: видно, где остановился (аудит, п.28). */}
-      {typeof percent === 'number' && percent > 0 ? (
-        <div style={{ height: 3, background: 'var(--bv-line)' }}>
-          <div style={{ width: `${Math.min(100, percent)}%`, height: '100%', background: 'var(--bv-accent)' }} />
+    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }}>
+      <div className={`cover ${tone}`} style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+        {aiBadge(w.aiUsage, t)}
+        <span className="tiny">TEROLIBRARY</span>
+        <span className="cover-title">{w.title}</span>
+        <span className="cover-author">{w.author}</span>
+      </div>
+      <div className="bookbody">
+        <div className="meta">
+          <span>{w.category === 'manga' ? t.manga : w.category === 'fanfic' ? t.fanfics : t.books}</span>
+          <span className="rating">★ {w.rating.toFixed(1)}</span>
         </div>
-      ) : null}
-      <div className="bv-work-card__body">
-        <div className="bv-work-card__meta">
-          <span>{genre}</span>
-          {badge ? <span className="bv-pill">{badge}</span> : null}
+        <h3>{w.title}</h3>
+        <div className="author">{w.author}</div>
+        <div className="tags">
+          <span className="status">{w.completed ? t.completed : '—'}</span>
         </div>
-        <h3>{work.title}</h3>
-        <p>{work.author}</p>
       </div>
     </Link>
   );
@@ -85,8 +113,7 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
-  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '', aiUsage = '',
-  user = null, progress = {}, notifications = 0,
+  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -100,295 +127,180 @@ export default function BookverseCatalog({
   tag?: string;
   fandom?: string;
   aiUsage?: string;
-  user?: { name: string } | null;
-  progress?: Record<number, number>;
-  notifications?: number;
+  genres?: CatalogGenre[];
 }) {
-  const d = catalogDict(lang);
+  const t = TXT[lang];
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
-  const [pending, setPending] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draftGenre, setDraftGenre] = useState(genre);
-  const [draftSource, setDraftSource] = useState(source);
   const [draftTag, setDraftTag] = useState(tag);
   const [draftFandom, setDraftFandom] = useState(fandom);
-  const [draftAiUsage, setDraftAiUsage] = useState(aiUsage);
-  const firstRender = useRef(true);
+  const [draftSource, setDraftSource] = useState(source);
+  const [draftAi, setDraftAi] = useState(aiUsage);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
 
-  const section = initialSection;
-  const filter = initialFilter;
-  const copy = d.sections[section];
-
-  /** Единственный способ поменять состояние: собрать URL и уйти на него.
-   *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
-  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string; tag?: string; fandom?: string; aiUsage?: string }) {
+  function go(next: {
+    q?: string; kind?: string; filter?: CatalogFilter; page?: number;
+    genre?: string; tag?: string; fandom?: string; source?: string; ai?: string;
+  }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
-    const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
-    const f = next.filter !== undefined ? next.filter : filter;
+    const kind = next.kind !== undefined ? next.kind : SECTION_KIND[initialSection];
+    const f = next.filter !== undefined ? next.filter : initialFilter;
+    const g = next.genre !== undefined ? next.genre : genre;
+    const tg = next.tag !== undefined ? next.tag : tag;
+    const fd = next.fandom !== undefined ? next.fandom : fandom;
+    const src = next.source !== undefined ? next.source : source;
+    const ai = next.ai !== undefined ? next.ai : aiUsage;
     const p = next.page !== undefined ? next.page : 1;
-
     if (q.trim()) params.set('q', q.trim());
     if (kind) params.set('kind', kind);
-    if (next.type) params.set('type', next.type);
     if (f !== 'forYou') params.set('filter', f);
-    const g = next.genre !== undefined ? next.genre : genre;
     if (g) params.set('genre', g);
-    const src = next.source !== undefined ? next.source : source;
+    if (tg) params.set('tag', tg);
+    if (fd) params.set('fandom', fd);
     if (src) params.set('source', src);
-    const tg = next.tag !== undefined ? next.tag : tag; if (tg) params.set('tag', tg);
-    const fd = next.fandom !== undefined ? next.fandom : fandom; if (fd) params.set('fandom', fd);
-    const ai = next.aiUsage !== undefined ? next.aiUsage : aiUsage; if (ai) params.set('ai', ai);
+    if (ai) params.set('ai', ai);
     if (p > 1) params.set('page', String(p));
-
-    setPending(true);
     const qs = params.toString();
     router.push(`/${lang}/catalog${qs ? `?${qs}` : ''}`);
   }
 
-  // Поиск: пока печатают — только локальное состояние, в URL уходит с задержкой.
-  useEffect(() => {
-    if (firstRender.current) { firstRender.current = false; return; }
-    const t = setTimeout(() => {
-      if (query !== initialQuery) go({ q: query, page: 1 });
-    }, 450);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  const active: { label: string; clear: () => void }[] = [];
+  if (query) active.push({ label: `q: ${query}`, clear: () => { setQuery(''); go({ q: '', page: 1 }); } });
+  if (genre) active.push({ label: `${t.genre}: ${genre}`, clear: () => { setDraftGenre(''); go({ genre: '', page: 1 }); } });
+  if (tag) active.push({ label: `#${tag}`, clear: () => { setDraftTag(''); go({ tag: '', page: 1 }); } });
+  if (fandom) active.push({ label: `${t.fandom}: ${fandom}`, clear: () => { setDraftFandom(''); go({ fandom: '', page: 1 }); } });
+  if (source) active.push({ label: `${t.source}: ${source}`, clear: () => { setDraftSource(''); go({ source: '', page: 1 }); } });
+  if (aiUsage) active.push({ label: `AI: ${aiUsage}`, clear: () => { setDraftAi(''); go({ ai: '', page: 1 }); } });
 
-  useEffect(() => { setPending(false); }, [works]);
-
-  function switchLang(code: Lang) {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (SECTION_KIND[section]) params.set('kind', SECTION_KIND[section]);
-    if (filter !== 'forYou') params.set('filter', filter);
-    if (genre) params.set('genre', genre);
-    if (source) params.set('source', source);
-    if (tag) params.set('tag', tag);
-    if (fandom) params.set('fandom', fandom);
-    if (aiUsage) params.set('ai', aiUsage);
-    if (page > 1) params.set('page', String(page));
-    const qs = params.toString();
-    window.location.href = `/${code}/catalog${qs ? `?${qs}` : ''}`;
-  }
-
-  const filterLabels: [CatalogFilter, string][] = [
-    ['forYou', d.filters.forYou],
-    ['popular', d.filters.popular],
-    ['fresh', d.filters.fresh],
-    ['completed', d.filters.completed],
-  ];
+  const kindFor = (s: SectionId) => SECTION_KIND[s];
 
   return (
-    <main className={`bv-app bv-theme-${section}`}>
-      <aside className="bv-sidebar">
-        <Link href={`/${lang}`} className="bv-brand" aria-label={d.brandHome}>
-          <span className="bv-brand__mark">t</span>
-          <span>erolibrary<span className="bv-brand__dot">.</span></span>
-        </Link>
-        <div className="bv-sidebar__label">{d.platform}</div>
-        <nav className="bv-main-nav" aria-label={d.platform}>
-          {SECTION_IDS.map((id) => (
-            <button key={id} className={`bv-nav-item ${section === id ? 'is-active' : ''}`}
-              onClick={() => go({ kind: SECTION_KIND[id], page: 1 })}>
-              <span className={`bv-nav-icon bv-nav-icon--${id}`}>{id === 'books' ? '▤' : id === 'fanfics' ? '✧' : '▧'}</span>
-              <span>{d.sections[id].label}</span>
-              {section === id ? <span className="bv-nav-item__active-dot" /> : null}
+    <main id="main" className="shell">
+      <div className={`tlp-cat-category ${initialSection}`}>
+        <nav className="subnav" aria-label="Categories">
+          {(['books', 'fanfics', 'comics'] as SectionId[]).map((s) => (
+            <button key={s} className={initialSection === s ? 'active' : ''} onClick={() => go({ kind: kindFor(s), page: 1 })}>
+              {s === 'books' ? `▤ ${t.books}` : s === 'fanfics' ? `✧ ${t.fanfics}` : `▧ ${t.manga}`}
             </button>
           ))}
         </nav>
-        <div className="bv-sidebar__label bv-sidebar__label--spaced">{d.mySpace}</div>
-        <nav className="bv-main-nav" aria-label={d.library}>
-          <Link href={`/${lang}/library?tab=saved`} className="bv-nav-item"><span className="bv-nav-icon">▣</span><span>{d.library}</span></Link>
-          <Link href={`/${lang}/library?tab=history`} className="bv-nav-item"><span className="bv-nav-icon">◷</span><span>{d.history}</span></Link>
-          <Link href={`/${lang}/library?tab=bookmarks`} className="bv-nav-item"><span className="bv-nav-icon">☆</span><span>{d.bookmarks}</span></Link>
-          <Link href={`/${lang}/collections`} className="bv-nav-item"><span className="bv-nav-icon">◫</span><span>{lang === 'ru' ? 'Подборки' : lang === 'en' ? 'Collections' : 'Kolekcije'}</span></Link>
-        </nav>
-        <div className="bv-sidebar__bottom">
-          <div className="bv-author-box">
-            <div className="bv-author-box__icon">✎</div>
-            <div><strong>{d.publishing}</strong><span>{d.publishingSub}</span></div>
-            <Link href={`/${lang}/author`} aria-label={d.promoAuthorLink}>↗</Link>
+
+        <div className="row catalog-title">
+          <div>
+            <div className="eyebrow">{t.eyebrows[initialSection]}</div>
+            <h1>{t.titles[initialSection]}</h1>
+            <p className="muted">{t.descs[initialSection]}</p>
           </div>
-          <Link className="bv-profile" href={user ? `/${lang}/library` : `/${lang}/login`}>
-            <span className="bv-avatar">{user ? user.name.slice(0, 1).toUpperCase() : d.guest.slice(0, 1)}</span>
-            <span><strong>{user ? user.name : d.guest}</strong><small>{user ? d.mySpace : d.guestSub}</small></span>
-            <span className="bv-profile__more">···</span>
-          </Link>
+          <button className="btn" onClick={() => setFiltersOpen(true)}>☷ {t.filters}{active.length ? ` ${active.length}` : ''}</button>
         </div>
-      </aside>
 
-      <section className="bv-main">
-        <header className="bv-topbar">
-          <div className="bv-mobile-brand"><span className="bv-brand__mark">t</span> erolibrary</div>
-          <label className="bv-search">
-            <span>⌕</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={d.searchPlaceholder} />
-            <kbd>⌘ K</kbd>
-          </label>
-          <label className="bv-typefilter">
-            <select
-              value={section === 'comics' ? 'manga' : section === 'fanfics' ? 'fanfic' : 'book'}
-              onChange={(e) => go({ type: e.target.value === 'book' ? 'novel' : e.target.value, kind: e.target.value === 'book' ? '' : e.target.value === 'manga' ? 'comic' : 'fanfic', page: 1 })}
-              aria-label={d.allTypes}
-            >
-              <option value="book">{d.sectionBooks}</option>
-              <option value="fanfic">{d.sectionFanfics}</option>
-              <option value="manga">{d.sectionComics}</option>
-            </select>
-          </label>
-          <div className="bv-topbar__actions">
-            {/* Колокольчик уведомлений: новые главы из библиотеки (аудит, п.22). */}
-            <Link className="bv-icon-button" href={`/${lang}/notifications`} aria-label="Notifications">
-              🔔{notifications > 0 ? <i /> : null}
-            </Link>
-            <div className="bv-langs" role="group" aria-label="Language">
-              {LANGS.map((item) => (
-                <button
-                  key={item.code}
-                  type="button"
-                  onClick={() => switchLang(item.code)}
-                  className={`bv-lang ${item.code === lang ? 'is-active' : ''}`}
-                  aria-pressed={item.code === lang}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <Link className="bv-login" href={`/${lang}/login`}>{d.login}</Link>
-          </div>
-        </header>
+        <div className="catalog-controls">
+          {([
+            ['forYou', t.all], ['popular', t.popular], ['fresh', t.fresh], ['completed', t.completed],
+          ] as [CatalogFilter, string][]).map(([key, label]) => (
+            <button key={key} className={`chip ${initialFilter === key ? 'selected' : ''}`} onClick={() => go({ filter: key, page: 1 })}>{label}</button>
+          ))}
+          <span className="spacer" />
+          <select className="select" value={initialFilter} onChange={(e) => go({ filter: e.target.value as CatalogFilter, page: 1 })} aria-label={t.sort}>
+            <option value="forYou">{t.sortRecommend}</option>
+            <option value="popular">{t.sortPopular}</option>
+            <option value="fresh">{t.sortNew}</option>
+            <option value="completed">{t.completed}</option>
+          </select>
+          <button className="iconbtn" onClick={() => setView('grid')} aria-label="Grid">▦</button>
+          <button className="iconbtn" onClick={() => setView('list')} aria-label="List">☰</button>
+        </div>
 
-        <div className="bv-content">
-          <div className="bv-section-switcher" role="tablist" aria-label={d.platform}>
-            {SECTION_IDS.map((id) => (
-              <button role="tab" aria-selected={section === id} key={id}
-                onClick={() => go({ kind: SECTION_KIND[id], page: 1 })}
-                className={section === id ? 'is-active' : ''}>
-                {d.sections[id].label}
-              </button>
+        {active.length ? (
+          <div className="filters-active">
+            <span>{t.activeFilters}:</span>
+            {active.map((f, i) => (
+              <button key={i} className="chip selected" onClick={f.clear}>{f.label} ✕</button>
             ))}
-            <Link href={`/${lang}/library`} className="bv-switcher-link">{d.library}</Link>
           </div>
+        ) : null}
 
-          <section className="bv-hero">
-            <div className="bv-hero__content">
-              <div className="bv-eyebrow"><span />{copy.eyebrow}</div>
-              <h1>{copy.title}</h1>
-              <p>{copy.subtitle}</p>
-              <div className="bv-hero__actions">
-                <button className="bv-primary-button" onClick={() => go({ filter: 'forYou', page: 1 })}>{copy.action}<span>↗</span></button>
-                <button className="bv-text-link" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.viewAll} <span>→</span></button>
-              </div>
-            </div>
-            <div className="bv-hero-art" aria-hidden="true">
-              <div className="bv-hero-art__halo" />
-              <div className="bv-hero-art__book bv-hero-art__book--back" />
-              <div className="bv-hero-art__book bv-hero-art__book--front">
-                <span>TEROLIBRARY</span><strong>THE<br />NEXT<br />CHAPTER</strong><small>YOUR STORY STARTS HERE</small>
-              </div>
-              <span className="bv-hero-art__spark bv-hero-art__spark--one">✦</span>
-              <span className="bv-hero-art__spark bv-hero-art__spark--two">✧</span>
-            </div>
-            <div className="bv-hero__index">{String(SECTION_IDS.indexOf(section) + 1).padStart(2, '0')} <span>/ 03</span></div>
-          </section>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>{t.count(works.length)}</div>
 
-          <section className="bv-section-block">
-            <div className="bv-section-heading">
-              <div><span className="bv-kicker">{d.catalogKicker}</span><h2>{d.catalogTitle}</h2><p>{copy.subtitle}</p></div>
-              <button className="bv-view-all" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.wholeCatalog} <span>→</span></button>
-            </div>
-            <div className="bv-filter-row">
-              <button type="button" onClick={() => setFiltersOpen(v => !v)} className={filtersOpen ? 'is-active' : ''}>{lang === 'ru' ? '☷ Фильтры' : lang === 'en' ? '☷ Filters' : '☷ Filteri'}</button>
-              {filterLabels.map(([key, label]) => (
-                <button key={key} onClick={() => go({ filter: key, page: 1 })} className={filter === key ? 'is-active' : ''}>{label}</button>
-              ))}
-            </div>
+        {works.length ? (
+          <div className={view === 'grid' ? 'grid' : 'grid4'}>
+            {works.map((w) => <Card key={w.id} w={w} lang={lang} t={t} />)}
+          </div>
+        ) : (
+          <div className="panel muted" style={{ textAlign: 'center' }}>{t.empty}</div>
+        )}
 
-            {filtersOpen ? <div className="bv-filter-overlay" role="dialog" aria-modal="true" aria-label={lang === 'ru' ? 'Фильтры каталога' : lang === 'en' ? 'Catalog filters' : 'Filteri kataloga'}><button className="bv-filter-overlay__scrim" aria-label={lang === 'ru' ? 'Закрыть фильтры' : lang === 'en' ? 'Close filters' : 'Zatvori filtere'} onClick={() => setFiltersOpen(false)}/><div className="bv-filter-drawer"><div className="bv-filter-drawer__head"><h2>{lang === 'ru' ? 'Фильтры' : lang === 'en' ? 'Filters' : 'Filteri'}</h2><button className="bv-filter-close" onClick={() => setFiltersOpen(false)} aria-label={lang === 'ru' ? 'Закрыть' : lang === 'en' ? 'Close' : 'Zatvori'}>×</button></div><div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Жанр / тег' : lang === 'en' ? 'Genre / tag' : 'Žanr / tag'}</span><input className="input" value={draftGenre} onChange={e => setDraftGenre(e.target.value)} placeholder={lang === 'ru' ? 'Введите жанр или тег' : lang === 'en' ? 'Enter genre or tag' : 'Unesite žanr ili tag'} /></label>
-                <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}</span><select className="input" value={draftSource} onChange={e => setDraftSource(e.target.value)}><option value="">{lang === 'ru' ? 'Все источники' : lang === 'en' ? 'All sources' : 'Svi izvori'}</option><option value="publisher">{lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'}</option><option value="selfpub">{lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'}</option><option value="classic">{lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'}</option></select></label><label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Тег' : lang === 'en' ? 'Tag' : 'Tag'}</span><input className="input" value={draftTag} onChange={e => setDraftTag(e.target.value)} placeholder="tag-slug" /></label><label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Фандом' : lang === 'en' ? 'Fandom' : 'Fandom'}</span><input className="input" value={draftFandom} onChange={e => setDraftFandom(e.target.value)} placeholder={lang === 'ru' ? 'Название фандома' : lang === 'en' ? 'Fandom name' : 'Naziv fandoma'} /></label>
-                <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Использование ИИ' : lang === 'en' ? 'AI disclosure' : 'AI oznaka'}</span><select className="input" value={draftAiUsage} onChange={e => setDraftAiUsage(e.target.value)}><option value="">{lang === 'ru' ? 'Любой статус' : lang === 'en' ? 'Any status' : 'Bilo koji status'}</option><option value="no_ai">{lang === 'ru' ? 'Автор заявляет: без ИИ' : lang === 'en' ? 'Author declares: no AI' : 'Autor navodi: bez AI'}</option><option value="assisted">{lang === 'ru' ? 'ИИ использовался частично' : lang === 'en' ? 'AI-assisted' : 'AI kao pomoćni alat'}</option><option value="generated">{lang === 'ru' ? 'ИИ-генерация' : lang === 'en' ? 'AI-generated' : 'AI generisano'}</option></select></label>
-              </div><div className="mt-4 flex justify-end gap-2"><button className="btn btn-ghost" onClick={() => {setDraftGenre('');setDraftSource('');setDraftTag('');setDraftFandom('');setDraftAiUsage('');go({genre:'',source:'',tag:'',fandom:'',aiUsage:'',page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Сбросить' : lang === 'en' ? 'Reset' : 'Resetuj'}</button><button className="btn btn-primary" onClick={() => {go({genre:draftGenre.trim(),source:draftSource,tag:draftTag.trim(),fandom:draftFandom.trim(),aiUsage:draftAiUsage,page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Применить' : lang === 'en' ? 'Apply' : 'Primeni'}</button></div>
-            </div></div> : null}
-
-            {/* Источник издания: издательское, самиздат, классика (аудит, п.10).
-                listWorks это уже умел — UI просто не передавал параметр. */}
-            <div className="bv-filter-row">
-              <span className="muted" style={{ fontSize: 10, alignSelf: 'center', marginRight: 6 }}>
-                {lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}:
-              </span>
-              {([
-                ['', lang === 'ru' ? 'Все' : lang === 'en' ? 'All' : 'Sve'],
-                ['publisher', lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'],
-                ['selfpub', lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'],
-                ['classic', lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'],
-              ] as [string, string][]).map(([value, label]) => (
-                <button key={value || 'all'} onClick={() => go({ page: 1, source: value })} className={source === value ? 'is-active' : ''}>{label}</button>
-              ))}
-            </div>
-            <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>
-              {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} percent={progress[w.id]} />)}
-            </div>
-            {works.length === 0 ? <div className="bv-empty">{d.empty}</div> : null}
-
-            <div className="bv-filter-row" style={{ justifyContent: 'center', marginTop: 16 }}>
-              <button
-                onClick={() => go({ page: Math.max(1, page - 1) })}
-                className={page <= 1 ? '' : 'is-active'}
-                disabled={page <= 1}
-                style={{ opacity: page <= 1 ? 0.4 : 1 }}
-              >
-                ← {lang === 'ru' ? 'Назад' : 'Prethodna'}
-              </button>
-              <span className="muted" style={{ alignSelf: 'center' }}>{lang === 'ru' ? 'Страница' : 'Strana'} {page}</span>
-              <button
-                onClick={() => go({ page: page + 1 })}
-                className={hasMore ? 'is-active' : ''}
-                disabled={!hasMore}
-                style={{ opacity: hasMore ? 1 : 0.4 }}
-              >
-                {lang === 'ru' ? 'Дальше' : 'Sledeća'} →
-              </button>
-            </div>
-          </section>
-
-          <section className="bv-promo-row">
-            <div className="bv-promo-card bv-promo-card--author">
-              <div><span className="bv-kicker">{d.promoAuthorKicker}</span><h2>{d.promoAuthorTitle}</h2>
-                <p>{d.promoAuthorText}</p>
-                <Link href={`/${lang}/author`}>{d.promoAuthorLink} <span>→</span></Link></div>
-              <div className="bv-promo-card__symbol">✎</div>
-            </div>
-            <div className="bv-promo-card bv-promo-card--community">
-              <div><span className="bv-kicker">{d.promoLibKicker}</span><h2>{d.promoLibTitle}</h2>
-                <p>{d.promoLibText}</p>
-                <Link href={`/${lang}/library`}>{d.promoLibLink} <span>→</span></Link></div>
-              <div className="bv-promo-card__symbol">▤</div>
-            </div>
-          </section>
-
-          <footer className="bv-footer">
-            <span>© 2026 TEROLIBRARY</span><span>{d.footerTagline}</span>
-            <div>
-              <Link href={`/${lang}/about`}>{d.footerAbout}</Link>
-              <Link href={`/${lang}/rules`}>{d.footerRules}</Link>
-              <Link href={`/${lang}/help`}>{d.footerHelp}</Link>
-            </div>
-          </footer>
+        <div className="row" style={{ marginTop: 20 }}>
+          <button className="btn" disabled={page <= 1} onClick={() => go({ page: Math.max(1, page - 1) })}>← {t.prev}</button>
+          <button className="btn" disabled={!hasMore} onClick={() => go({ page: page + 1 })}>{t.next} →</button>
         </div>
-      </section>
+      </div>
 
-      {/* Мобильная навигация: на узком экране сайдбар скрыт, а History/Bookmarks
-          были недоступны вообще (аудит, п.20). */}
-      <nav className="bv-bottomnav" aria-label="Mobile">
-        <Link href={`/${lang}`}>{lang === 'ru' ? 'Главная' : lang === 'en' ? 'Home' : 'Početna'}</Link>
-        <Link href={`/${lang}/catalog`} className="is-active">{lang === 'ru' ? 'Каталог' : lang === 'en' ? 'Catalog' : 'Katalog'}</Link>
-        <Link href={`/${lang}/library`}>{lang === 'ru' ? 'Библиотека' : lang === 'en' ? 'Library' : 'Biblioteka'}</Link>
-        <Link href={`/${lang}/login`}>{lang === 'ru' ? 'Профиль' : lang === 'en' ? 'Profile' : 'Profil'}</Link>
-      </nav>
+      {filtersOpen ? (
+        <div className="filterdrawer open" role="dialog" aria-modal="true" aria-label={t.filters}
+          onClick={(e) => { if (e.target === e.currentTarget) setFiltersOpen(false); }}>
+          <div className="drawer">
+            <div className="drawerhead">
+              <h2>{t.filters}</h2>
+              <button className="iconbtn" onClick={() => setFiltersOpen(false)} aria-label="Close">✕</button>
+            </div>
+
+            <div className="filterrow">
+              <h3>{t.genre}</h3>
+              <div className="chips">
+                {genres.map((g) => (
+                  <button key={g.slug} className={`chip ${draftGenre === g.slug ? 'selected' : ''}`}
+                    onClick={() => setDraftGenre(draftGenre === g.slug ? '' : g.slug)}>{g.name}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filterrow">
+              <h3>{t.tags}</h3>
+              <input className="taginput" value={draftTag} placeholder={t.tagPlaceholder} onChange={(e) => setDraftTag(e.target.value)} />
+              <h3 style={{ marginTop: 12 }}>{t.fandom}</h3>
+              <input className="taginput" value={draftFandom} placeholder={t.fandomPlaceholder} onChange={(e) => setDraftFandom(e.target.value)} />
+            </div>
+
+            <div className="filterrow">
+              <h3>{t.ai}</h3>
+              {([
+                ['', t.anyAi], ['no_ai', t.noAi], ['assisted', t.assisted], ['generated', t.generated],
+              ] as [string, string][]).map(([v, label]) => (
+                <label key={v || 'any'} className="checkbox">
+                  <input type="radio" name="ai" checked={draftAi === v} onChange={() => setDraftAi(v)} /> {label}
+                </label>
+              ))}
+            </div>
+
+            <div className="filterrow">
+              <h3>{t.source}</h3>
+              {([
+                ['publisher', t.sourcePublisher], ['selfpub', t.sourceSelf], ['classic', t.sourceClassic],
+              ] as [string, string][]).map(([v, label]) => (
+                <label key={v} className="checkbox">
+                  <input type="checkbox" checked={draftSource === v} onChange={() => setDraftSource(draftSource === v ? '' : v)} /> {label}
+                </label>
+              ))}
+            </div>
+
+            <div className="row" style={{ marginTop: 20 }}>
+              <button className="btn" onClick={() => {
+                setDraftGenre(''); setDraftTag(''); setDraftFandom(''); setDraftSource(''); setDraftAi('');
+                go({ genre: '', tag: '', fandom: '', source: '', ai: '', page: 1 });
+                setFiltersOpen(false);
+              }}>{t.reset}</button>
+              <button className="btn primary" onClick={() => {
+                go({ genre: draftGenre, tag: draftTag, fandom: draftFandom, source: draftSource, ai: draftAi, page: 1 });
+                setFiltersOpen(false);
+              }}>{t.apply}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

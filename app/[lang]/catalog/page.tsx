@@ -1,5 +1,5 @@
 import { isLang, type Lang } from '@/lib/i18n';
-import { listWorks, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { listWorks, listGenres, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
 import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
@@ -108,6 +108,9 @@ export default async function CatalogPage({
     };
   });
 
+  const genresRaw = await listGenres().catch(() => []);
+  const genres = genresRaw.map((g) => ({ slug: g.slug, name: l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr }));
+
   return (
     <BookverseCatalog
       lang={l}
@@ -122,9 +125,7 @@ export default async function CatalogPage({
       tag={tag}
       fandom={fandom}
       aiUsage={aiUsage || ''}
-      user={session ? { name: session.name } : null}
-      progress={progress}
-      notifications={unread}
+      genres={genres}
     />
   );
 }
