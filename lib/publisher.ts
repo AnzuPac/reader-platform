@@ -234,3 +234,207 @@ export async function markPayoutPaid(publisherId: number, payoutId: number) {
   }
   return { ok: true as const, already: false };
 }
+
+/* ------------------------------------------------------------------
+   Роли сотрудников, лицензии и территории (мастер-промпт §5).
+   ------------------------------------------------------------------ */
+
+export type MemberRole = 'owner' | 'manager' | 'member';
+export const MEMBER_ROLES: MemberRole[] = ['owner', 'manager', 'member'];
+
+export function isMemberRole(v: unknown): v is MemberRole {
+  return typeof v === 'string' && (MEMBER_ROLES as string[]).includes(v);
+}
+
+/** Кто управляет сотрудниками: только владелец издательства. */
+export function canManageStaff(role: string | null | undefined): boolean {
+  return role === 'owner';
+}
+
+/** Кто правит лицензии, цены и права: владелец и менеджер. */
+export function canEditLicenses(role: string | null | undefined): boolean {
+  return role === 'owner' || role === 'manager';
+}
+
+export type PublisherMember = {
+  user_id: number;
+  display_name: string;
+  email: string;
+  role: MemberRole;
+  created_at: string;
+};
+
+export async function listMembers(publisherId: number): Promise<PublisherMember[]> {
+  return query<PublisherMember>(
+    `SELECT m.user_id, u.display_name, u.email, m.role, m.created_at
+       FROM publisher_members m JOIN users u ON u.id = m.user_id
+      WHERE m.publisher_id = $1
+      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END, m.created_at`,
+    [publisherId],
+  );
+}
+
+export type MemberResult =
+  | { ok: true }
+  | { ok: false; reason: 'bad_role' | 'user_not_found' | 'last_owner' | 'not_member' };
+
+export async function addMember(publisherId: number, email: string, role: MemberRole): Promise<MemberResult> {
+  if (!isMemberRole(role)) return { ok: false, reason: 'bad_role' };
+  const user = await one<{ id: number }>('SELECT id FROM users WHERE email = $1', [String(email).trim().toLowerCase()]);
+  if (!user) return { ok: false, reason: 'user_not_found' };
+
+  await query(
+    `INSERT INTO publisher_members (publisher_id, user_id, role) VALUES ($1,$2,$3)
+     ON CONFLICT (publisher_id, user_id) DO UPDATE SET role = EXCLUDED.role`,
+    [publisherId, user.id, role],
+  );
+  return { ok: true };
+}
+
+async function ownerCount(publisherId: number): Promise<number> {
+  const row = await one<{ n: number | string }>(
+    "SELECT COUNT(*) AS n FROM publisher_members WHERE publisher_id = $1 AND role = 'owner'", [publisherId],
+  );
+  return Number(row?.n ?? 0);
+}
+
+export async function setMemberRole(publisherId: number, userId: number, role: MemberRole): Promise<MemberResult> {
+  if (!isMemberRole(role)) return { ok: false, reason: 'bad_role' };
+  const current = await one<{ role: string }>(
+    'SELECT role FROM publisher_members WHERE publisher_id = $1 AND user_id = $2', [publisherId, userId],
+  );
+  if (!current) return { ok: false, reason: 'not_member' };
+  // Нельзя оставить издательство без владельца.
+  if (current.role === 'owner' && role !== 'owner' && (await ownerCount(publisherId)) <= 1) {
+    return { ok: false, reason: 'last_owner' };
+  }
+  await query('UPDATE publisher_members SET role = $3 WHERE publisher_id = $1 AND user_id = $2',
+    [publisherId, userId, role]);
+  return { ok: true };
+}
+
+export async function removeMember(publisherId: number, userId: number): Promise<MemberResult> {
+  const current = await one<{ role: string }>(
+    'SELECT role FROM publisher_members WHERE publisher_id = $1 AND user_id = $2', [publisherId, userId],
+  );
+  if (!current) return { ok: false, reason: 'not_member' };
+  if (current.role === 'owner' && (await ownerCount(publisherId)) <= 1) {
+    return { ok: false, reason: 'last_owner' };
+  }
+  await query('DELETE FROM publisher_members WHERE publisher_id = $1 AND user_id = $2', [publisherId, userId]);
+  return { ok: true };
+}
+
+export type WorkLicense = {
+  work_id: number;
+  publisher_id: number;
+  territory: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  rights_sale: number | boolean;
+  rights_subscription: number | boolean;
+  rights_library: number | boolean;
+  tts_allowed: number | boolean;
+  translit_allowed: number | boolean;
+  export_policy: 'disallowed' | 'watermark' | 'original' | string;
+  updated_at: string;
+};
+
+export const EXPORT_POLICIES = ['disallowed', 'watermark', 'original'] as const;
+
+function flag(v: unknown): boolean {
+  return v === true || v === 1 || v === '1';
+}
+
+export type LicenseRight = 'sale' | 'subscription' | 'library' | 'tts' | 'translit' | 'export';
+
+/**
+ * Действует ли лицензия сейчас и в этой территории.
+ * Территория: 'WW' или '*' — весь мир; иначе список кодов через запятую.
+ */
+export function licenseAllows(
+  license: Pick<WorkLicense, 'territory' | 'starts_at' | 'ends_at' | 'rights_sale' | 'rights_subscription'
+    | 'rights_library' | 'tts_allowed' | 'translit_allowed' | 'export_policy'> | null,
+  opts: { territory: string; now?: Date; right: LicenseRight },
+): boolean {
+  if (!license) return false;
+  const now = opts.now ?? new Date();
+  const nowMs = now.getTime();
+
+  if (license.starts_at) {
+    const start = new Date(String(license.starts_at)).getTime();
+    if (Number.isFinite(start) && nowMs < start) return false;
+  }
+  if (license.ends_at) {
+    const end = new Date(String(license.ends_at)).getTime();
+    if (Number.isFinite(end) && nowMs > end) return false;
+  }
+
+  const terr = String(license.territory || '').trim().toUpperCase();
+  const want = String(opts.territory || '').trim().toUpperCase();
+  const global = terr === '' || terr === 'WW' || terr === '*';
+  const allowed = global || terr.split(',').map((t) => t.trim()).includes(want);
+  if (!allowed) return false;
+
+  switch (opts.right) {
+    case 'sale': return flag(license.rights_sale);
+    case 'subscription': return flag(license.rights_subscription);
+    case 'library': return flag(license.rights_library);
+    case 'tts': return flag(license.tts_allowed);
+    case 'translit': return flag(license.translit_allowed);
+    case 'export': return license.export_policy !== 'disallowed';
+    default: return false;
+  }
+}
+
+export async function getLicense(workId: number, publisherId: number): Promise<WorkLicense | null> {
+  return one<WorkLicense>(
+    'SELECT * FROM work_licenses WHERE work_id = $1 AND publisher_id = $2', [workId, publisherId],
+  );
+}
+
+export type LicensePatch = Partial<Pick<WorkLicense,
+  'territory' | 'starts_at' | 'ends_at' | 'rights_sale' | 'rights_subscription'
+  | 'rights_library' | 'tts_allowed' | 'translit_allowed' | 'export_policy'>>;
+
+export async function upsertLicense(workId: number, publisherId: number, patch: LicensePatch): Promise<boolean> {
+  const work = await one<{ id: number }>('SELECT id FROM works WHERE id = $1 AND publisher_id = $2', [workId, publisherId]);
+  if (!work) return false;
+
+  const territory = String(patch.territory || 'RS').trim().toUpperCase().slice(0, 60);
+  const exportPolicy = EXPORT_POLICIES.includes((patch.export_policy || 'disallowed') as 'disallowed')
+    ? String(patch.export_policy)
+    : 'disallowed';
+
+  await query(
+    `INSERT INTO work_licenses
+       (work_id, publisher_id, territory, starts_at, ends_at, rights_sale, rights_subscription,
+        rights_library, tts_allowed, translit_allowed, export_policy, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     ON CONFLICT (work_id, publisher_id) DO UPDATE SET
+       territory = EXCLUDED.territory, starts_at = EXCLUDED.starts_at, ends_at = EXCLUDED.ends_at,
+       rights_sale = EXCLUDED.rights_sale, rights_subscription = EXCLUDED.rights_subscription,
+       rights_library = EXCLUDED.rights_library, tts_allowed = EXCLUDED.tts_allowed,
+       translit_allowed = EXCLUDED.translit_allowed, export_policy = EXCLUDED.export_policy,
+       updated_at = EXCLUDED.updated_at`,
+    [
+      workId, publisherId, territory,
+      patch.starts_at || null, patch.ends_at || null,
+      flag(patch.rights_sale) ? 1 : 0,
+      flag(patch.rights_subscription) ? 1 : 0,
+      flag(patch.rights_library) ? 1 : 0,
+      flag(patch.tts_allowed) ? 1 : 0,
+      flag(patch.translit_allowed) ? 1 : 0,
+      exportPolicy, new Date().toISOString(),
+    ],
+  );
+  return true;
+}
+
+/** Роль пользователя внутри конкретного издательства (или null). */
+export async function memberRoleFor(userId: number, publisherId: number): Promise<MemberRole | null> {
+  const row = await one<{ role: string }>(
+    'SELECT role FROM publisher_members WHERE user_id = $1 AND publisher_id = $2', [userId, publisherId],
+  );
+  return isMemberRole(row?.role) ? row!.role : null;
+}

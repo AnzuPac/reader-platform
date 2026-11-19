@@ -163,6 +163,22 @@ async function migrateSqlite(db: any) {
        PRIMARY KEY (user_id, author_id)
      )`,
     `CREATE INDEX IF NOT EXISTS author_follows_author_idx ON author_follows(author_id)`,
+    // Лицензия издателя на произведение: территория, срок, права.
+    `CREATE TABLE IF NOT EXISTS work_licenses (
+       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+       publisher_id BIGINT NOT NULL REFERENCES publishers(id) ON DELETE CASCADE,
+       territory TEXT NOT NULL DEFAULT 'RS',
+       starts_at TEXT,
+       ends_at TEXT,
+       rights_sale INTEGER NOT NULL DEFAULT 1,
+       rights_subscription INTEGER NOT NULL DEFAULT 0,
+       rights_library INTEGER NOT NULL DEFAULT 0,
+       tts_allowed INTEGER NOT NULL DEFAULT 0,
+       translit_allowed INTEGER NOT NULL DEFAULT 0,
+       export_policy TEXT NOT NULL DEFAULT 'disallowed',
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       PRIMARY KEY (work_id, publisher_id)
+     )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -312,6 +328,22 @@ async function migratePg(db: any) {
        PRIMARY KEY (user_id, author_id)
      )`,
     `CREATE INDEX IF NOT EXISTS author_follows_author_idx ON author_follows(author_id)`,
+    // Лицензия издателя на произведение: территория, срок, права.
+    `CREATE TABLE IF NOT EXISTS work_licenses (
+       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+       publisher_id BIGINT NOT NULL REFERENCES publishers(id) ON DELETE CASCADE,
+       territory TEXT NOT NULL DEFAULT 'RS',
+       starts_at TIMESTAMPTZ,
+       ends_at TIMESTAMPTZ,
+       rights_sale BOOLEAN NOT NULL DEFAULT TRUE,
+       rights_subscription BOOLEAN NOT NULL DEFAULT FALSE,
+       rights_library BOOLEAN NOT NULL DEFAULT FALSE,
+       tts_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+       translit_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+       export_policy TEXT NOT NULL DEFAULT 'disallowed',
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       PRIMARY KEY (work_id, publisher_id)
+     )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,

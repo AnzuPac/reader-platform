@@ -10,6 +10,8 @@ import PublisherReport from '@/components/PublisherReport';
 import PublisherPriceEditor from '@/components/PublisherPriceEditor';
 import PublisherRightsEditor from '@/components/PublisherRightsEditor';
 import PayoutForm from '@/components/PayoutForm';
+import PublisherMembers from '@/components/PublisherMembers';
+import PublisherLicenses from '@/components/PublisherLicenses';
 
 export const dynamic = 'force-dynamic';
 
@@ -202,6 +204,13 @@ export default async function PublisherPage({
           </table>
         </div>
       </section>
+
+      <PublisherLicenses
+        publisherId={publisherId}
+        works={works.map((w) => ({ id: w.id, title: w.title }))}
+      />
+
+      <PublisherMembers publisherId={publisherId} />
 
       <section className="card mt-6 p-5">
         <h2 className="mb-3 font-bold">Isplate</h2>
