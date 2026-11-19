@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, type Lang } from '@/lib/i18n';
-import { getWork, listChapters, isInLibrary, workGenres } from '@/lib/repo';
+import { getWork, listChapters, isInLibrary, workGenres, listRelatedWorks } from '@/lib/repo';
 import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
@@ -45,6 +45,7 @@ export default async function WorkPage({
   const inLib = session ? await isInLibrary(session.uid, work.id) : false;
   const first = chapters[0];
   const genres = await workGenres(work.id);
+  const related = await listRelatedWorks(work.id).catch(() => []);
   const price = await workPrice(work.id);
   const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
@@ -88,8 +89,20 @@ export default async function WorkPage({
 
             <div className="mb-3 flex flex-wrap gap-2">
               {genres.map((g) => (
-                <span key={g.slug} className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">{g.name_sr}</span>
+                <span key={g.slug} className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr}
+                </span>
               ))}
+              {work.type === 'comic' ? (
+                <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {l === 'ru' ? 'Комикс' : l === 'en' ? 'Comic' : 'Strip'}
+                </span>
+              ) : null}
+              {work.kind === 'fanfic' ? (
+                <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {l === 'ru' ? 'Фанфик' : l === 'en' ? 'Fan fiction' : 'Fanfikcija'}
+                </span>
+              ) : null}
             </div>
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
@@ -178,6 +191,27 @@ export default async function WorkPage({
       </div>
 
       <Comments workId={work.id} />
+      {related.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="mb-3 text-xl font-bold">{l === 'ru' ? 'Похожие произведения' : l === 'en' ? 'Related works' : 'Slična dela'}</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {related.map((r) => (
+              <Link key={r.id} href={`/${l}/work/${r.slug}`} className="group">
+                <div className="cover cover-sm relative overflow-hidden">
+                  {r.cover_path ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r.cover_path} alt={r.title} loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="relative line-clamp-3">{r.title}</span>
+                  )}
+                </div>
+                <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{r.title}</div>
+                <div className="text-xs muted">{r.author_name}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

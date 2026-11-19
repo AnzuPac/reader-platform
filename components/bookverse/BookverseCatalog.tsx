@@ -56,12 +56,18 @@ function Cover({ work, series }: { work: CatalogWork; series: string }) {
   );
 }
 
-function WorkCard({ work, lang, d }: { work: CatalogWork; lang: Lang; d: CatalogDict }) {
+function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d: CatalogDict; percent?: number }) {
   const genre = work.category === 'manga' ? d.genreManga : work.category === 'fanfic' ? d.genreFanfic : d.genreBook;
   const badge = work.classic ? d.badgeClassic : work.completed ? d.badgeCompleted : '';
   return (
     <Link className="bv-work-card" href={`/${lang}/work/${work.slug}`}>
       <Cover work={work} series="TEROLIBRARY ORIGINAL" />
+      {/* Прогресс чтения на карточке: видно, где остановился (аудит, п.28). */}
+      {typeof percent === 'number' && percent > 0 ? (
+        <div style={{ height: 3, background: 'var(--bv-line)' }}>
+          <div style={{ width: `${Math.min(100, percent)}%`, height: '100%', background: 'var(--bv-accent)' }} />
+        </div>
+      ) : null}
       <div className="bv-work-card__body">
         <div className="bv-work-card__meta">
           <span>{genre}</span>
@@ -77,6 +83,7 @@ function WorkCard({ work, lang, d }: { work: CatalogWork; lang: Lang; d: Catalog
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
   page = 1, hasMore = false, genre = '', source = '',
+  user = null, progress = {},
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -87,6 +94,8 @@ export default function BookverseCatalog({
   hasMore?: boolean;
   genre?: string;
   source?: string;
+  user?: { name: string } | null;
+  progress?: Record<number, number>;
 }) {
   const d = catalogDict(lang);
   const router = useRouter();
@@ -180,9 +189,9 @@ export default function BookverseCatalog({
             <div><strong>{d.publishing}</strong><span>{d.publishingSub}</span></div>
             <Link href={`/${lang}/author`} aria-label={d.promoAuthorLink}>↗</Link>
           </div>
-          <Link className="bv-profile" href={`/${lang}/login`}>
-            <span className="bv-avatar">{d.guest.slice(0, 1)}</span>
-            <span><strong>{d.guest}</strong><small>{d.guestSub}</small></span>
+          <Link className="bv-profile" href={user ? `/${lang}/library` : `/${lang}/login`}>
+            <span className="bv-avatar">{user ? user.name.slice(0, 1).toUpperCase() : d.guest.slice(0, 1)}</span>
+            <span><strong>{user ? user.name : d.guest}</strong><small>{user ? d.mySpace : d.guestSub}</small></span>
             <span className="bv-profile__more">···</span>
           </Link>
         </div>
@@ -286,7 +295,7 @@ export default function BookverseCatalog({
               ))}
             </div>
             <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>
-              {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} />)}
+              {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} percent={progress[w.id]} />)}
             </div>
             {works.length === 0 ? <div className="bv-empty">{d.empty}</div> : null}
 

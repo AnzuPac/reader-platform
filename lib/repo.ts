@@ -291,3 +291,34 @@ export async function deleteBookmark(userId: number, id: number) {
   await ensure();
   await query('DELETE FROM bookmarks WHERE id = $1 AND user_id = $2', [id, userId]);
 }
+
+/** Похожие произведения: те же жанры, кроме самого произведения (аудит, п.25). */
+export async function listRelatedWorks(workId: number, limit = 4) {
+  await ensure();
+  return query<{ id: number; slug: string; title: string; author_name: string; cover_path: string | null; rating_avg: string }>(
+    `SELECT w.id, w.slug, w.title, u.display_name AS author_name, w.cover_path, w.rating_avg
+       FROM works w
+       JOIN users u ON u.id = w.author_id
+      WHERE w.status = 'published' AND w.id <> $1
+        AND EXISTS (
+          SELECT 1 FROM work_genres wg
+           WHERE wg.work_id = w.id
+             AND wg.genre_id IN (SELECT genre_id FROM work_genres WHERE work_id = $1)
+        )
+      ORDER BY w.rating_avg DESC, w.published_at DESC
+      LIMIT $2`,
+    [workId, limit],
+  );
+}
+
+/** Прогресс чтения по произведениям — для полосок на карточках каталога (аудит, п.28). */
+export async function progressByWork(userId: number): Promise<Record<number, number>> {
+  await ensure();
+  const rows = await query<{ work_id: number; percent: number }>(
+    'SELECT work_id, percent FROM reading_progress WHERE user_id = $1',
+    [userId],
+  );
+  const out: Record<number, number> = {};
+  for (const r of rows) out[Number(r.work_id)] = Number(r.percent) || 0;
+  return out;
+}
