@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { isLang, t, LANGS, type Lang } from '@/lib/i18n';
+import { isLang, t, type Lang } from '@/lib/i18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Chrome from '@/components/Chrome';
 import SessionKeeper from '@/components/SessionKeeper';
 
@@ -36,17 +37,7 @@ export default async function LangLayout({
           </form>
 
           <div className="ml-auto flex items-center gap-1 md:ml-0">
-            {LANGS.map((code) => (
-              <Link
-                key={code}
-                href={`/${code}`}
-                className={`rounded-lg px-2 py-1 text-xs font-bold uppercase transition ${
-                  code === l ? 'bg-brand text-white' : 'text-mist hover:text-brand'
-                }`}
-              >
-                {code}
-              </Link>
-            ))}
+            <LanguageSwitcher lang={l} />
           </div>
 
           <div className="hidden items-center gap-2 sm:flex">

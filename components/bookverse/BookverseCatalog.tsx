@@ -84,7 +84,7 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou', genres = [],
-  page = 1, hasMore = false, genre = '', source = '',
+  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '',
   user = null, progress = {}, notifications = 0,
 }: {
   works: CatalogWork[];
@@ -97,6 +97,8 @@ export default function BookverseCatalog({
   hasMore?: boolean;
   genre?: string;
   source?: string;
+  tag?: string;
+  fandom?: string;
   user?: { name: string } | null;
   progress?: Record<number, number>;
   notifications?: number;
@@ -113,7 +115,7 @@ export default function BookverseCatalog({
 
   /** Единственный способ поменять состояние: собрать URL и уйти на него.
    *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
-  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string }) {
+  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string; tag?: string; fandom?: string }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
     const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
@@ -128,6 +130,10 @@ export default function BookverseCatalog({
     if (selectedGenre) params.set('genre', selectedGenre);
     const src = next.source !== undefined ? next.source : source;
     if (src) params.set('source', src);
+    const tg = next.tag !== undefined ? next.tag : tag;
+    if (tg) params.set('tag', tg);
+    const fd = next.fandom !== undefined ? next.fandom : fandom;
+    if (fd) params.set('fandom', fd);
     if (p > 1) params.set('page', String(p));
 
     setPending(true);
@@ -155,6 +161,8 @@ export default function BookverseCatalog({
     if (page > 1) params.set('page', String(page));
     if (genre) params.set('genre', genre);
     if (source) params.set('source', source);
+    if (tag) params.set('tag', tag);
+    if (fandom) params.set('fandom', fandom);
     const qs = params.toString();
     window.location.href = `/${code}/catalog${qs ? `?${qs}` : ''}`;
   }
@@ -288,6 +296,26 @@ export default function BookverseCatalog({
                   <option value="">{lang === 'ru' ? 'Все жанры' : lang === 'en' ? 'All genres' : 'Svi žanrovi'}</option>
                   {genres.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
                 </select>
+              </label>
+              <label className="bv-genre-control">
+                <span>{lang === 'ru' ? 'Тег' : lang === 'en' ? 'Tag' : 'Tag'}</span>
+                <input
+                  className="input"
+                  defaultValue={tag}
+                  placeholder="tag-slug"
+                  onBlur={(e) => { const v = e.target.value.trim(); if (v !== tag) go({ tag: v, page: 1 }); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                />
+              </label>
+              <label className="bv-genre-control">
+                <span>{lang === 'ru' ? 'Фандом' : lang === 'en' ? 'Fandom' : 'Fandom'}</span>
+                <input
+                  className="input"
+                  defaultValue={fandom}
+                  placeholder={lang === 'ru' ? 'Название фандома' : lang === 'en' ? 'Fandom name' : 'Naziv fandoma'}
+                  onBlur={(e) => { const v = e.target.value.trim(); if (v !== fandom) go({ fandom: v, page: 1 }); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                />
               </label>
             </div>
             <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>

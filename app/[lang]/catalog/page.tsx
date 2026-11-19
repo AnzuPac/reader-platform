@@ -34,6 +34,8 @@ export default async function CatalogPage({
   const typeParam = str(sp.type);
   const genre = str(sp.genre);
   const source = str(sp.source);
+  const tag = str(sp.tag);
+  const fandom = str(sp.fandom);
   const rawFilter = str(sp.filter);
   const filter: CatalogFilter =
     rawFilter === 'popular' || rawFilter === 'fresh' || rawFilter === 'completed' ? rawFilter : 'forYou';
@@ -56,6 +58,8 @@ export default async function CatalogPage({
   };
   if (genre) opts.genre = genre;
   if (source) opts.source = source;
+  if (tag) opts.tag = tag;
+  if (fandom) opts.fandom = fandom;
   if (filter === 'completed') opts.completion = 'completed';
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
@@ -114,6 +118,8 @@ export default async function CatalogPage({
       hasMore={hasMore}
       genre={genre}
       source={source}
+      tag={tag}
+      fandom={fandom}
       user={session ? { name: session.name } : null}
       progress={progress}
       notifications={unread}

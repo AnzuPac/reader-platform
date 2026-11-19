@@ -29,6 +29,8 @@ export type ListWorksOpts = {
   free?: boolean; subscribed?: boolean; classic?: boolean; fanfic?: boolean;
   completion?: string;
   tag?: string;
+  /** Подстрочный поиск по полю works.fandom (мастер-промпт §4: фандом). */
+  fandom?: string;
   excludeTags?: string[];
 };
 
@@ -79,6 +81,11 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
   if (completion === 'completed' || completion === 'ongoing') {
     params.push(completion);
     where.push(`w.completion = $${params.length}`);
+  }
+  if (opts.fandom?.trim()) {
+    // ILIKE есть только в Postgres; LOWER(...) LIKE LOWER(...) работает в обоих.
+    params.push(`%${opts.fandom.trim()}%`);
+    where.push(`LOWER(COALESCE(w.fandom, '')) LIKE LOWER($${params.length})`);
   }
   if (tag) {
     params.push(tag);
