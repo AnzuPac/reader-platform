@@ -1,5 +1,5 @@
 import { isLang, type Lang } from '@/lib/i18n';
-import { listWorks, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { listWorks, listGenres, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
 import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
@@ -70,6 +70,8 @@ export default async function CatalogPage({
 
   // Состояние пользователя и прогресс — чтобы каталог не показывал «Guest»
   // залогиненному человеку и рисовал прогресс на карточках (аудит, п.24 и 28).
+  const genresRaw = await listGenres().catch(() => []);
+  const genres = genresRaw.map((g) => ({ slug: g.slug, name: l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr }));
   const session = await readSession().catch(() => null);
   const progress = session ? await progressByWork(session.uid).catch(() => ({})) : {};
   const unread = session
@@ -104,6 +106,7 @@ export default async function CatalogPage({
     <BookverseCatalog
       lang={l}
       works={items}
+      genres={genres}
       initialQuery={q}
       initialSection={section}
       initialFilter={filter}

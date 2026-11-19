@@ -8,6 +8,7 @@ import type { Lang } from '@/lib/i18n';
 
 export type SectionId = 'books' | 'fanfics' | 'comics';
 export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
+export type CatalogGenre = { slug: string; name: string };
 
 export type CatalogWork = {
   id: number;
@@ -72,6 +73,7 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
         <div className="bv-work-card__meta">
           <span>{genre}</span>
           {badge ? <span className="bv-pill">{badge}</span> : null}
+          {work.rating > 0 ? <span className="bv-rating">★ {work.rating.toFixed(1)}</span> : null}
         </div>
         <h3>{work.title}</h3>
         <p>{work.author}</p>
@@ -81,12 +83,13 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
 }
 
 export default function BookverseCatalog({
-  works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
+  works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou', genres = [],
   page = 1, hasMore = false, genre = '', source = '',
   user = null, progress = {}, notifications = 0,
 }: {
   works: CatalogWork[];
   lang: Lang;
+  genres?: CatalogGenre[];
   initialQuery?: string;
   initialSection?: SectionId;
   initialFilter?: CatalogFilter;
@@ -110,7 +113,7 @@ export default function BookverseCatalog({
 
   /** Единственный способ поменять состояние: собрать URL и уйти на него.
    *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
-  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string }) {
+  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
     const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
@@ -121,7 +124,8 @@ export default function BookverseCatalog({
     if (kind) params.set('kind', kind);
     if (next.type) params.set('type', next.type);
     if (f !== 'forYou') params.set('filter', f);
-    if (genre) params.set('genre', genre);
+    const selectedGenre = next.genre !== undefined ? next.genre : genre;
+    if (selectedGenre) params.set('genre', selectedGenre);
     const src = next.source !== undefined ? next.source : source;
     if (src) params.set('source', src);
     if (p > 1) params.set('page', String(p));
@@ -149,6 +153,8 @@ export default function BookverseCatalog({
     if (SECTION_KIND[section]) params.set('kind', SECTION_KIND[section]);
     if (filter !== 'forYou') params.set('filter', filter);
     if (page > 1) params.set('page', String(page));
+    if (genre) params.set('genre', genre);
+    if (source) params.set('source', source);
     const qs = params.toString();
     window.location.href = `/${code}/catalog${qs ? `?${qs}` : ''}`;
   }
@@ -207,17 +213,6 @@ export default function BookverseCatalog({
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={d.searchPlaceholder} />
             <kbd>⌘ K</kbd>
           </label>
-          <label className="bv-typefilter">
-            <select
-              value={section === 'comics' ? 'manga' : section === 'fanfics' ? 'fanfic' : 'book'}
-              onChange={(e) => go({ type: e.target.value === 'book' ? 'novel' : e.target.value, kind: e.target.value === 'book' ? '' : e.target.value === 'manga' ? 'comic' : 'fanfic', page: 1 })}
-              aria-label={d.allTypes}
-            >
-              <option value="book">{d.sectionBooks}</option>
-              <option value="fanfic">{d.sectionFanfics}</option>
-              <option value="manga">{d.sectionComics}</option>
-            </select>
-          </label>
           <div className="bv-topbar__actions">
             {/* Колокольчик уведомлений: новые главы из библиотеки (аудит, п.22). */}
             <Link className="bv-icon-button" href={`/${lang}/notifications`} aria-label="Notifications">
@@ -275,20 +270,25 @@ export default function BookverseCatalog({
               ))}
             </div>
 
-            {/* Источник издания: издательское, самиздат, классика (аудит, п.10).
-                listWorks это уже умел — UI просто не передавал параметр. */}
-            <div className="bv-filter-row">
-              <span className="muted" style={{ fontSize: 10, alignSelf: 'center', marginRight: 6 }}>
-                {lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}:
-              </span>
-              {([
-                ['', lang === 'ru' ? 'Все' : lang === 'en' ? 'All' : 'Sve'],
-                ['publisher', lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'],
-                ['selfpub', lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'],
-                ['classic', lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'],
-              ] as [string, string][]).map(([value, label]) => (
-                <button key={value || 'all'} onClick={() => go({ page: 1, source: value })} className={source === value ? 'is-active' : ''}>{label}</button>
-              ))}
+            <div className="bv-catalog-controls">
+              <div className="bv-source-control">
+                <span>{lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}</span>
+                {([
+                  ['', lang === 'ru' ? 'Все' : lang === 'en' ? 'All' : 'Sve'],
+                  ['publisher', lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'],
+                  ['selfpub', lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'],
+                  ['classic', lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'],
+                ] as [string, string][]).map(([value, label]) => (
+                  <button key={value || 'all'} onClick={() => go({ page: 1, source: value })} className={source === value ? 'is-active' : ''}>{label}</button>
+                ))}
+              </div>
+              <label className="bv-genre-control">
+                <span>{lang === 'ru' ? 'Жанр' : lang === 'en' ? 'Genre' : 'Žanr'}</span>
+                <select value={genre} onChange={(e) => go({ genre: e.target.value, page: 1 })}>
+                  <option value="">{lang === 'ru' ? 'Все жанры' : lang === 'en' ? 'All genres' : 'Svi žanrovi'}</option>
+                  {genres.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+                </select>
+              </label>
             </div>
             <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>
               {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} percent={progress[w.id]} />)}

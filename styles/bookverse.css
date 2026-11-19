@@ -62,3 +62,17 @@
 @media(max-width:1250px){.bv-work-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.bv-cover{height:210px}}
 @media(max-width:1050px){.bv-work-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.bv-cover{height:200px}}
 @media(max-width:720px){.bv-catalog-intro{padding:4px 0 18px;margin-bottom:19px}.bv-catalog-intro__heading{align-items:flex-start}.bv-catalog-intro h1{font-size:27px}.bv-catalog-intro__count{font-size:8px;padding:7px 8px}.bv-work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bv-cover{height:175px}.bv-filter-row{margin:10px 0;padding-bottom:9px}.bv-filter-row button{font-size:10px;padding:7px 9px}}
+
+/* Catalog controls: compact, responsive, category-aware filter toolbar. */
+.bv-catalog-controls{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:12px 0 18px;padding:12px 14px;border:1px solid var(--bv-line);border-radius:12px;background:var(--bv-surface)}
+.bv-source-control{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.bv-source-control>span,.bv-genre-control>span{font-size:10px;font-weight:700;color:var(--bv-muted);margin-right:4px}
+.bv-source-control button{border:1px solid transparent;background:transparent;color:var(--bv-muted);padding:7px 10px;border-radius:8px;font-size:10px;cursor:pointer}
+.bv-source-control button:hover{border-color:var(--bv-line);color:var(--bv-text)}
+.bv-source-control button.is-active{background:var(--bv-brand-soft);color:var(--bv-accent);font-weight:800}
+.bv-genre-control{display:flex;align-items:center;gap:8px;min-width:180px}
+.bv-genre-control select{max-width:220px;min-width:150px;height:34px;border:1px solid var(--bv-line);border-radius:8px;background:var(--bv-bg);color:var(--bv-text);padding:0 10px;font-size:11px;outline:none}
+.bv-genre-control select:focus{border-color:var(--bv-accent);box-shadow:0 0 0 3px rgba(var(--bv-accent-rgb),.12)}
+.bv-rating{color:#d69b35;font-size:9px;font-weight:800;margin-left:auto;white-space:nowrap}
+.bv-work-card__meta{flex-wrap:wrap;white-space:normal}
+@media(max-width:720px){.bv-catalog-controls{align-items:stretch;padding:10px}.bv-source-control{width:100%}.bv-genre-control{width:100%;justify-content:space-between}.bv-genre-control select{flex:1;max-width:none}.bv-rating{margin-left:0}}
