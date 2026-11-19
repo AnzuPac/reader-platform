@@ -240,3 +240,54 @@ export async function getContinueReading(userId: number) {
       ORDER BY p.updated_at DESC LIMIT 1`, [userId]
   );
 }
+
+/** История чтения: всё, где есть прогресс, свежие сверху (аудит, п.21). */
+export async function listReadingHistory(userId: number, limit = 50) {
+  await ensure();
+  return query<{
+    work_id: number; slug: string; title: string; author_name: string; cover_path: string | null;
+    chapter_id: number; chapter_title: string | null; number: number; percent: number; updated_at: string;
+  }>(
+    `SELECT w.id AS work_id, w.slug, w.title, w.cover_path, u.display_name AS author_name,
+            c.id AS chapter_id, c.title AS chapter_title, c.number, p.percent, p.updated_at
+       FROM reading_progress p
+       JOIN works w ON w.id = p.work_id AND w.status = 'published'
+       JOIN users u ON u.id = w.author_id
+       LEFT JOIN chapters c ON c.id = p.chapter_id
+      WHERE p.user_id = $1
+      ORDER BY p.updated_at DESC LIMIT $2`,
+    [userId, limit],
+  );
+}
+
+/** Закладки по главам (таблица bookmarks была, но UI её не показывал). */
+export async function listBookmarks(userId: number, limit = 50) {
+  await ensure();
+  return query<{
+    id: number; chapter_id: number; position: number; note: string | null; created_at: string;
+    slug: string; title: string; chapter_title: string | null; number: number;
+  }>(
+    `SELECT b.id, b.chapter_id, b.position, b.note, b.created_at,
+            w.slug, w.title, c.title AS chapter_title, c.number
+       FROM bookmarks b
+       JOIN chapters c ON c.id = b.chapter_id
+       JOIN works w ON w.id = c.work_id AND w.status = 'published'
+      WHERE b.user_id = $1
+      ORDER BY b.created_at DESC LIMIT $2`,
+    [userId, limit],
+  );
+}
+
+export async function addBookmark(userId: number, chapterId: number, position: number, note: string | null) {
+  await ensure();
+  const rows = await query<{ id: number }>(
+    'INSERT INTO bookmarks (user_id, chapter_id, position, note) VALUES ($1,$2,$3,$4) RETURNING id',
+    [userId, chapterId, position, note],
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function deleteBookmark(userId: number, id: number) {
+  await ensure();
+  await query('DELETE FROM bookmarks WHERE id = $1 AND user_id = $2', [id, userId]);
+}

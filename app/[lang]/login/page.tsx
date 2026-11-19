@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 const TXT = {
   sr: { title: 'Prijava', email: 'E-pošta', password: 'Lozinka', submit: 'Prijavi se', err: 'Pogrešna e-pošta ili lozinka', need: 'Popuni sva polja' },
@@ -14,7 +14,9 @@ export default function LoginPage({ params }: { params: Promise<{ lang: string }
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
-  const t = TXT.sr;
+  const rawLang = String(useParams<{ lang?: string }>()?.lang || 'sr');
+  const lang: keyof typeof TXT = rawLang === 'ru' || rawLang === 'en' ? rawLang : 'sr';
+  const t = TXT[lang];
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function LoginPage({ params }: { params: Promise<{ lang: string }
     });
     setBusy(false);
     if (!res.ok) { setError(t.err); return; }
-    router.push('/sr');
+    router.push(`/${lang}`);
     router.refresh();
   }
 

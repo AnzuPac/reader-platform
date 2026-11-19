@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
 type Work = { id: number; slug: string; title: string; status: string; words_total: number; author?: string };
 type Payment = { id: number; amount_cents: number; currency: string; status: string; user: string; email: string; meta: string };
@@ -15,6 +16,8 @@ type Donation = {
 
 export default function AdminPage() {
   const [token, setToken] = useState('');
+  const rawLang = String(useParams<{ lang?: string }>()?.lang || 'sr');
+  const lang = rawLang === 'ru' || rawLang === 'en' ? rawLang : 'sr';
   const [works, setWorks] = useState<Work[]>([]);
   const [review, setReview] = useState<Work[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -176,7 +179,7 @@ export default function AdminPage() {
     <main id="main" className="mx-auto max-w-4xl px-5 py-10">
       <h1 className="mb-5 text-2xl font-bold">Админка</h1>
       <p className="mb-4 text-sm muted">
-        <a className="text-brand hover:underline" href="/sr/admin/publishers">Издательства и заявки →</a>
+        <a className="text-brand hover:underline" href={`/${lang}/admin/publishers`}>Издательства и заявки →</a>
       </p>
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">

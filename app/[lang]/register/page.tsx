@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -9,6 +9,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  const rawLang = String(useParams<{ lang?: string }>()?.lang || 'sr');
+  const lang = rawLang === 'ru' || rawLang === 'en' ? rawLang : 'sr';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +26,7 @@ export default function RegisterPage() {
       setError(j.error === 'err_exists' ? 'Nalog sa ovom e-poštom već postoji' : 'Greška pri registraciji');
       return;
     }
-    router.push('/sr');
+    router.push(`/${lang}`);
     router.refresh();
   }
 

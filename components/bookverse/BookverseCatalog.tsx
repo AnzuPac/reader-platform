@@ -100,7 +100,7 @@ export default function BookverseCatalog({
 
   /** Единственный способ поменять состояние: собрать URL и уйти на него.
    *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
-  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string }) {
+  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
     const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
@@ -112,7 +112,8 @@ export default function BookverseCatalog({
     if (next.type) params.set('type', next.type);
     if (f !== 'forYou') params.set('filter', f);
     if (genre) params.set('genre', genre);
-    if (source) params.set('source', source);
+    const src = next.source !== undefined ? next.source : source;
+    if (src) params.set('source', src);
     if (p > 1) params.set('page', String(p));
 
     setPending(true);
@@ -268,6 +269,22 @@ export default function BookverseCatalog({
                 <button key={key} onClick={() => go({ filter: key, page: 1 })} className={filter === key ? 'is-active' : ''}>{label}</button>
               ))}
             </div>
+
+            {/* Источник издания: издательское, самиздат, классика (аудит, п.10).
+                listWorks это уже умел — UI просто не передавал параметр. */}
+            <div className="bv-filter-row">
+              <span className="muted" style={{ fontSize: 10, alignSelf: 'center', marginRight: 6 }}>
+                {lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}:
+              </span>
+              {([
+                ['', lang === 'ru' ? 'Все' : lang === 'en' ? 'All' : 'Sve'],
+                ['publisher', lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'],
+                ['selfpub', lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'],
+                ['classic', lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'],
+              ] as [string, string][]).map(([value, label]) => (
+                <button key={value || 'all'} onClick={() => go({ page: 1, source: value })} className={source === value ? 'is-active' : ''}>{label}</button>
+              ))}
+            </div>
             <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>
               {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} />)}
             </div>
@@ -319,6 +336,15 @@ export default function BookverseCatalog({
           </footer>
         </div>
       </section>
+
+      {/* Мобильная навигация: на узком экране сайдбар скрыт, а History/Bookmarks
+          были недоступны вообще (аудит, п.20). */}
+      <nav className="bv-bottomnav" aria-label="Mobile">
+        <Link href={`/${lang}`}>{lang === 'ru' ? 'Главная' : lang === 'en' ? 'Home' : 'Početna'}</Link>
+        <Link href={`/${lang}/catalog`} className="is-active">{lang === 'ru' ? 'Каталог' : lang === 'en' ? 'Catalog' : 'Katalog'}</Link>
+        <Link href={`/${lang}/library`}>{lang === 'ru' ? 'Библиотека' : lang === 'en' ? 'Library' : 'Biblioteka'}</Link>
+        <Link href={`/${lang}/login`}>{lang === 'ru' ? 'Профиль' : lang === 'en' ? 'Profile' : 'Profil'}</Link>
+      </nav>
     </main>
   );
 }

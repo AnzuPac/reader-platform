@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
 type Publisher = {
   id: number; name: string; slug: string; contact_email: string;
@@ -17,6 +18,8 @@ const LEAD_LABEL: Record<string, string> = {
 
 export default function AdminPublishersPage() {
   const [token, setToken] = useState('');
+  const rawLang = String(useParams<{ lang?: string }>()?.lang || 'sr');
+  const lang = rawLang === 'ru' || rawLang === 'en' ? rawLang : 'sr';
   const [publishers, setPublishers] = useState<Publisher[]>([]);
   const [works, setWorks] = useState<Work[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -141,7 +144,7 @@ export default function AdminPublishersPage() {
                   <td className="px-4 py-3">{p.works_count}</td>
                   <td className="px-4 py-3 muted">{p.owner_email || '—'}</td>
                   <td className="px-4 py-3">
-                    <a className="text-brand hover:underline" href="/sr/publisher" target="_blank" rel="noreferrer">
+                    <a className="text-brand hover:underline" href={`/${lang}/publisher`} target="_blank" rel="noreferrer">
                       открыть
                     </a>
                   </td>
