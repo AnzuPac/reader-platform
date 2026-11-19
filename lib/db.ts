@@ -124,26 +124,6 @@ async function migrateSqlite(db: any) {
        added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        PRIMARY KEY (collection_id, work_id)
      )`,
-    // Коллекции: системные, редакционные и пользовательские (мастер-промпт §2).
-    `CREATE TABLE IF NOT EXISTS collections (
-       id BIGSERIAL PRIMARY KEY,
-       slug TEXT UNIQUE NOT NULL,
-       title TEXT NOT NULL,
-       description TEXT NOT NULL DEFAULT '',
-       kind TEXT NOT NULL DEFAULT 'user',
-       owner_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-       is_public BOOLEAN NOT NULL DEFAULT TRUE,
-       position INTEGER NOT NULL DEFAULT 0,
-       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-     )`,
-    `CREATE TABLE IF NOT EXISTS collection_items (
-       collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
-       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
-       position INTEGER NOT NULL DEFAULT 0,
-       added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-       PRIMARY KEY (collection_id, work_id)
-     )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
