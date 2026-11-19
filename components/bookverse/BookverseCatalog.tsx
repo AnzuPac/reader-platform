@@ -83,7 +83,7 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
   page = 1, hasMore = false, genre = '', source = '',
-  user = null, progress = {},
+  user = null, progress = {}, notifications = 0,
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -96,6 +96,7 @@ export default function BookverseCatalog({
   source?: string;
   user?: { name: string } | null;
   progress?: Record<number, number>;
+  notifications?: number;
 }) {
   const d = catalogDict(lang);
   const router = useRouter();
@@ -217,6 +218,10 @@ export default function BookverseCatalog({
             </select>
           </label>
           <div className="bv-topbar__actions">
+            {/* Колокольчик уведомлений: новые главы из библиотеки (аудит, п.22). */}
+            <Link className="bv-icon-button" href={`/${lang}/notifications`} aria-label="Notifications">
+              🔔{notifications > 0 ? <i /> : null}
+            </Link>
             <div className="bv-langs" role="group" aria-label="Language">
               {LANGS.map((item) => (
                 <button

@@ -9,6 +9,9 @@ export type WorkCard = {
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string; type?: string; kind?: string; category?: string;
   is_classic?: number; publisher_id?: number | null;
+  /** Таксономия фанфиков/комиксов (аудит, п.29-30). */
+  fandom?: string | null; pairing?: string | null; content_warnings?: string | null;
+  comic_format?: string | null; reading_direction?: string | null;
 };
 
 export type ChapterRow = {
@@ -115,6 +118,7 @@ export async function getWork(slug: string): Promise<(WorkCard & { type: string;
   await ensure();
   return one<WorkCard & { type: string; author_id: number }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
+            w.fandom, w.pairing, w.content_warnings, w.comic_format, w.reading_direction,
             w.age_rating, w.completion, w.cover_path, w.type, w.kind, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, w.author_id, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
@@ -321,4 +325,40 @@ export async function progressByWork(userId: number): Promise<Record<number, num
   const out: Record<number, number> = {};
   for (const r of rows) out[Number(r.work_id)] = Number(r.percent) || 0;
   return out;
+}
+
+/** Новые главы в произведениях из библиотеки — лента уведомлений (аудит, п.22). */
+export async function listLibraryUpdates(userId: number, days = 45, limit = 30) {
+  await ensure();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  return query<{
+    chapter_id: number; chapter_title: string | null; number: number; published_at: string;
+    slug: string; title: string; author_name: string;
+  }>(
+    `SELECT c.id AS chapter_id, c.title AS chapter_title, c.number, c.published_at,
+            w.slug, w.title, u.display_name AS author_name
+       FROM library_items li
+       JOIN works w ON w.id = li.work_id AND w.status = 'published'
+       JOIN users u ON u.id = w.author_id
+       JOIN chapters c ON c.work_id = w.id AND c.status = 'published'
+      WHERE li.user_id = $1 AND c.published_at IS NOT NULL AND c.published_at >= $2
+      ORDER BY c.published_at DESC
+      LIMIT $3`,
+    [userId, since, limit],
+  );
+}
+
+/** Количество новых глав для бейджа в шапке. */
+export async function countLibraryUpdates(userId: number, days = 7): Promise<number> {
+  await ensure();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const rows = await query<{ n: number | string }>(
+    `SELECT COUNT(*) AS n
+       FROM library_items li
+       JOIN works w ON w.id = li.work_id AND w.status = 'published'
+       JOIN chapters c ON c.work_id = w.id AND c.status = 'published'
+      WHERE li.user_id = $1 AND c.published_at IS NOT NULL AND c.published_at >= $2`,
+    [userId, since],
+  );
+  return Number(rows[0]?.n ?? 0);
 }

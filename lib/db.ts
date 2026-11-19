@@ -13,6 +13,24 @@ let sqlite: any = null;
 let pgPool: any = null;
 let ready = false;
 
+export type MigrationFailure = { name: string; error: string };
+const migrationFailures: MigrationFailure[] = [];
+
+/** Неудачные миграции за текущий запуск — отдаём в /api/health и логируем. */
+export function getMigrationFailures(): MigrationFailure[] {
+  return migrationFailures;
+}
+
+function migrationName(sql: string): string {
+  const flat = sql.trim().replace(/\s+/g, ' ');
+  return flat.length > 90 ? flat.slice(0, 90) : flat;
+}
+
+/** Ожидаемые ошибки: колонка/таблица/индекс уже существуют. Всё остальное — не глотаем. */
+function isExpectedMigrationError(msg: string): boolean {
+  return /duplicate column|already exists|duplicate_column|42701|42P07|42710/i.test(msg);
+}
+
 function toSqlite(sql: string, params: unknown[]): { sql: string; params: unknown[] } {
   const out: unknown[] = [];
   const converted = sql
@@ -60,6 +78,12 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN canceled_at TEXT',
     'ALTER TABLE subscriptions ADD COLUMN reminder_sent_at TEXT',
     'ALTER TABLE plans ADD COLUMN max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Таксономия фанфиков и комиксов (аудит, п.29-30): без неё категории — просто ярлык.
+    'ALTER TABLE works ADD COLUMN fandom TEXT',
+    'ALTER TABLE works ADD COLUMN pairing TEXT',
+    'ALTER TABLE works ADD COLUMN content_warnings TEXT',
+    'ALTER TABLE works ADD COLUMN comic_format TEXT',
+    "ALTER TABLE works ADD COLUMN reading_direction TEXT NOT NULL DEFAULT 'ltr'",
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -67,7 +91,33 @@ async function migrateSqlite(db: any) {
        reset_at  TEXT NOT NULL
      )`,
   ];
-  for (const sql of alters) { try { db.exec(sql); } catch {} }
+  // Журнал миграций: раньше ошибки молча проглатывались и схема могла разъехаться (аудит, п.33).
+  db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+    name       TEXT PRIMARY KEY,
+    status     TEXT NOT NULL,
+    error      TEXT,
+    updated_at TEXT NOT NULL
+  )`);
+  const recordSqlite = (name: string, status: string, error: string | null) => {
+    try {
+      db.prepare(
+        `INSERT INTO schema_migrations (name, status, error, updated_at) VALUES (?,?,?,?)
+         ON CONFLICT(name) DO UPDATE SET status = excluded.status, error = excluded.error, updated_at = excluded.updated_at`,
+      ).run(name, status, error, new Date().toISOString());
+    } catch { /* журнал не должен ломать старт */ }
+  };
+  for (const sql of alters) {
+    const name = migrationName(sql);
+    try {
+      db.exec(sql);
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (isExpectedMigrationError(msg)) continue;
+      migrationFailures.push({ name, error: msg });
+      console.error('[migrate:sqlite] failed:', name, '→', msg);
+      recordSqlite(name, 'failed', msg);
+    }
+  }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
   try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
   try { db.exec('UPDATE works SET paragraph_comments_enabled = 0 WHERE publisher_id IS NOT NULL AND paragraph_comments_enabled = 1'); } catch {}
@@ -120,6 +170,12 @@ async function migratePg(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ',
     'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Таксономия фанфиков и комиксов (аудит, п.29-30).
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS fandom TEXT',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS comic_format TEXT',
+    "ALTER TABLE works ADD COLUMN IF NOT EXISTS reading_direction TEXT NOT NULL DEFAULT 'ltr'",
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -127,7 +183,35 @@ async function migratePg(db: any) {
        reset_at  TEXT NOT NULL
      )`,
   ];
-  for (const sql of alters) { try { await db.query(sql); } catch {} }
+  // Тот же журнал для Postgres: ожидаемые «уже существует» пропускаем,
+  // остальные ошибки пишем в schema_migrations и в лог (аудит, п.33).
+  await db.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+    name       TEXT PRIMARY KEY,
+    status     TEXT NOT NULL,
+    error      TEXT,
+    updated_at TEXT NOT NULL
+  )`).catch(() => {});
+  const recordPg = async (name: string, status: string, error: string | null) => {
+    try {
+      await db.query(
+        `INSERT INTO schema_migrations (name, status, error, updated_at) VALUES ($1,$2,$3,$4)
+         ON CONFLICT (name) DO UPDATE SET status = EXCLUDED.status, error = EXCLUDED.error, updated_at = EXCLUDED.updated_at`,
+        [name, status, error, new Date().toISOString()],
+      );
+    } catch { /* журнал не должен ломать старт */ }
+  };
+  for (const sql of alters) {
+    const name = migrationName(sql);
+    try {
+      await db.query(sql);
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (isExpectedMigrationError(msg) || e?.code === '42701' || e?.code === '42P07' || e?.code === '42710') continue;
+      migrationFailures.push({ name, error: msg });
+      console.error('[migrate:pg] failed:', name, '→', msg);
+      await recordPg(name, 'failed', msg);
+    }
+  }
   try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
   try { await db.query('UPDATE works SET translit_allowed = FALSE WHERE publisher_id IS NOT NULL AND translit_allowed = TRUE'); } catch {}
   // Старые комментарии main лежали в body — переносим в text (новая фича читает его).

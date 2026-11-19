@@ -103,6 +103,27 @@ export default async function WorkPage({
                   {l === 'ru' ? 'Фанфик' : l === 'en' ? 'Fan fiction' : 'Fanfikcija'}
                 </span>
               ) : null}
+              {work.fandom ? (
+                <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {l === 'ru' ? 'Фандом' : l === 'en' ? 'Fandom' : 'Fandom'}: {work.fandom}
+                </span>
+              ) : null}
+              {work.pairing ? (
+                <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {l === 'ru' ? 'Пейринг' : l === 'en' ? 'Pairing' : 'Paring'}: {work.pairing}
+                </span>
+              ) : null}
+              {work.comic_format ? (
+                <span className="rounded-full border border-line px-2.5 py-0.5 text-xs text-mist">
+                  {work.comic_format}
+                  {work.reading_direction === 'rtl' ? ` · ${l === 'ru' ? 'справа налево' : l === 'en' ? 'right to left' : 'zdesna nalevo'}` : ''}
+                </span>
+              ) : null}
+              {work.content_warnings ? (
+                <span className="rounded-full border border-sakura/60 px-2.5 py-0.5 text-xs text-sakura">
+                  ⚠ {work.content_warnings}
+                </span>
+              ) : null}
             </div>
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
