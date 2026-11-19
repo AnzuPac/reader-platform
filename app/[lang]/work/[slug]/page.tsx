@@ -5,6 +5,7 @@ import { getWork, listChapters, isInLibrary, workGenres, listRelatedWorks } from
 import { query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
+import CollectionAddButton from '@/components/CollectionAddButton';
 import BuyButton from '@/components/BuyButton';
 import { WorkCover } from '@/lib/cover';
 import RatingStars from '@/components/RatingStars';
@@ -161,6 +162,7 @@ export default async function WorkPage({
                 <span className="text-sm muted">{bookRsd} · trajni pristup</span>
               ) : null}
               <LibraryButton workId={work.id} initial={inLib} />
+              {session ? <CollectionAddButton workId={work.id} lang={l} /> : null}
               {canDonate ? <DonateButton workId={work.id} authorName={work.author_name} lang={l} /> : null}
               <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>
             </div>

@@ -183,6 +183,7 @@ export default function BookverseCatalog({
           <Link href={`/${lang}/library?tab=saved`} className="bv-nav-item"><span className="bv-nav-icon">▣</span><span>{d.library}</span></Link>
           <Link href={`/${lang}/library?tab=history`} className="bv-nav-item"><span className="bv-nav-icon">◷</span><span>{d.history}</span></Link>
           <Link href={`/${lang}/library?tab=bookmarks`} className="bv-nav-item"><span className="bv-nav-icon">☆</span><span>{d.bookmarks}</span></Link>
+          <Link href={`/${lang}/collections`} className="bv-nav-item"><span className="bv-nav-icon">◫</span><span>{lang === 'ru' ? 'Подборки' : lang === 'en' ? 'Collections' : 'Kolekcije'}</span></Link>
         </nav>
         <div className="bv-sidebar__bottom">
           <div className="bv-author-box">
