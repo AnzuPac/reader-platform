@@ -11,12 +11,16 @@ export default function LanguageSwitcher({ lang, className = '' }: { lang: Lang;
   const pathname = usePathname() || `/${lang}`;
   const search = useSearchParams();
   const parts = pathname.split('/');
-  parts[1] = lang;
-  const route = parts.join('/') || `/${lang}`;
   const query = search?.toString();
+  // Для каждой кнопки — свой код языка, иначе все ссылки ведут на текущую локаль.
+  const routeFor = (code: Lang) => {
+    const p = [...parts];
+    p[1] = code;
+    return p.join('/') || `/${code}`;
+  };
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   return <div className={`language-switcher ${className}`} aria-label="Language">
-    {LANGS.map(({ code, label }) => <Link key={code} href={`${route}${query ? `?${query}` : ''}`} locale={false}
+    {LANGS.map(({ code, label }) => <Link key={code} href={`${routeFor(code)}${query ? `?${query}` : ''}`}
       className={`language-switcher__item ${code === lang ? 'is-active' : ''}`} aria-current={code === lang ? 'page' : undefined}>{label}</Link>)}
   </div>;
 }

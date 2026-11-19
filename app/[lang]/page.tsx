@@ -168,7 +168,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               <p className="muted" style={{ marginTop: 6 }}>
                 {cont.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${cont.number}`}
               </p>
-              <button className="btn primary" style={{ marginTop: 14 }}>{l === 'ru' ? 'Продолжить' : l === 'en' ? 'Continue' : 'Nastavi'} →</button>
+              <span className="btn primary" style={{ marginTop: 14, display: 'inline-block' }}>{l === 'ru' ? 'Продолжить' : l === 'en' ? 'Continue' : 'Nastavi'} →</span>
             </Link>
           </div>
         </div>

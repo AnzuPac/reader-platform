@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import Chrome from '@/components/Chrome';
@@ -37,7 +38,7 @@ export default async function LangLayout({
             />
           </form>
           <div className="right">
-            <LanguageSwitcher lang={l} />
+            <Suspense fallback={<span className="lang">···</span>}><LanguageSwitcher lang={l} /></Suspense>
             <Link href={`/${l}/notifications`} className="iconbtn" aria-label="Notifications">♧</Link>
             <Link href={`/${l}/login`} className="btn">{l === 'ru' ? 'Войти' : l === 'en' ? 'Log in' : 'Prijava'}</Link>
           </div>
