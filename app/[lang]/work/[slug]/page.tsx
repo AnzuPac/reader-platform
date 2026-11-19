@@ -9,6 +9,8 @@ import CollectionAddButton from '@/components/CollectionAddButton';
 import ReviewForm from '@/components/ReviewForm';
 import FollowButton from '@/components/FollowButton';
 import { followerCount, isFollowing } from '@/lib/follows';
+import ExportPdfButton from '@/components/ExportPdfButton';
+import { exportPolicy } from '@/lib/export';
 import ReportButton from '@/components/ReportButton';
 import { listReviews, myReview, reviewEligibility } from '@/lib/reviews';
 import BuyButton from '@/components/BuyButton';
@@ -58,6 +60,11 @@ export default async function WorkPage({
   const isOwnWork = session?.uid === work.author_id;
   const followingAuthor = session && !isOwnWork ? await isFollowing(session.uid, work.author_id).catch(() => false) : false;
   const followers = await followerCount(work.author_id).catch(() => 0);
+  // Экспорт: сервер решает по правам, кнопка показывается только когда разрешено.
+  const exportDecision = exportPolicy(
+    { id: work.id, slug: work.slug, title: work.title, author_id: work.author_id, author_name: work.author_name, is_classic: work.is_classic },
+    session ? { uid: session.uid, role: session.role } : null,
+  );
   const price = await workPrice(work.id);
   const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
@@ -181,6 +188,7 @@ export default async function WorkPage({
               <LibraryButton workId={work.id} initial={inLib} />
               {session ? <CollectionAddButton workId={work.id} lang={l} /> : null}
               {canDonate ? <DonateButton workId={work.id} authorName={work.author_name} lang={l} /> : null}
+              {exportDecision.allowed ? <ExportPdfButton slug={work.slug} lang={l} /> : null}
               <Link href={`/${l}/subscribe`} className="btn btn-ghost">Pretplata</Link>
             </div>
           </div>
