@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
-import { listLibrary, getContinueReading, listReadingHistory, listBookmarks } from '@/lib/repo';
+import {
+  listLibrary, getContinueReading, listReadingHistory, listBookmarks,
+  libraryCounts, isLibraryStatus, LIBRARY_STATUSES, type LibraryStatus,
+} from '@/lib/repo';
+import LibraryStatusPicker from '@/components/LibraryStatusPicker';
 import { listPurchasedWorks } from '@/lib/purchases';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +18,12 @@ type LibItem = {
 
 type Tab = 'saved' | 'history' | 'bookmarks' | 'purchased';
 
+const STATUS_LABELS: Record<Lang, Record<LibraryStatus, string>> = {
+  sr: { reading: 'Čitam', want: 'U planu', done: 'Pročitano', favorite: 'Omiljeno', postponed: 'Odloženo', dropped: 'Napušteno' },
+  ru: { reading: 'Читаю', want: 'В планах', done: 'Прочитано', favorite: 'Любимое', postponed: 'Отложено', dropped: 'Брошено' },
+  en: { reading: 'Reading', want: 'Want to read', done: 'Finished', favorite: 'Favourite', postponed: 'Postponed', dropped: 'Dropped' },
+};
+
 const TAB_LABELS: Record<Lang, Record<Tab, string>> = {
   sr: { saved: 'Sačuvano', history: 'Istorija', bookmarks: 'Obeleživači', purchased: 'Kupljeno' },
   ru: { saved: 'Сохранённое', history: 'История', bookmarks: 'Закладки', purchased: 'Куплено' },
@@ -24,7 +34,7 @@ export default async function LibraryPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; status?: string }>;
 }) {
   const { lang } = await params;
   const sp = await searchParams;
@@ -33,6 +43,8 @@ export default async function LibraryPage({
 
   const rawTab = typeof sp.tab === 'string' ? sp.tab : 'saved';
   const tab: Tab = rawTab === 'history' || rawTab === 'bookmarks' || rawTab === 'purchased' ? rawTab : 'saved';
+  const rawStatus = typeof sp.status === 'string' ? sp.status : '';
+  const status: LibraryStatus | undefined = isLibraryStatus(rawStatus) ? rawStatus : undefined;
 
   if (!session) {
     return (
@@ -51,7 +63,8 @@ export default async function LibraryPage({
     );
   }
 
-  const items = (await listLibrary(session.uid)) as unknown as LibItem[];
+  const items = (await listLibrary(session.uid, status)) as unknown as LibItem[];
+  const counts = await libraryCounts(session.uid);
   const cont = await getContinueReading(session.uid);
   const purchased = await listPurchasedWorks(session.uid);
   const history = tab === 'history' ? await listReadingHistory(session.uid) : [];
@@ -157,6 +170,25 @@ export default async function LibraryPage({
       ) : null}
 
       {tab === 'saved' ? (
+        <>
+          <nav className="mb-4 flex flex-wrap gap-2">
+            <Link href={`/${l}/library?tab=saved`} className={`btn ${!status ? 'btn-primary' : 'btn-ghost'}`}>
+              {l === 'ru' ? 'Все' : l === 'en' ? 'All' : 'Sve'}
+            </Link>
+            {LIBRARY_STATUSES.map((st) => (
+              <Link
+                key={st}
+                href={`/${l}/library?tab=saved&status=${st}`}
+                className={`btn ${status === st ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                {STATUS_LABELS[l][st]} {counts[st] > 0 ? counts[st] : ''}
+              </Link>
+            ))}
+          </nav>
+        </>
+      ) : null}
+
+      {tab === 'saved' ? (
         items.length === 0 ? (
           <div className="card p-8 text-center muted">
             {l === 'ru' ? 'Библиотека пуста. Открой произведение и нажми «Добавить в библиотеку».' : l === 'en' ? 'Library is empty. Open a work and press “Add to library”.' : 'Biblioteka je prazna. Otvori delo i klikni „Dodaj u biblioteku“.'}
@@ -164,13 +196,18 @@ export default async function LibraryPage({
         ) : (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             {items.map((w) => (
-              <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
-                <div className="cover cover-sm relative">
-                  <span className="relative line-clamp-3">{w.title}</span>
+              <div key={w.id}>
+                <Link href={`/${l}/work/${w.slug}`} className="group block">
+                  <div className="cover cover-sm relative">
+                    <span className="relative line-clamp-3">{w.title}</span>
+                  </div>
+                  <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
+                  <div className="text-xs muted">{w.author_name}</div>
+                </Link>
+                <div className="mt-2">
+                  <LibraryStatusPicker workId={w.id} initial={(w as unknown as { status?: LibraryStatus }).status ?? null} lang={l} />
                 </div>
-                <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
-                <div className="text-xs muted">{w.author_name}</div>
-              </Link>
+              </div>
             ))}
           </div>
         )

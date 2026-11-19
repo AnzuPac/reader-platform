@@ -180,6 +180,14 @@ export async function isInLibrary(userId: number, workId: number): Promise<boole
   return rows.length > 0;
 }
 
+export type LibraryStatus = 'want' | 'reading' | 'done' | 'favorite' | 'postponed' | 'dropped';
+export const LIBRARY_STATUSES: LibraryStatus[] = ['reading', 'want', 'done', 'favorite', 'postponed', 'dropped'];
+
+export function isLibraryStatus(v: unknown): v is LibraryStatus {
+  return typeof v === 'string' && (LIBRARY_STATUSES as string[]).includes(v);
+}
+
+/** Добавить/снять «в библиотеке» (старое поведение кнопки на карточке). */
 export async function toggleLibrary(userId: number, workId: number): Promise<boolean> {
   await ensure();
   const exists = await isInLibrary(userId, workId);
@@ -187,20 +195,65 @@ export async function toggleLibrary(userId: number, workId: number): Promise<boo
     await query('DELETE FROM library_items WHERE user_id = $1 AND work_id = $2', [userId, workId]);
     return false;
   }
-  await query('INSERT INTO library_items (user_id, work_id) VALUES ($1,$2)', [userId, workId]);
+  await query("INSERT INTO library_items (user_id, work_id, status) VALUES ($1,$2,'want')", [userId, workId]);
   return true;
 }
 
-export async function listLibrary(userId: number) {
+/** Поставить статус чтения. 'remove' убирает из библиотеки совсем. */
+export async function setLibraryStatus(
+  userId: number, workId: number, status: LibraryStatus | 'remove',
+): Promise<LibraryStatus | null> {
   await ensure();
-  return query<WorkCard & { added_at: string }>(
+  if (status === 'remove') {
+    await query('DELETE FROM library_items WHERE user_id = $1 AND work_id = $2', [userId, workId]);
+    return null;
+  }
+  await query(
+    `INSERT INTO library_items (user_id, work_id, status, updated_at)
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (user_id, work_id)
+     DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
+    [userId, workId, status, new Date().toISOString()],
+  );
+  return status;
+}
+
+export async function getLibraryStatus(userId: number, workId: number): Promise<LibraryStatus | null> {
+  await ensure();
+  const row = await one<{ status: string | null }>(
+    'SELECT status FROM library_items WHERE user_id = $1 AND work_id = $2', [userId, workId],
+  );
+  return isLibraryStatus(row?.status) ? row!.status : (row ? 'want' : null);
+}
+
+/** Счётчики по статусам — для вкладок «Моей полки». */
+export async function libraryCounts(userId: number): Promise<Record<LibraryStatus, number>> {
+  await ensure();
+  const rows = await query<{ status: string | null; n: number | string }>(
+    'SELECT status, COUNT(*) AS n FROM library_items WHERE user_id = $1 GROUP BY status', [userId],
+  );
+  const out = Object.fromEntries(LIBRARY_STATUSES.map((s) => [s, 0])) as Record<LibraryStatus, number>;
+  for (const r of rows) {
+    const key: LibraryStatus = isLibraryStatus(r.status) ? r.status : 'want';
+    out[key] += Number(r.n) || 0;
+  }
+  return out;
+}
+
+export async function listLibrary(userId: number, status?: LibraryStatus) {
+  await ensure();
+  const params: unknown[] = [userId];
+  let filter = '';
+  if (status) { params.push(status); filter = ` AND coalesce(l.status, 'want') = $${params.length}`; }
+  return query<WorkCard & { added_at: string; status: string | null }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name, l.created_at AS added_at
+            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name,
+            l.created_at AS added_at, l.status
        FROM library_items l
        JOIN works w ON w.id = l.work_id
        JOIN users u ON u.id = w.author_id
-      WHERE l.user_id = $1 AND w.status = 'published'
-      ORDER BY l.created_at DESC`, [userId]
+      WHERE l.user_id = $1 AND w.status = 'published'${filter}
+      ORDER BY coalesce(l.updated_at, l.created_at) DESC`, params
   );
 }
 

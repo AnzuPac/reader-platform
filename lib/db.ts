@@ -80,6 +80,9 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN canceled_at TEXT',
     'ALTER TABLE subscriptions ADD COLUMN reminder_sent_at TEXT',
     'ALTER TABLE plans ADD COLUMN max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Статусы библиотеки: читаю / в планах / прочитано / любимое / отложено / брошено.
+    "ALTER TABLE library_items ADD COLUMN status TEXT NOT NULL DEFAULT 'want'",
+    'ALTER TABLE library_items ADD COLUMN updated_at TEXT',
     // Таксономия фанфиков и комиксов (аудит, п.29-30): без неё категории — просто ярлык.
     'ALTER TABLE works ADD COLUMN fandom TEXT',
     'ALTER TABLE works ADD COLUMN pairing TEXT',
@@ -187,6 +190,9 @@ async function migratePg(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ',
     'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Статусы библиотеки.
+    "ALTER TABLE library_items ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'want'",
+    'ALTER TABLE library_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ',
     // Таксономия фанфиков и комиксов (аудит, п.29-30).
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS fandom TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
