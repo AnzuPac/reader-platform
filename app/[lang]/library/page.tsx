@@ -34,7 +34,7 @@ export default async function LibraryPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ tab?: string; status?: string }>;
+  searchParams: Promise<{ tab?: string; status?: string; category?: string }>;
 }) {
   const { lang } = await params;
   const sp = await searchParams;
@@ -44,6 +44,7 @@ export default async function LibraryPage({
   const rawTab = typeof sp.tab === 'string' ? sp.tab : 'saved';
   const tab: Tab = rawTab === 'history' || rawTab === 'bookmarks' || rawTab === 'purchased' ? rawTab : 'saved';
   const rawStatus = typeof sp.status === 'string' ? sp.status : '';
+  const category = sp.category === 'book' || sp.category === 'fanfic' || sp.category === 'manga' ? sp.category : 'all';
   const status: LibraryStatus | undefined = isLibraryStatus(rawStatus) ? rawStatus : undefined;
 
   if (!session) {
@@ -63,7 +64,8 @@ export default async function LibraryPage({
     );
   }
 
-  const items = (await listLibrary(session.uid, status)) as unknown as LibItem[];
+  const items = (await listLibrary(session.uid, status)) as unknown as (LibItem & { category?: string })[];
+  const filteredItems = category === 'all' ? items : items.filter((item) => item.category === category);
   const counts = await libraryCounts(session.uid);
   const cont = await getContinueReading(session.uid);
   const purchased = await listPurchasedWorks(session.uid);
@@ -76,7 +78,7 @@ export default async function LibraryPage({
     <main className="mx-auto max-w-6xl px-5 py-8">
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-2xl font-bold">{t(l, 'nav_library')}</h1>
-        <span className="text-sm muted">{items.length}</span>
+        <span className="text-sm muted">{filteredItems.length}</span>
       </div>
 
       {/* Вкладки — каждая со своим содержимым, а не три ссылки в одну страницу (аудит, п.21). */}
@@ -91,6 +93,17 @@ export default async function LibraryPage({
             {key === 'saved' ? ` ${items.length}` : key === 'purchased' ? ` ${purchased.length}` : ''}
           </Link>
         ))}
+      </nav>
+
+      <nav className="mb-5 flex flex-wrap gap-2" aria-label="Library category">
+        {(['all', 'book', 'fanfic', 'manga'] as const).map((cat) => {
+          const labels: Record<Lang, Record<typeof cat, string>> = {
+            sr: { all: 'Sve', book: 'Knjige', fanfic: 'Fan-fikcija', manga: 'Manga / stripovi' },
+            ru: { all: 'Все', book: 'Книги', fanfic: 'Фанфики', manga: 'Манга / комиксы' },
+            en: { all: 'All', book: 'Books', fanfic: 'Fan fiction', manga: 'Manga / comics' },
+          };
+          return <Link key={cat} href={`/${l}/library?tab=${tab}${status ? `&status=${status}` : ''}${cat !== 'all' ? `&category=${cat}` : ''}`} className={`btn ${category === cat ? 'btn-primary' : 'btn-ghost'}`}>{labels[l][cat]}</Link>;
+        })}
       </nav>
 
       {cont ? (
@@ -172,13 +185,13 @@ export default async function LibraryPage({
       {tab === 'saved' ? (
         <>
           <nav className="mb-4 flex flex-wrap gap-2">
-            <Link href={`/${l}/library?tab=saved`} className={`btn ${!status ? 'btn-primary' : 'btn-ghost'}`}>
+            <Link href={`/${l}/library?tab=saved${category !== 'all' ? `&category=${category}` : ''}`} className={`btn ${!status ? 'btn-primary' : 'btn-ghost'}`}>
               {l === 'ru' ? 'Все' : l === 'en' ? 'All' : 'Sve'}
             </Link>
             {LIBRARY_STATUSES.map((st) => (
               <Link
                 key={st}
-                href={`/${l}/library?tab=saved&status=${st}`}
+                href={`/${l}/library?tab=saved&status=${st}${category !== 'all' ? `&category=${category}` : ''}`}
                 className={`btn ${status === st ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {STATUS_LABELS[l][st]} {counts[st] > 0 ? counts[st] : ''}
@@ -195,7 +208,7 @@ export default async function LibraryPage({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {items.map((w) => (
+            {filteredItems.map((w) => (
               <div key={w.id}>
                 <Link href={`/${l}/work/${w.slug}`} className="group block">
                   <div className="cover cover-sm relative">

@@ -93,3 +93,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .cover-sm { min-height: 138px; }
   .btn { padding: 9px 12px; }
 }
+
+/* Категории на главной: мягкие светлые подложки вместо тёмных акцентов. */
+.home-category-books   { background: linear-gradient(135deg, #ffffff, #f7f6f4); border-color: #e7e5e4; }
+.home-category-fanfics { background: linear-gradient(135deg, #faf7ff, #f1edf8); border-color: #e3d9f5; }
+.home-category-manga   { background: linear-gradient(135deg, #fff8f3, #fdf1e7); border-color: #f0dccb; }

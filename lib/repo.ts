@@ -247,8 +247,9 @@ export async function listLibrary(userId: number, status?: LibraryStatus) {
   if (status) { params.push(status); filter = ` AND coalesce(l.status, 'want') = $${params.length}`; }
   return query<WorkCard & { added_at: string; status: string | null }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, u.display_name AS author_name,
-            l.created_at AS added_at, l.status
+            w.age_rating, w.completion, w.cover_path, w.type, w.kind,
+            CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
+            u.display_name AS author_name, l.created_at AS added_at, l.status
        FROM library_items l
        JOIN works w ON w.id = l.work_id
        JOIN users u ON u.id = w.author_id

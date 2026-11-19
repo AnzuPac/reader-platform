@@ -15,6 +15,7 @@ const TXT: Record<Lang, {
   fresh: string; freshSub: string; popular: string; popularSub: string;
   allCatalog: string; books: string; comics: string; fanfics: string; empty: string;
   heroTitle: string; heroText: string; discover: string; search: string; genres: string;
+  recommendations: string; top: string; browseAll: string; manga: string;
 }> = {
   sr: {
     hello: 'Dobro došli nazad', continueReading: 'Nastavi čitanje', continueBtn: 'Nastavi',
@@ -23,6 +24,7 @@ const TXT: Record<Lang, {
     allCatalog: 'Ceo katalog', books: 'Knjige', comics: 'Stripovi', fanfics: 'Fanfikcija',
     empty: 'Još nema objavljenih dela u ovom izboru.',
     heroTitle: 'Priče koje ostaju sa tobom', heroText: 'Otkrij knjige, stripove i fanfikciju. Pronađi sledeće omiljeno čitanje.', discover: 'Istraži katalog', search: 'Naslov, autor ili fandom…', genres: 'Istraži po žanru',
+    recommendations: 'Preporuke', top: 'Nedeljni top', browseAll: 'Sva dela', manga: 'Manga i stripovi',
   },
   ru: {
     hello: 'С возвращением', continueReading: 'Продолжить чтение', continueBtn: 'Дальше',
@@ -31,6 +33,7 @@ const TXT: Record<Lang, {
     allCatalog: 'Весь каталог', books: 'Книги', comics: 'Комиксы', fanfics: 'Фанфики',
     empty: 'В этой подборке пока нет опубликованных произведений.',
     heroTitle: 'Истории, которые остаются с тобой', heroText: 'Открой книги, комиксы и фанфики. Найди своё следующее любимое чтение.', discover: 'Исследовать каталог', search: 'Название, автор или фандом…', genres: 'Популярные жанры',
+    recommendations: 'Рекомендации', top: 'Топ недели', browseAll: 'Все произведения', manga: 'Манга и комиксы',
   },
   en: {
     hello: 'Welcome back', continueReading: 'Continue reading', continueBtn: 'Continue',
@@ -39,6 +42,7 @@ const TXT: Record<Lang, {
     allCatalog: 'Full catalog', books: 'Books', comics: 'Comics', fanfics: 'Fan fiction',
     empty: 'No published works in this selection yet.',
     heroTitle: 'Stories that stay with you', heroText: 'Discover books, comics and fan fiction. Find your next favourite read.', discover: 'Explore catalog', search: 'Title, author or fandom…', genres: 'Explore by genre',
+    recommendations: 'Recommended', top: 'Weekly top', browseAll: 'Browse all', manga: 'Manga & comics',
   },
 };
 
@@ -64,6 +68,40 @@ function Grid({ items, lang, empty }: { items: Card[]; lang: Lang; empty: string
   );
 }
 
+/** Блок категории: рекомендации (новое) + топ по прочтениям. */
+function CategoryBlock({
+  title, recommendations, top, lang, empty, href, accent, recLabel, topLabel, browseAll,
+}: {
+  title: string; recommendations: Card[]; top: Card[]; lang: Lang; empty: string;
+  href: string; accent: string; recLabel: string; topLabel: string; browseAll: string;
+}) {
+  const sep = href.includes('?') ? '&' : '?';
+  return (
+    <section className={`mb-10 rounded-2xl border p-4 sm:p-6 ${accent}`}>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
+        <Link className="btn btn-ghost text-sm" href={href}>{browseAll} →</Link>
+      </div>
+
+      <div className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-semibold">{recLabel}</h3>
+          <Link href={`${href}${sep}filter=fresh`} className="text-sm text-brand hover:underline">→</Link>
+        </div>
+        <Grid items={recommendations} lang={lang} empty={empty} />
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-semibold">{topLabel}</h3>
+          <Link href={`${href}${sep}filter=popular`} className="text-sm text-brand hover:underline">→</Link>
+        </div>
+        <Grid items={top} lang={lang} empty={empty} />
+      </div>
+    </section>
+  );
+}
+
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
@@ -72,11 +110,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   const session = await readSession();
   const cont = session ? await getContinueReading(session.uid).catch(() => null) : null;
 
-  const [fresh, popular, comics, fanfics] = await Promise.all([
-    listWorks({ sort: 'new', limit: 8 }).catch(() => []),
-    listWorks({ sort: 'views', limit: 8 }).catch(() => []),
-    listWorks({ type: 'comic', sort: 'new', limit: 4 }).catch(() => []),
+  const [booksFresh, booksTop, fanficFresh, fanficTop, mangaFresh, mangaTop] = await Promise.all([
+    listWorks({ type: 'novel', fanfic: false, sort: 'new', limit: 4 }).catch(() => []),
+    listWorks({ type: 'novel', fanfic: false, sort: 'views', limit: 4 }).catch(() => []),
     listWorks({ fanfic: true, sort: 'new', limit: 4 }).catch(() => []),
+    listWorks({ fanfic: true, sort: 'views', limit: 4 }).catch(() => []),
+    listWorks({ type: 'comic', sort: 'new', limit: 4 }).catch(() => []),
+    listWorks({ type: 'comic', sort: 'views', limit: 4 }).catch(() => []),
   ]);
 
   return (
@@ -122,47 +162,44 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </Link>
       ) : null}
 
-      <section className="mb-12">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold">{x.fresh}</h2>
-            <p className="text-xs muted">{x.freshSub}</p>
-          </div>
-          <Link href={`/${l}/catalog?filter=fresh`} className="text-sm text-brand hover:underline">→</Link>
-        </div>
-        <Grid items={fresh as unknown as Card[]} lang={l} empty={x.empty} />
-      </section>
+      <CategoryBlock
+        title={`📚 ${x.books}`}
+        recommendations={booksFresh as unknown as Card[]}
+        top={booksTop as unknown as Card[]}
+        lang={l}
+        empty={x.empty}
+        href={`/${l}/catalog`}
+        accent="home-category-books"
+        recLabel={x.recommendations}
+        topLabel={x.top}
+        browseAll={x.browseAll}
+      />
 
-      <section className="mb-12">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold">{x.popular}</h2>
-            <p className="text-xs muted">{x.popularSub}</p>
-          </div>
-          <Link href={`/${l}/catalog?filter=popular`} className="text-sm text-brand hover:underline">→</Link>
-        </div>
-        <Grid items={popular as unknown as Card[]} lang={l} empty={x.empty} />
-      </section>
+      <CategoryBlock
+        title={`✦ ${x.fanfics}`}
+        recommendations={fanficFresh as unknown as Card[]}
+        top={fanficTop as unknown as Card[]}
+        lang={l}
+        empty={x.empty}
+        href={`/${l}/catalog?kind=fanfic`}
+        accent="home-category-fanfics"
+        recLabel={x.recommendations}
+        topLabel={x.top}
+        browseAll={x.browseAll}
+      />
 
-      {comics.length > 0 ? (
-        <section className="mb-12">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="text-xl font-bold">{x.comics}</h2>
-            <Link href={`/${l}/catalog?kind=comic`} className="text-sm text-brand hover:underline">→</Link>
-          </div>
-          <Grid items={comics as unknown as Card[]} lang={l} empty={x.empty} />
-        </section>
-      ) : null}
-
-      {fanfics.length > 0 ? (
-        <section className="mb-12">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="text-xl font-bold">{x.fanfics}</h2>
-            <Link href={`/${l}/catalog?kind=fanfic`} className="text-sm text-brand hover:underline">→</Link>
-          </div>
-          <Grid items={fanfics as unknown as Card[]} lang={l} empty={x.empty} />
-        </section>
-      ) : null}
+      <CategoryBlock
+        title={`▣ ${x.manga}`}
+        recommendations={mangaFresh as unknown as Card[]}
+        top={mangaTop as unknown as Card[]}
+        lang={l}
+        empty={x.empty}
+        href={`/${l}/catalog?kind=comic`}
+        accent="home-category-manga"
+        recLabel={x.recommendations}
+        topLabel={x.top}
+        browseAll={x.browseAll}
+      />
     </main>
   );
 }
