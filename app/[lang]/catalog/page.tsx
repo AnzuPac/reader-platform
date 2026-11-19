@@ -46,7 +46,8 @@ export default async function CatalogPage({
   const section: SectionId =
     typeParam === 'manga' || kind === 'comic' || kind === 'manga' ? 'comics'
       : typeParam === 'fanfic' || kind === 'fanfic' ? 'fanfics'
-        : 'books';
+        : kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub'
+          : 'books';
 
   // Сортировка и фильтры выполняются на сервере, а не по обрезанной выборке.
   const opts: ListWorksOpts = {
@@ -59,14 +60,18 @@ export default async function CatalogPage({
     sort: filter === 'popular' ? 'views' : filter === 'fresh' ? 'new' : 'rating',
   };
   if (genre) opts.genre = genre;
-  if (source) opts.source = source;
+  // Книги — только издательские; самиздат — только авторский. Источник из URL
+  // не должен «размывать» вкладку, поэтому задаётся разделом.
+  if (section === 'books') opts.source = 'publisher';
+  else if (section === 'selfpub') opts.source = 'selfpub';
+  else if (source) opts.source = source;
   if (tag) opts.tag = tag;
   if (fandom) opts.fandom = fandom;
   if (aiUsage) opts.aiUsage = aiUsage;
   if (filter === 'completed') opts.completion = 'completed';
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
-  if (section === 'books') opts.type = 'novel';
+  if (section === 'books' || section === 'selfpub') opts.type = 'novel';
 
   let rows: Row[] = [];
   try {

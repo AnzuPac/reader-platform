@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 
-export type SectionId = 'books' | 'fanfics' | 'comics';
+export type SectionId = 'books' | 'selfpub' | 'fanfics' | 'comics';
 export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
 
 export type CatalogWork = {
@@ -25,10 +25,11 @@ export type CatalogWork = {
 
 export type CatalogGenre = { slug: string; name: string };
 
-const SECTION_KIND: Record<SectionId, string> = { books: '', fanfics: 'fanfic', comics: 'comic' };
+const SECTION_KIND: Record<SectionId, string> = { books: '', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'comic' };
+const SECTION_COLOR: Record<SectionId, string> = { books: 'publisher', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'graphic' };
 
 const TXT: Record<Lang, {
-  books: string; fanfics: string; manga: string;
+  books: string; selfpub: string; fanfics: string; manga: string;
   titles: Record<SectionId, string>; eyebrows: Record<SectionId, string>; descs: Record<SectionId, string>;
   filters: string; all: string; popular: string; fresh: string; completed: string; rated: string;
   sort: string; sortRecommend: string; sortPopular: string; sortNew: string; sortRating: string;
@@ -39,10 +40,10 @@ const TXT: Record<Lang, {
   activeFilters: string; remove: string; tagPlaceholder: string; fandomPlaceholder: string;
 }> = {
   sr: {
-    books: 'Knjige', fanfics: 'Fanfikcija', manga: 'Manga',
-    titles: { books: 'Katalog knjiga', fanfics: 'Katalog fanfikcije', comics: 'Katalog mange i stripova' },
-    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
-    descs: { books: 'Originalne priče, klasici i samizdat.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.' },
+    books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', manga: 'Grafička literatura',
+    titles: { books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', comics: 'Grafička literatura' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
+    descs: { books: 'Knjige izdavačkih kuća.', selfpub: 'Dela koja autori objavljuju sami.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.' },
     filters: 'Filteri', all: 'Sve', popular: 'Popularno', fresh: 'Novo', completed: 'Završeno', rated: 'Visok rejting',
     sort: 'Sortiranje', sortRecommend: 'Preporučeno', sortPopular: 'Popularno', sortNew: 'Najnovije', sortRating: 'Po rejtingu',
     apply: 'Prikaži rezultate', reset: 'Resetuj', genre: 'Žanrovi', tags: 'Tagovi', fandom: 'Fandom', source: 'Izvor', ai: 'AI sadržaj',
@@ -52,10 +53,10 @@ const TXT: Record<Lang, {
     activeFilters: 'Aktivni filteri', remove: 'Ukloni', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Naziv fandoma',
   },
   ru: {
-    books: 'Книги', fanfics: 'Фанфики', manga: 'Манга',
-    titles: { books: 'Каталог книг', fanfics: 'Каталог фанфиков', comics: 'Каталог манги и комиксов' },
-    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
-    descs: { books: 'Оригинальные истории, классика и самиздат.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.' },
+    books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', manga: 'Графическая литература',
+    titles: { books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', comics: 'Графическая литература' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
+    descs: { books: 'Книги издательских домов.', selfpub: 'Произведения, которые авторы публикуют сами.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.' },
     filters: 'Фильтры', all: 'Все', popular: 'Популярное', fresh: 'Новинки', completed: 'Завершённые', rated: 'Высокий рейтинг',
     sort: 'Сортировка', sortRecommend: 'Рекомендованные', sortPopular: 'Популярные', sortNew: 'Сначала новые', sortRating: 'По рейтингу',
     apply: 'Показать результаты', reset: 'Сбросить', genre: 'Жанры', tags: 'Теги', fandom: 'Фандом', source: 'Источник', ai: 'AI-контент',
@@ -65,10 +66,10 @@ const TXT: Record<Lang, {
     activeFilters: 'Активные фильтры', remove: 'Убрать', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Название фандома',
   },
   en: {
-    books: 'Books', fanfics: 'Fan fiction', manga: 'Manga',
-    titles: { books: 'Book catalog', fanfics: 'Fan fiction catalog', comics: 'Manga & comics catalog' },
-    eyebrows: { books: 'TEROLIBRARY · BOOKS', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · COMICS' },
-    descs: { books: 'Original stories, classics and self-published.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.' },
+    books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', manga: 'Graphic literature',
+    titles: { books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', comics: 'Graphic literature' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
+    descs: { books: 'Books from publishing houses.', selfpub: 'Works authors publish themselves.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.' },
     filters: 'Filters', all: 'All', popular: 'Popular', fresh: 'New', completed: 'Completed', rated: 'Top rated',
     sort: 'Sort', sortRecommend: 'Recommended', sortPopular: 'Popular', sortNew: 'Newest', sortRating: 'By rating',
     apply: 'Show results', reset: 'Reset', genre: 'Genres', tags: 'Tags', fandom: 'Fandom', source: 'Source', ai: 'AI content',
@@ -181,9 +182,13 @@ export default function BookverseCatalog({
     <main id="main" className="shell">
       <div className={`tlp-cat-category ${initialSection}`}>
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'fanfics', 'comics'] as SectionId[]).map((s) => (
-            <button key={s} className={initialSection === s ? 'active' : ''} onClick={() => go({ kind: kindFor(s), page: 1 })}>
-              {s === 'books' ? `▤ ${t.books}` : s === 'fanfics' ? `✧ ${t.fanfics}` : `▧ ${t.manga}`}
+          {(['books', 'selfpub', 'fanfics', 'comics'] as SectionId[]).map((s) => (
+            <button
+              key={s}
+              className={`subnav-btn subnav-btn--${SECTION_COLOR[s]} ${initialSection === s ? 'active' : ''}`}
+              onClick={() => go({ kind: kindFor(s), source: s === 'books' || s === 'selfpub' ? '' : source, page: 1 })}
+            >
+              {s === 'books' ? t.books : s === 'selfpub' ? t.selfpub : s === 'fanfics' ? t.fanfics : t.manga}
             </button>
           ))}
         </nav>
