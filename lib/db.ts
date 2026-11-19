@@ -34,6 +34,8 @@ function isExpectedMigrationError(msg: string): boolean {
 function toSqlite(sql: string, params: unknown[]): { sql: string; params: unknown[] } {
   const out: unknown[] = [];
   const converted = sql
+    // Postgres dollar-quoting ($$RS$$) в SQLite — синтаксическая ошибка: разворачиваем в строку.
+    .replace(/\$\$([^$]*)\$\$/g, "'$1'")
     .replace(/\bnow\(\)/gi, 'CURRENT_TIMESTAMP')
     .replace(/\$(\d+)/g, (_m, n: string) => {
       out.push(params[Number(n) - 1]);
@@ -64,7 +66,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE author_payouts ADD COLUMN net_cents INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN rights_subscription INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE works ADD COLUMN subscription_window_days INTEGER NOT NULL DEFAULT 0',
-    'ALTER TABLE works ADD COLUMN regions TEXT NOT NULL DEFAULT $$RS$$',
+    "ALTER TABLE works ADD COLUMN regions TEXT NOT NULL DEFAULT 'RS'",
     'ALTER TABLE works ADD COLUMN tts_allowed INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE works ADD COLUMN free_excerpt_pct INTEGER NOT NULL DEFAULT 10',
     // Комментарии к абзацам: колонки, которых не было в старой схеме main.
