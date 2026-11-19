@@ -1,5 +1,6 @@
 import { isLang, type Lang } from '@/lib/i18n';
 import { listWorks, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
 
@@ -71,7 +72,12 @@ export default async function CatalogPage({
   // залогиненному человеку и рисовал прогресс на карточках (аудит, п.24 и 28).
   const session = await readSession().catch(() => null);
   const progress = session ? await progressByWork(session.uid).catch(() => ({})) : {};
-  const unread = session ? await countLibraryUpdates(session.uid).catch(() => 0) : 0;
+  const unread = session
+    ? (await Promise.all([
+        countLibraryUpdates(session.uid).catch(() => 0),
+        countFollowUpdates(session.uid).catch(() => 0),
+      ])).reduce((a, b) => a + b, 0)
+    : 0;
 
   const hasMore = rows.length > PAGE_SIZE;
   const pageRows = hasMore ? rows.slice(0, PAGE_SIZE) : rows;

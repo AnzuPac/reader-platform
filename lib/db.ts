@@ -151,6 +151,18 @@ async function migrateSqlite(db: any) {
        resolved_by TEXT
      )`,
     `CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC)`,
+    // Профиль: описание, аватар, публичность.
+    'ALTER TABLE users ADD COLUMN bio TEXT',
+    'ALTER TABLE users ADD COLUMN avatar_path TEXT',
+    'ALTER TABLE users ADD COLUMN profile_public INTEGER NOT NULL DEFAULT 1',
+    // Подписка на автора: уведомления о новых главах.
+    `CREATE TABLE IF NOT EXISTS author_follows (
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       PRIMARY KEY (user_id, author_id)
+     )`,
+    `CREATE INDEX IF NOT EXISTS author_follows_author_idx ON author_follows(author_id)`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -288,6 +300,18 @@ async function migratePg(db: any) {
        resolved_by TEXT
      )`,
     `CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC)`,
+    // Профиль: описание, аватар, публичность.
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_path TEXT',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_public BOOLEAN NOT NULL DEFAULT TRUE',
+    // Подписка на автора: уведомления о новых главах.
+    `CREATE TABLE IF NOT EXISTS author_follows (
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       PRIMARY KEY (user_id, author_id)
+     )`,
+    `CREATE INDEX IF NOT EXISTS author_follows_author_idx ON author_follows(author_id)`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,

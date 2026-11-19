@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { isLang, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
 import { listLibraryUpdates } from '@/lib/repo';
+import { newChaptersFromFollowed } from '@/lib/follows';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,16 @@ export default async function NotificationsPage({ params }: { params: Promise<{ 
     );
   }
 
-  const updates = await listLibraryUpdates(session.uid).catch(() => []);
+  // Две ленты: новые главы в библиотеке и у авторов, на которых подписан.
+  const [fromLibrary, fromFollows] = await Promise.all([
+    listLibraryUpdates(session.uid).catch(() => []),
+    newChaptersFromFollowed(session.uid).catch(() => []),
+  ]);
+  const seen = new Set<number>();
+  const updates = [...fromLibrary, ...fromFollows]
+    .filter((u) => (seen.has(u.chapter_id) ? false : (seen.add(u.chapter_id), true)))
+    .sort((a, b) => String(b.published_at).localeCompare(String(a.published_at)))
+    .slice(0, 50);
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-8">

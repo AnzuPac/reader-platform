@@ -7,6 +7,8 @@ import { readSession } from '@/lib/auth';
 import LibraryButton from '@/components/LibraryButton';
 import CollectionAddButton from '@/components/CollectionAddButton';
 import ReviewForm from '@/components/ReviewForm';
+import FollowButton from '@/components/FollowButton';
+import { followerCount, isFollowing } from '@/lib/follows';
 import ReportButton from '@/components/ReportButton';
 import { listReviews, myReview, reviewEligibility } from '@/lib/reviews';
 import BuyButton from '@/components/BuyButton';
@@ -53,6 +55,9 @@ export default async function WorkPage({
   const reviews = await listReviews(work.id).catch(() => []);
   const eligibility = session ? await reviewEligibility(session.uid, work.id).catch(() => ({ eligible: false, percent: 0 })) : { eligible: false, percent: 0 };
   const mine = session ? await myReview(session.uid, work.id).catch(() => null) : null;
+  const isOwnWork = session?.uid === work.author_id;
+  const followingAuthor = session && !isOwnWork ? await isFollowing(session.uid, work.author_id).catch(() => false) : false;
+  const followers = await followerCount(work.author_id).catch(() => 0);
   const price = await workPrice(work.id);
   const owned = session ? await hasWorkAccess(session.uid, work.id) : false;
   const subscribed = session ? await hasActiveSubscription(session.uid) : false;
@@ -86,7 +91,7 @@ export default async function WorkPage({
           <div className="min-w-0 flex-1">
             <h1 className="mb-2 text-2xl font-extrabold leading-tight sm:text-3xl">{work.title}</h1>
             <div className="mb-4 flex flex-wrap items-center gap-3 text-sm muted">
-              <span>{work.author_name}</span>
+              <Link href={`/${l}/u/${work.author_id}`} className="hover:text-brand">{work.author_name}</Link>
               <RatingStars workId={work.id} initialAvg={String(work.rating_avg)} />
               <span>{work.words_total} {work.type === 'comic' ? 'stranica' : 'reči'}</span>
               <span>{chapters.length} glava</span>
@@ -155,6 +160,12 @@ export default async function WorkPage({
                 {canDonate ? <li>Podrži autora — dobrovoljni donat, bez obaveze</li> : null}
               </ul>
             </div>
+
+            {!isOwnWork ? (
+              <div className="mb-4">
+                <FollowButton authorId={work.author_id} initialFollowing={followingAuthor} initialFollowers={followers} lang={l} />
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-3">
               {owned ? (
