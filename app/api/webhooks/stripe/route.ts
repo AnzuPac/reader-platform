@@ -16,12 +16,23 @@ export async function POST(req: Request) {
   const signature = req.headers.get('stripe-signature') || '';
   const payload = await req.text();
 
+  // Fail-closed: без секрета вебхук не принимает НИЧЕГО. Раньше при пустом
+  // STRIPE_WEBHOOK_SECRET payload парсился как обычный JSON, и подделанное
+  // событие checkout.session.completed могло начислить монеты/покупку/подписку.
+  if (!secret) {
+    console.error('[stripe] STRIPE_WEBHOOK_SECRET is not set — refusing webhook');
+    return NextResponse.json({ error: 'webhook_secret_missing' }, { status: 503 });
+  }
+  if (!signature) {
+    return NextResponse.json({ error: 'missing_signature' }, { status: 400 });
+  }
+
   const { default: Stripe } = await import('stripe');
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
   let event: any;
   try {
-    event = secret ? stripe.webhooks.constructEvent(payload, signature, secret) : JSON.parse(payload);
+    event = stripe.webhooks.constructEvent(payload, signature, secret);
   } catch (e) {
     return NextResponse.json({ error: 'invalid_signature' }, { status: 400 });
   }

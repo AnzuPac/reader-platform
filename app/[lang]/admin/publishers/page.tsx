@@ -32,9 +32,11 @@ export default function AdminPublishersPage() {
   const [priceEur, setPriceEur] = useState('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('admin_token') || '';
-    setToken(saved);
-    if (saved) loadAll(saved);
+    // Сессия — в HttpOnly-cookie, выданной /api/admin/session.
+    fetch('/api/admin/session')
+      .then((r) => r.json())
+      .then((j) => { if (j?.admin) loadAll(''); })
+      .catch(() => {});
   }, []);
 
   function headers(tk = token): Record<string, string> {
@@ -54,8 +56,15 @@ export default function AdminPublishersPage() {
   }
 
   async function saveToken() {
-    localStorage.setItem('admin_token', token);
-    await loadAll(token);
+    const r = await fetch('/api/admin/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg(j.message || j.error || 'Токен не принят'); return; }
+    setToken('');
+    await loadAll('');
   }
 
   async function createPublisher(e: React.FormEvent) {

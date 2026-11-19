@@ -38,9 +38,12 @@ export default function AdminPage() {
   const [trs, setTrs] = useState<Array<{ id: number; work_title: string; chapter_number: number; target_lang: string; status: string; model: string | null }>>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('admin_token') || '';
-    setToken(saved);
-    if (saved) loadAll(saved);
+    // Токен не хранится в localStorage (его читает любой XSS).
+    // Сессия админа живёт в HttpOnly-cookie, выданной /api/admin/session.
+    fetch('/api/admin/session')
+      .then((r) => r.json())
+      .then((j) => { if (j?.admin) loadAll(''); })
+      .catch(() => {});
   }, []);
 
   function headers(tk = token): Record<string, string> {
@@ -89,9 +92,16 @@ export default function AdminPage() {
   }
 
   async function saveToken() {
-    localStorage.setItem('admin_token', token);
-    await loadAll(token);
-    setMsg('Токен сохранён');
+    const r = await fetch('/api/admin/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg('Ошибка: ' + (j.message || j.error || r.status)); return; }
+    setToken('');
+    await loadAll('');
+    setMsg('Сессия админа открыта на 8 часов');
   }
 
   async function workAction(slg: string, action: string) {
@@ -170,8 +180,8 @@ export default function AdminPage() {
       </p>
 
       <div className="card mb-5 flex flex-wrap items-center gap-2 p-4">
-        <input className="input max-w-xs" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен доступа" />
-        <button className="btn btn-ghost" onClick={saveToken}>Sačuvaj токен</button>
+        <input className="input max-w-xs" type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен доступа" autoComplete="off" />
+        <button className="btn btn-ghost" onClick={saveToken}>Otvori sesiju</button>
         {msg ? <span className="text-sm text-hot">{msg}</span> : null}
       </div>
 

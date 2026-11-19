@@ -1,12 +1,18 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { getJwtSecret } from './secrets';
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me-in-prod-32chars');
 export const ACCESS_COOKIE = 'rd_access';
 export const REFRESH_COOKIE = 'rd_refresh';
 const ACCESS_TTL = 60 * 60;           // 1 час
 const REFRESH_TTL = 60 * 60 * 24 * 30; // 30 дней
+
+// Секрет читается лениво: в production без JWT_SECRET приложение падает
+// на первом обращении к сессии, а не подписывает токены известной строкой.
+function secret(): Uint8Array {
+  return getJwtSecret();
+}
 
 export type Session = { uid: number; email: string; role: string; name: string };
 
@@ -23,7 +29,7 @@ export async function signAccess(s: Session): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${ACCESS_TTL}s`)
-    .sign(SECRET);
+    .sign(secret());
 }
 
 export async function readSession(): Promise<Session | null> {
@@ -31,7 +37,7 @@ export async function readSession(): Promise<Session | null> {
   const token = jar.get(ACCESS_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, secret());
     return { uid: Number(payload.uid), email: String(payload.email), role: String(payload.role), name: String(payload.name) };
   } catch {
     return null;
@@ -56,12 +62,12 @@ export async function signDeleteToken(uid: number): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('15m')
-    .sign(SECRET);
+    .sign(secret());
 }
 
 export async function verifyDeleteToken(token: string): Promise<number | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, secret());
     if (payload.purpose !== 'delete') return null;
     const uid = Number(payload.uid);
     return Number.isFinite(uid) && uid > 0 ? uid : null;

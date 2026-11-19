@@ -3,13 +3,13 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let query: any, one: any, repo: any, search: any;
+let query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, repo: any, search: any;
 
 beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-search-'));
   const db = await import('../lib/db');
   query = db.query;
-  one = db.one;
+  one = db.one as typeof one;
   await db.initSchema();
   repo = await import('../lib/repo');
   search = await import('../lib/search');
@@ -30,7 +30,7 @@ async function addWork(opts: {
     [opts.slug, u.id, opts.publisherId ?? null, opts.title, opts.kind ?? 'original',
       opts.classic ?? 0, opts.completion ?? 'ongoing']
   );
-  const workId = w[0].id;
+  const workId = Number(w[0].id);
   await query(
     `INSERT INTO chapters (work_id, number, title, content, status, access)
      VALUES ($1,1,'Glava 1','x','published',$2)`, [workId, opts.access ?? 'free']

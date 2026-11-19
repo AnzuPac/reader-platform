@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { catalogDict, type CatalogDict } from '@/lib/bookverse-i18n';
 import type { Lang } from '@/lib/i18n';
 
 export type SectionId = 'books' | 'fanfics' | 'comics';
+export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
 
 export type CatalogWork = {
   id: number;
@@ -17,15 +19,14 @@ export type CatalogWork = {
   rating: number;
   classic?: boolean;
   completed?: boolean;
+  cover?: string | null;
   tone: 'blue' | 'rose' | 'gold' | 'violet' | 'green' | 'orange';
 };
 
 const SECTION_IDS: SectionId[] = ['books', 'fanfics', 'comics'];
 
-/** Раздел каталога → категория произведения. */
-const SECTION_CATEGORY: Record<SectionId, CatalogWork['category']> = {
-  books: 'book', fanfics: 'fanfic', comics: 'manga',
-};
+/** Значение `kind` в URL для раздела каталога. */
+const SECTION_KIND: Record<SectionId, string> = { books: '', fanfics: 'fanfic', comics: 'comic' };
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: 'sr', label: 'SR' },
@@ -34,6 +35,17 @@ const LANGS: { code: Lang; label: string }[] = [
 ];
 
 function Cover({ work, series }: { work: CatalogWork; series: string }) {
+  const [broken, setBroken] = useState(false);
+  const src = work.cover ? (work.cover.startsWith('http') ? work.cover : work.cover) : '';
+  // Реальная обложка, если она есть; декоративная заглушка — только как fallback.
+  if (src && !broken) {
+    return (
+      <div className="bv-cover bv-cover--image">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={work.title} loading="lazy" onError={() => setBroken(true)} />
+      </div>
+    );
+  }
   return (
     <div className={`bv-cover bv-cover--${work.tone}`} aria-label={work.title}>
       <span className="bv-cover__ornament" />
@@ -63,39 +75,79 @@ function WorkCard({ work, lang, d }: { work: CatalogWork; lang: Lang; d: Catalog
 }
 
 export default function BookverseCatalog({
-  works, lang, initialQuery = '', initialSection = 'books',
+  works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
+  page = 1, hasMore = false, genre = '', source = '',
 }: {
   works: CatalogWork[];
   lang: Lang;
   initialQuery?: string;
   initialSection?: SectionId;
+  initialFilter?: CatalogFilter;
+  page?: number;
+  hasMore?: boolean;
+  genre?: string;
+  source?: string;
 }) {
   const d = catalogDict(lang);
-  const [section, setSection] = useState<SectionId>(initialSection);
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
-  const [typeFilter, setTypeFilter] = useState<'all' | CatalogWork['category']>('all');
-  const [filter, setFilter] = useState<'forYou' | 'popular' | 'fresh' | 'completed'>('forYou');
+  const [pending, setPending] = useState(false);
+  const firstRender = useRef(true);
 
+  const section = initialSection;
+  const filter = initialFilter;
   const copy = d.sections[section];
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const wanted: CatalogWork['category'] = typeFilter === 'all' ? SECTION_CATEGORY[section] : typeFilter;
-    let list = works.filter((w) => w.category === wanted);
-    list = list.filter((w) => !q || `${w.title} ${w.author}`.toLowerCase().includes(q));
-    if (filter === 'popular') list = [...list].sort((a, b) => b.rating - a.rating);
-    if (filter === 'completed') list = list.filter((w) => w.completed);
-    return list;
-  }, [works, section, query, typeFilter, filter]);
+  /** Единственный способ поменять состояние: собрать URL и уйти на него.
+   *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
+  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string }) {
+    const params = new URLSearchParams();
+    const q = next.q !== undefined ? next.q : query;
+    const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
+    const f = next.filter !== undefined ? next.filter : filter;
+    const p = next.page !== undefined ? next.page : 1;
+
+    if (q.trim()) params.set('q', q.trim());
+    if (kind) params.set('kind', kind);
+    if (next.type) params.set('type', next.type);
+    if (f !== 'forYou') params.set('filter', f);
+    if (genre) params.set('genre', genre);
+    if (source) params.set('source', source);
+    if (p > 1) params.set('page', String(p));
+
+    setPending(true);
+    const qs = params.toString();
+    router.push(`/${lang}/catalog${qs ? `?${qs}` : ''}`);
+  }
+
+  // Поиск: пока печатают — только локальное состояние, в URL уходит с задержкой.
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    const t = setTimeout(() => {
+      if (query !== initialQuery) go({ q: query, page: 1 });
+    }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  useEffect(() => { setPending(false); }, [works]);
 
   function switchLang(code: Lang) {
     const params = new URLSearchParams();
     if (query) params.set('q', query);
-    if (section === 'fanfics') params.set('kind', 'fanfic');
-    if (section === 'comics') params.set('kind', 'comic');
+    if (SECTION_KIND[section]) params.set('kind', SECTION_KIND[section]);
+    if (filter !== 'forYou') params.set('filter', filter);
+    if (page > 1) params.set('page', String(page));
     const qs = params.toString();
     window.location.href = `/${code}/catalog${qs ? `?${qs}` : ''}`;
   }
+
+  const filterLabels: [CatalogFilter, string][] = [
+    ['forYou', d.filters.forYou],
+    ['popular', d.filters.popular],
+    ['fresh', d.filters.fresh],
+    ['completed', d.filters.completed],
+  ];
 
   return (
     <main className={`bv-app bv-theme-${section}`}>
@@ -108,7 +160,7 @@ export default function BookverseCatalog({
         <nav className="bv-main-nav" aria-label={d.platform}>
           {SECTION_IDS.map((id) => (
             <button key={id} className={`bv-nav-item ${section === id ? 'is-active' : ''}`}
-              onClick={() => { setSection(id); setTypeFilter('all'); }}>
+              onClick={() => go({ kind: SECTION_KIND[id], page: 1 })}>
               <span className={`bv-nav-icon bv-nav-icon--${id}`}>{id === 'books' ? '▤' : id === 'fanfics' ? '✧' : '▧'}</span>
               <span>{d.sections[id].label}</span>
               {section === id ? <span className="bv-nav-item__active-dot" /> : null}
@@ -117,9 +169,9 @@ export default function BookverseCatalog({
         </nav>
         <div className="bv-sidebar__label bv-sidebar__label--spaced">{d.mySpace}</div>
         <nav className="bv-main-nav" aria-label={d.library}>
-          <Link href={`/${lang}/library`} className="bv-nav-item"><span className="bv-nav-icon">▣</span><span>{d.library}</span></Link>
-          <Link href={`/${lang}/library`} className="bv-nav-item"><span className="bv-nav-icon">◷</span><span>{d.history}</span></Link>
-          <Link href={`/${lang}/library`} className="bv-nav-item"><span className="bv-nav-icon">☆</span><span>{d.bookmarks}</span></Link>
+          <Link href={`/${lang}/library?tab=saved`} className="bv-nav-item"><span className="bv-nav-icon">▣</span><span>{d.library}</span></Link>
+          <Link href={`/${lang}/library?tab=history`} className="bv-nav-item"><span className="bv-nav-icon">◷</span><span>{d.history}</span></Link>
+          <Link href={`/${lang}/library?tab=bookmarks`} className="bv-nav-item"><span className="bv-nav-icon">☆</span><span>{d.bookmarks}</span></Link>
         </nav>
         <div className="bv-sidebar__bottom">
           <div className="bv-author-box">
@@ -144,8 +196,11 @@ export default function BookverseCatalog({
             <kbd>⌘ K</kbd>
           </label>
           <label className="bv-typefilter">
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} aria-label={d.allTypes}>
-              <option value="all">{d.allTypes}</option>
+            <select
+              value={section === 'comics' ? 'manga' : section === 'fanfics' ? 'fanfic' : 'book'}
+              onChange={(e) => go({ type: e.target.value === 'book' ? 'novel' : e.target.value, kind: e.target.value === 'book' ? '' : e.target.value === 'manga' ? 'comic' : 'fanfic', page: 1 })}
+              aria-label={d.allTypes}
+            >
               <option value="book">{d.sectionBooks}</option>
               <option value="fanfic">{d.sectionFanfics}</option>
               <option value="manga">{d.sectionComics}</option>
@@ -171,16 +226,13 @@ export default function BookverseCatalog({
 
         <div className="bv-content">
           <div className="bv-section-switcher" role="tablist" aria-label={d.platform}>
-            {SECTION_IDS.map((id) => {
-              const n = works.filter((w) => w.category === SECTION_CATEGORY[id]).length;
-              return (
-                <button role="tab" aria-selected={section === id} key={id}
-                  onClick={() => { setSection(id); setTypeFilter('all'); }}
-                  className={section === id ? 'is-active' : ''}>
-                  {d.sections[id].label} <span className="bv-tab-count">{n}</span>
-                </button>
-              );
-            })}
+            {SECTION_IDS.map((id) => (
+              <button role="tab" aria-selected={section === id} key={id}
+                onClick={() => go({ kind: SECTION_KIND[id], page: 1 })}
+                className={section === id ? 'is-active' : ''}>
+                {d.sections[id].label}
+              </button>
+            ))}
             <Link href={`/${lang}/library`} className="bv-switcher-link">{d.library}</Link>
           </div>
 
@@ -190,8 +242,8 @@ export default function BookverseCatalog({
               <h1>{copy.title}</h1>
               <p>{copy.subtitle}</p>
               <div className="bv-hero__actions">
-                <button className="bv-primary-button" onClick={() => setTypeFilter('all')}>{copy.action}<span>↗</span></button>
-                <button className="bv-text-link" onClick={() => { setQuery(''); setTypeFilter('all'); }}>{d.viewAll} <span>→</span></button>
+                <button className="bv-primary-button" onClick={() => go({ filter: 'forYou', page: 1 })}>{copy.action}<span>↗</span></button>
+                <button className="bv-text-link" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.viewAll} <span>→</span></button>
               </div>
             </div>
             <div className="bv-hero-art" aria-hidden="true">
@@ -209,17 +261,37 @@ export default function BookverseCatalog({
           <section className="bv-section-block">
             <div className="bv-section-heading">
               <div><span className="bv-kicker">{d.catalogKicker}</span><h2>{d.catalogTitle}</h2><p>{copy.subtitle}</p></div>
-              <button className="bv-view-all" onClick={() => setQuery('')}>{d.wholeCatalog} <span>→</span></button>
+              <button className="bv-view-all" onClick={() => { setQuery(''); go({ q: '', filter: 'forYou', page: 1 }); }}>{d.wholeCatalog} <span>→</span></button>
             </div>
             <div className="bv-filter-row">
-              {([['forYou', d.filters.forYou], ['popular', d.filters.popular], ['fresh', d.filters.fresh], ['completed', d.filters.completed]] as const).map(([key, label]) => (
-                <button key={key} onClick={() => setFilter(key)} className={filter === key ? 'is-active' : ''}>{label}</button>
+              {filterLabels.map(([key, label]) => (
+                <button key={key} onClick={() => go({ filter: key, page: 1 })} className={filter === key ? 'is-active' : ''}>{label}</button>
               ))}
             </div>
-            <div className="bv-work-grid">
-              {filtered.slice(0, 8).map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} />)}
+            <div className="bv-work-grid" style={{ opacity: pending ? 0.55 : 1 }}>
+              {works.map((w) => <WorkCard key={w.id} work={w} lang={lang} d={d} />)}
             </div>
-            {filtered.length === 0 ? <div className="bv-empty">{d.empty}</div> : null}
+            {works.length === 0 ? <div className="bv-empty">{d.empty}</div> : null}
+
+            <div className="bv-filter-row" style={{ justifyContent: 'center', marginTop: 16 }}>
+              <button
+                onClick={() => go({ page: Math.max(1, page - 1) })}
+                className={page <= 1 ? '' : 'is-active'}
+                disabled={page <= 1}
+                style={{ opacity: page <= 1 ? 0.4 : 1 }}
+              >
+                ← {lang === 'ru' ? 'Назад' : 'Prethodna'}
+              </button>
+              <span className="muted" style={{ alignSelf: 'center' }}>{lang === 'ru' ? 'Страница' : 'Strana'} {page}</span>
+              <button
+                onClick={() => go({ page: page + 1 })}
+                className={hasMore ? 'is-active' : ''}
+                disabled={!hasMore}
+                style={{ opacity: hasMore ? 1 : 0.4 }}
+              >
+                {lang === 'ru' ? 'Дальше' : 'Sledeća'} →
+              </button>
+            </div>
           </section>
 
           <section className="bv-promo-row">
@@ -240,9 +312,9 @@ export default function BookverseCatalog({
           <footer className="bv-footer">
             <span>© 2026 TEROLIBRARY</span><span>{d.footerTagline}</span>
             <div>
-              <Link href={`/${lang}`}>{d.footerAbout}</Link>
-              <Link href={`/${lang}`}>{d.footerRules}</Link>
-              <Link href={`/${lang}`}>{d.footerHelp}</Link>
+              <Link href={`/${lang}/about`}>{d.footerAbout}</Link>
+              <Link href={`/${lang}/rules`}>{d.footerRules}</Link>
+              <Link href={`/${lang}/help`}>{d.footerHelp}</Link>
             </div>
           </footer>
         </div>

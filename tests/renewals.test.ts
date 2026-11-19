@@ -3,13 +3,13 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let query: any, one: any, initSchema: any, runRenewalReminders: any;
+let query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, initSchema: any, runRenewalReminders: any;
 
 beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-renew-'));
   delete process.env.RESEND_API_KEY;
   const db = await import('../lib/db');
-  query = db.query; one = db.one; initSchema = db.initSchema;
+  query = db.query; one = db.one as typeof one; initSchema = db.initSchema;
   const rn = await import('../lib/renewals');
   runRenewalReminders = rn.runRenewalReminders;
   await initSchema();

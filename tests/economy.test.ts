@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let query: any, one: any, initSchema: any;
+let query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, initSchema: any;
 let coins: any, purchases: any, economy: any, subs: any, donations: any, earnings: any, royalty: any;
 
 let authorId = 0;
@@ -22,7 +22,7 @@ async function mkUser(email: string, role = 'reader') {
 beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-economy-'));
   const db = await import('../lib/db');
-  query = db.query; one = db.one; initSchema = db.initSchema;
+  query = db.query; one = db.one as typeof one; initSchema = db.initSchema;
   await initSchema();
 
   coins = await import('../lib/coins');

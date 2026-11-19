@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let query: any, one: any, initSchema: any;
+let query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, initSchema: any;
 let royalty: any, purchases: any, publisher: any;
 
 let buyerId = 0;
@@ -16,7 +16,7 @@ let neighbourChapter = 0;
 beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-purchases-'));
   const db = await import('../lib/db');
-  query = db.query; one = db.one; initSchema = db.initSchema;
+  query = db.query; one = db.one as typeof one; initSchema = db.initSchema;
   await initSchema();
 
   royalty = await import('../lib/royalty');

@@ -39,7 +39,9 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
   const tag = (opts.tag || '').trim();
   const excludeTags = (opts.excludeTags || []).map((t) => t.trim()).filter(Boolean);
   const sort = (opts.sort || 'new').trim();
-  const limit = Math.min(opts.limit ?? 24, 60);
+  // Потолок поднят до 100: страница каталога просит больше, чем 60,
+  // и раньше молча обрезалась (см. аудит, п.5). Пагинация — offset/limit.
+  const limit = Math.max(1, Math.min(opts.limit ?? 24, 100));
   const offset = opts.offset ?? 0;
   const params: unknown[] = [];
   const where: string[] = ["w.status = 'published'"];
@@ -146,6 +148,13 @@ export async function getChapter(id: number) {
 
 export async function saveProgress(userId: number, workId: number, chapterId: number, position: number, percent: number) {
   await ensure();
+  // Глава обязана принадлежать произведению: иначе прогресс можно записать
+  // на чужую/несуществующую пару work+chapter (аудит, п.16).
+  const ok = await query<{ ok: number }>(
+    "SELECT 1 AS ok FROM chapters WHERE id = $1 AND work_id = $2",
+    [chapterId, workId]
+  );
+  if (ok.length === 0) return false;
   await query(
     `INSERT INTO reading_progress (user_id, work_id, chapter_id, position, percent, updated_at)
      VALUES ($1,$2,$3,$4,$5,now())
@@ -154,6 +163,7 @@ export async function saveProgress(userId: number, workId: number, chapterId: nu
                    percent = EXCLUDED.percent, updated_at = now()`,
     [userId, workId, chapterId, position, percent]
   );
+  return true;
 }
 
 export async function isInLibrary(userId: number, workId: number): Promise<boolean> {

@@ -3,13 +3,13 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let one: any, query: any, initSchema: any, exportAccount: any, deleteAccount: any;
+let one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, initSchema: any, exportAccount: any, deleteAccount: any;
 let uid = 0;
 
 beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-account-'));
   const db = await import('../lib/db');
-  one = db.one; query = db.query; initSchema = db.initSchema;
+  one = db.one as typeof one; query = db.query; initSchema = db.initSchema;
   const acc = await import('../lib/account');
   exportAccount = acc.exportAccount; deleteAccount = acc.deleteAccount;
   await initSchema();

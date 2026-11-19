@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-let query: any, one: any, pc: any;
+let query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>, one: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T>, pc: any;
 
 /**
  * Комментарии к абзацам (ТЗ 4.6, 5.4).
@@ -15,7 +15,7 @@ beforeAll(async () => {
   process.env.SQLITE_DIR = mkdtempSync(path.join(tmpdir(), 'reader-pc-'));
   const db = await import('../lib/db');
   query = db.query;
-  one = db.one;
+  one = db.one as typeof one;
   await db.initSchema();
   pc = await import('../lib/paragraph-comments');
 });

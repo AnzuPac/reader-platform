@@ -1,9 +1,33 @@
 import { query, one } from './db';
+import { ADMIN_COOKIE, getAdminToken, safeEqual } from './secrets';
 
+/** Достаёт cookie по имени из заголовка запроса (без next/headers — функция синхронная). */
+function cookieValue(req: Request, name: string): string {
+  const raw = req.headers.get('cookie') || '';
+  for (const part of raw.split(';')) {
+    const i = part.indexOf('=');
+    if (i === -1) continue;
+    if (part.slice(0, i).trim() === name) {
+      return decodeURIComponent(part.slice(i + 1).trim());
+    }
+  }
+  return '';
+}
+
+/**
+ * Проверка админ-доступа. Fail-closed: если ADMIN_TOKEN не задан —
+ * доступ закрыт полностью (никаких дефолтных токенов).
+ * Токен принимается из заголовка X-Admin-Token или из HttpOnly-cookie,
+ * которую ставит /api/admin/session — так он не живёт в localStorage.
+ */
 export function adminTokenOk(req: Request): boolean {
-  const need = process.env.ADMIN_TOKEN || 'dev-admin-token';
-  const got = req.headers.get('x-admin-token') || '';
-  return got === need;
+  const need = getAdminToken();
+  if (!need) return false;
+  const header = (req.headers.get('x-admin-token') || '').trim();
+  if (header && safeEqual(header, need)) return true;
+  const fromCookie = cookieValue(req, ADMIN_COOKIE).trim();
+  if (fromCookie && safeEqual(fromCookie, need)) return true;
+  return false;
 }
 
 export async function ensureAuthor(): Promise<number> {
