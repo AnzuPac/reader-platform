@@ -32,3 +32,40 @@ export function regionAllowed(regions: string, region: string): boolean {
   if (list.includes('*')) return true;
   return list.includes(String(region || '').toUpperCase());
 }
+
+/* ------------------------------------------------------------------
+   Режим защиты произведения — то, что издатель видит в кабинете.
+   Названия режимов продуктовые: они не означают абсолютную защиту,
+   а DRM честно помечается как неподключённый.
+   ------------------------------------------------------------------ */
+
+export type ProtectionMode = 'standard' | 'enhanced';
+
+export type ProtectionInfo = {
+  mode: ProtectionMode;
+  drmConnected: boolean;
+  notes: string[];
+};
+
+export function protectionMode(input: {
+  exportPolicy?: string | null;
+  deviceLimit?: number | null;
+  hasLicense?: boolean;
+}): ProtectionInfo {
+  const notes: string[] = [];
+  let mode: ProtectionMode = 'standard';
+
+  if (input.exportPolicy === 'watermark' || Number(input.deviceLimit ?? 0) > 0) {
+    mode = 'enhanced';
+    notes.push('Динамическая метка и/или лимит устройств');
+  }
+  if (input.exportPolicy === 'original') {
+    notes.push('Правообладатель разрешил экспорт оригинала');
+  }
+  if (!input.hasLicense) {
+    notes.push('Лицензия не заполнена — действуют только базовые проверки прав');
+  }
+  notes.push('DRM (Readium LCP) не подключён: нужна отдельная интеграция и лицензия');
+
+  return { mode, drmConnected: false, notes };
+}

@@ -20,6 +20,10 @@ export type PublisherWorksRow = {
   sales: number; gross_cents: number; royalty_cents: number; commission_cents: number;
   rights_sale?: number; rights_subscription?: number; subscription_window_days?: number;
   regions?: string; tts_allowed?: number; free_excerpt_pct?: number;
+  /** Лицензия: если заполнена, режим защиты считается по ней. */
+  license_export_policy?: string | null;
+  license_ends_at?: string | null;
+  license_territory?: string | null;
 };
 
 export type ReportLine = {
@@ -68,12 +72,14 @@ export async function publisherWorks(publisherId: number): Promise<PublisherWork
   const rows = await query<Record<string, unknown>>(
     `SELECT w.id, w.slug, w.title, w.status, w.type,
             w.rights_sale, w.rights_subscription, w.subscription_window_days, w.regions, w.tts_allowed, w.free_excerpt_pct,
+            wl.export_policy AS license_export_policy, wl.ends_at AS license_ends_at, wl.territory AS license_territory,
             bp.amount_cents, bp.currency, bp.active,
             COALESCE(s.sales, 0) AS sales,
             COALESCE(s.gross, 0) AS gross_cents,
             COALESCE(r.royalty, 0) AS royalty_cents,
             COALESCE(r.commission, 0) AS commission_cents
        FROM works w
+       LEFT JOIN work_licenses wl ON wl.work_id = w.id AND wl.publisher_id = w.publisher_id
        LEFT JOIN book_prices bp ON bp.work_id = w.id
        LEFT JOIN (SELECT work_id, COUNT(*) AS sales, SUM(amount_cents) AS gross
                     FROM purchases WHERE status = 'paid' GROUP BY work_id) s ON s.work_id = w.id
@@ -97,6 +103,9 @@ export async function publisherWorks(publisherId: number): Promise<PublisherWork
     gross_cents: Number(r.gross_cents),
     royalty_cents: Number(r.royalty_cents),
     commission_cents: Number(r.commission_cents),
+    license_export_policy: r.license_export_policy == null ? null : String(r.license_export_policy),
+    license_ends_at: r.license_ends_at == null ? null : String(r.license_ends_at),
+    license_territory: r.license_territory == null ? null : String(r.license_territory),
   }));
 }
 

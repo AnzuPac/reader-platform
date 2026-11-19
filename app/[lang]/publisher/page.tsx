@@ -11,6 +11,7 @@ import PublisherPriceEditor from '@/components/PublisherPriceEditor';
 import PublisherRightsEditor from '@/components/PublisherRightsEditor';
 import PayoutForm from '@/components/PayoutForm';
 import PublisherMembers from '@/components/PublisherMembers';
+import { protectionMode } from '@/lib/rights';
 import PublisherLicenses from '@/components/PublisherLicenses';
 
 export const dynamic = 'force-dynamic';
@@ -160,6 +161,7 @@ export default async function PublisherPage({
                 <th className="px-4 py-2">Cena</th>
                 <th className="px-4 py-2">Prodaje</th>
                 <th className="px-4 py-2">Rojalit</th>
+                <th className="px-4 py-2">Zaštita</th>
               </tr>
             </thead>
             <tbody>
@@ -194,6 +196,20 @@ export default async function PublisherPage({
                   <td className="px-4 py-3">{w.sales}</td>
                   <td className="px-4 py-3">
                     {w.currency ? money(w.royalty_cents, w.currency) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {(() => {
+                      const mode = protectionMode({
+                        exportPolicy: w.license_export_policy ?? null,
+                        hasLicense: Boolean(w.license_territory),
+                      });
+                      return (
+                        <>
+                          <div className="font-semibold">{mode.mode === 'enhanced' ? 'Enhanced' : 'Standard'}</div>
+                          <div className="muted">DRM: {mode.drmConnected ? 'да' : 'не подключён'}</div>
+                        </>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}
