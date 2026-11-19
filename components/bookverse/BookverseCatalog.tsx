@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 
-export type SectionId = 'books' | 'selfpub' | 'fanfics' | 'comics';
+export type SectionId = 'books' | 'selfpub' | 'fanfics' | 'comics' | 'top';
 export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
 
 export type CatalogWork = {
@@ -25,8 +25,8 @@ export type CatalogWork = {
 
 export type CatalogGenre = { slug: string; name: string };
 
-const SECTION_KIND: Record<SectionId, string> = { books: '', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'comic' };
-const SECTION_COLOR: Record<SectionId, string> = { books: 'publisher', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'graphic' };
+const SECTION_KIND: Record<SectionId, string> = { books: '', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'comic', top: 'top' };
+const SECTION_COLOR: Record<SectionId, string> = { books: 'publisher', selfpub: 'selfpub', fanfics: 'fanfic', comics: 'graphic', top: 'top' };
 
 const TXT: Record<Lang, {
   books: string; selfpub: string; fanfics: string; manga: string;
@@ -38,12 +38,13 @@ const TXT: Record<Lang, {
   sourcePublisher: string; sourceSelf: string; sourceClassic: string;
   count: (n: number) => string; prev: string; next: string; empty: string;
   activeFilters: string; remove: string; tagPlaceholder: string; fandomPlaceholder: string;
+  topTab: string; topDesc: string; periods: Record<'all'|'year'|'month'|'week', string>;
 }> = {
   sr: {
     books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', manga: 'Grafička literatura',
-    titles: { books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', comics: 'Grafička literatura' },
-    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
-    descs: { books: 'Knjige izdavačkih kuća.', selfpub: 'Dela koja autori objavljuju sami.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.' },
+    titles: { books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', comics: 'Grafička literatura', top: 'Top' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
+    descs: { books: 'Knjige izdavačkih kuća.', selfpub: 'Dela koja autori objavljuju sami.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.', top: 'Najčitanije po periodu.' },
     filters: 'Filteri', all: 'Sve', popular: 'Popularno', fresh: 'Novo', completed: 'Završeno', rated: 'Visok rejting',
     sort: 'Sortiranje', sortRecommend: 'Preporučeno', sortPopular: 'Popularno', sortNew: 'Najnovije', sortRating: 'Po rejtingu',
     apply: 'Prikaži rezultate', reset: 'Resetuj', genre: 'Žanrovi', tags: 'Tagovi', fandom: 'Fandom', source: 'Izvor', ai: 'AI sadržaj',
@@ -51,12 +52,13 @@ const TXT: Record<Lang, {
     sourcePublisher: 'Izdavač', sourceSelf: 'Samizdat', sourceClassic: 'Klasici',
     count: (n) => `Pronađeno ${n} dela`, prev: 'Nazad', next: 'Napred', empty: 'Ništa nije pronađeno po ovim filterima.',
     activeFilters: 'Aktivni filteri', remove: 'Ukloni', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Naziv fandoma',
+    topTab: 'Top', topDesc: 'Najčitanije po periodu — u svakoj kategoriji.', periods: { all: 'Sve vreme', year: 'Godina', month: 'Mesec', week: 'Nedelja' },
   },
   ru: {
     books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', manga: 'Графическая литература',
-    titles: { books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', comics: 'Графическая литература' },
-    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
-    descs: { books: 'Книги издательских домов.', selfpub: 'Произведения, которые авторы публикуют сами.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.' },
+    titles: { books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', comics: 'Графическая литература', top: 'Топ' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
+    descs: { books: 'Книги издательских домов.', selfpub: 'Произведения, которые авторы публикуют сами.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.', top: 'Самое читаемое по периоду.' },
     filters: 'Фильтры', all: 'Все', popular: 'Популярное', fresh: 'Новинки', completed: 'Завершённые', rated: 'Высокий рейтинг',
     sort: 'Сортировка', sortRecommend: 'Рекомендованные', sortPopular: 'Популярные', sortNew: 'Сначала новые', sortRating: 'По рейтингу',
     apply: 'Показать результаты', reset: 'Сбросить', genre: 'Жанры', tags: 'Теги', fandom: 'Фандом', source: 'Источник', ai: 'AI-контент',
@@ -64,12 +66,13 @@ const TXT: Record<Lang, {
     sourcePublisher: 'Издательство', sourceSelf: 'Самиздат', sourceClassic: 'Классика',
     count: (n) => `Найдено ${n} произведений`, prev: 'Назад', next: 'Вперёд', empty: 'По этим фильтрам ничего не найдено.',
     activeFilters: 'Активные фильтры', remove: 'Убрать', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Название фандома',
+    topTab: 'Топ', topDesc: 'Самое читаемое по периоду — в каждой категории.', periods: { all: 'Всё время', year: 'Год', month: 'Месяц', week: 'Неделя' },
   },
   en: {
     books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', manga: 'Graphic literature',
-    titles: { books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', comics: 'Graphic literature' },
-    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE' },
-    descs: { books: 'Books from publishing houses.', selfpub: 'Works authors publish themselves.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.' },
+    titles: { books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', comics: 'Graphic literature', top: 'Top' },
+    eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
+    descs: { books: 'Books from publishing houses.', selfpub: 'Works authors publish themselves.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.', top: 'Most read by period.' },
     filters: 'Filters', all: 'All', popular: 'Popular', fresh: 'New', completed: 'Completed', rated: 'Top rated',
     sort: 'Sort', sortRecommend: 'Recommended', sortPopular: 'Popular', sortNew: 'Newest', sortRating: 'By rating',
     apply: 'Show results', reset: 'Reset', genre: 'Genres', tags: 'Tags', fandom: 'Fandom', source: 'Source', ai: 'AI content',
@@ -77,6 +80,7 @@ const TXT: Record<Lang, {
     sourcePublisher: 'Publisher', sourceSelf: 'Self-published', sourceClassic: 'Classics',
     count: (n) => `Found ${n} works`, prev: 'Prev', next: 'Next', empty: 'Nothing matches these filters.',
     activeFilters: 'Active filters', remove: 'Remove', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Fandom name',
+    topTab: 'Top', topDesc: 'Most read by period — in every category.', periods: { all: 'All time', year: 'Year', month: 'Month', week: 'Week' },
   },
 };
 
@@ -114,7 +118,7 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
-  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
+  page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -123,6 +127,8 @@ export default function BookverseCatalog({
   initialFilter?: CatalogFilter;
   page?: number;
   hasMore?: boolean;
+  tops?: Partial<Record<'publisher' | 'selfpub' | 'fanfic' | 'graphic', CatalogWork[]>>;
+  period?: string;
   genre?: string;
   source?: string;
   tag?: string;
@@ -143,7 +149,7 @@ export default function BookverseCatalog({
 
   function go(next: {
     q?: string; kind?: string; filter?: CatalogFilter; page?: number;
-    genre?: string; tag?: string; fandom?: string; source?: string; ai?: string;
+    genre?: string; tag?: string; fandom?: string; source?: string; ai?: string; period?: string;
   }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
@@ -154,6 +160,7 @@ export default function BookverseCatalog({
     const fd = next.fandom !== undefined ? next.fandom : fandom;
     const src = next.source !== undefined ? next.source : source;
     const ai = next.ai !== undefined ? next.ai : aiUsage;
+    const per = next.period !== undefined ? next.period : period;
     const p = next.page !== undefined ? next.page : 1;
     if (q.trim()) params.set('q', q.trim());
     if (kind) params.set('kind', kind);
@@ -163,6 +170,7 @@ export default function BookverseCatalog({
     if (fd) params.set('fandom', fd);
     if (src) params.set('source', src);
     if (ai) params.set('ai', ai);
+    if (per && per !== 'all') params.set('period', per);
     if (p > 1) params.set('page', String(p));
     const qs = params.toString();
     router.push(`/${lang}/catalog${qs ? `?${qs}` : ''}`);
@@ -178,17 +186,69 @@ export default function BookverseCatalog({
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
+  if (initialSection === 'top') {
+    const cats: { key: 'publisher' | 'selfpub' | 'fanfic' | 'graphic'; label: string; color: string; href: string }[] = [
+      { key: 'publisher', label: t.books, color: '#5b6779', href: `/${lang}/catalog?kind=publisher` },
+      { key: 'selfpub', label: t.selfpub, color: '#2f6fb7', href: `/${lang}/catalog?kind=selfpub` },
+      { key: 'fanfic', label: t.fanfics, color: '#9061c4', href: `/${lang}/catalog?kind=fanfic` },
+      { key: 'graphic', label: t.manga, color: '#df843b', href: `/${lang}/catalog?kind=comic` },
+    ];
+    const periodList: [string, string][] = [
+      ['all', t.periods.all], ['year', t.periods.year], ['month', t.periods.month], ['week', t.periods.week],
+    ];
+    return (
+      <main id="main" className="shell">
+        <nav className="subnav" aria-label="Categories">
+          {(['books', 'selfpub', 'fanfics', 'comics', 'top'] as SectionId[]).map((sec) => (
+            <button
+              key={sec}
+              className={`subnav-btn subnav-btn--${SECTION_COLOR[sec]} ${sec === 'top' ? 'active' : ''}`}
+              onClick={() => go({ kind: kindFor(sec), page: 1 })}
+            >
+              {sec === 'books' ? t.books : sec === 'selfpub' ? t.selfpub : sec === 'fanfics' ? t.fanfics : sec === 'comics' ? t.manga : t.topTab}
+            </button>
+          ))}
+        </nav>
+        <div className="row catalog-title">
+          <div>
+            <div className="eyebrow">TEROLIBRARY · TOP</div>
+            <h1>{t.topTab}</h1>
+            <p className="muted">{t.topDesc}</p>
+          </div>
+        </div>
+        <div className="catalog-controls">
+          {periodList.map(([key, label]) => (
+            <button key={key} className={`chip ${period === key ? 'selected' : ''}`} onClick={() => go({ period: key, page: 1 })}>{label}</button>
+          ))}
+        </div>
+        {cats.map((c) => (
+          <div className="section" key={c.key}>
+            <div className="sectionhead">
+              <h2 style={{ color: c.color }}>{c.label}</h2>
+              <Link className="btn" href={c.href}>{t.all} →</Link>
+            </div>
+            {(tops[c.key] && tops[c.key]!.length) ? (
+              <div className="grid">{tops[c.key]!.map((w) => <Card key={w.id} w={w} lang={lang} t={t} />)}</div>
+            ) : (
+              <div className="panel muted" style={{ textAlign: 'center' }}>{t.empty}</div>
+            )}
+          </div>
+        ))}
+      </main>
+    );
+  }
+
   return (
     <main id="main" className="shell">
       <div className={`tlp-cat-category ${initialSection}`}>
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'selfpub', 'fanfics', 'comics'] as SectionId[]).map((s) => (
+          {(['books', 'selfpub', 'fanfics', 'comics', 'top'] as SectionId[]).map((s) => (
             <button
               key={s}
               className={`subnav-btn subnav-btn--${SECTION_COLOR[s]} ${initialSection === s ? 'active' : ''}`}
               onClick={() => go({ kind: kindFor(s), source: s === 'books' || s === 'selfpub' ? '' : source, page: 1 })}
             >
-              {s === 'books' ? t.books : s === 'selfpub' ? t.selfpub : s === 'fanfics' ? t.fanfics : t.manga}
+              {s === 'books' ? t.books : s === 'selfpub' ? t.selfpub : s === 'fanfics' ? t.fanfics : s === 'comics' ? t.manga : t.topTab}
             </button>
           ))}
         </nav>

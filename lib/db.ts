@@ -217,6 +217,19 @@ async function migrateSqlite(db: any) {
     }
   }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
+  // Топы по периодам: суммарного views_total мало — нужна история просмотров.
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS work_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      work_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS work_views_work_idx ON work_views(work_id, created_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS work_views_created_idx ON work_views(created_at)');
+  } catch (e: any) {
+    migrationFailures.push({ name: 'work_views', error: String(e?.message || e) });
+  }
+
   try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
   try { db.exec('UPDATE works SET paragraph_comments_enabled = 0 WHERE publisher_id IS NOT NULL AND paragraph_comments_enabled = 1'); } catch {}
   // Старые комментарии main лежали в body — переносим в text (новая фича читает его).
@@ -405,6 +418,19 @@ async function migratePg(db: any) {
     }
   }
   try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
+  // Топы по периодам: история просмотров.
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS work_views (
+      id BIGSERIAL PRIMARY KEY,
+      work_id BIGINT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await db.query('CREATE INDEX IF NOT EXISTS work_views_work_idx ON work_views(work_id, created_at)');
+    await db.query('CREATE INDEX IF NOT EXISTS work_views_created_idx ON work_views(created_at)');
+  } catch (e: any) {
+    migrationFailures.push({ name: 'work_views', error: String(e?.message || e) });
+  }
+
   try { await db.query('UPDATE works SET translit_allowed = FALSE WHERE publisher_id IS NOT NULL AND translit_allowed = TRUE'); } catch {}
   // Старые комментарии main лежали в body — переносим в text (новая фича читает его).
   try { await db.query("UPDATE paragraph_comments SET text = body WHERE (text IS NULL OR text = '') AND body IS NOT NULL"); } catch {}

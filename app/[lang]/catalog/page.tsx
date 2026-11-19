@@ -1,5 +1,5 @@
 import { isLang, type Lang } from '@/lib/i18n';
-import { listWorks, listGenres, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { listWorks, listGenres, listTopWorks, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
 import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
@@ -44,10 +44,14 @@ export default async function CatalogPage({
   const page = Math.max(1, Math.min(Number(str(sp.page)) || 1, 500));
 
   const section: SectionId =
-    typeParam === 'manga' || kind === 'comic' || kind === 'manga' ? 'comics'
-      : typeParam === 'fanfic' || kind === 'fanfic' ? 'fanfics'
-        : kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub'
-          : 'books';
+    kind === 'top' || typeParam === 'top' ? 'top'
+      : typeParam === 'manga' || kind === 'comic' || kind === 'manga' ? 'comics'
+        : typeParam === 'fanfic' || kind === 'fanfic' ? 'fanfics'
+          : kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub'
+            : 'books';
+
+  const periodRaw = str(sp.period);
+  const period = periodRaw === 'year' || periodRaw === 'month' || periodRaw === 'week' ? periodRaw : 'all';
 
   // Сортировка и фильтры выполняются на сервере, а не по обрезанной выборке.
   const opts: ListWorksOpts = {
@@ -74,10 +78,12 @@ export default async function CatalogPage({
   if (section === 'books' || section === 'selfpub') opts.type = 'novel';
 
   let rows: Row[] = [];
-  try {
-    rows = (await listWorks(opts)) as unknown as Row[];
-  } catch {
-    rows = [];
+  if (section !== 'top') {
+    try {
+      rows = (await listWorks(opts)) as unknown as Row[];
+    } catch {
+      rows = [];
+    }
   }
 
   // Состояние пользователя и прогресс — чтобы каталог не показывал «Guest»
@@ -113,6 +119,35 @@ export default async function CatalogPage({
     };
   });
 
+  // Топ по периодам: четыре категории, одна выборка на каждую.
+  const toCards = (list: Awaited<ReturnType<typeof listTopWorks>>): CatalogWork[] => list.map((w) => {
+    const category: CatalogWork['category'] =
+      w.kind === 'fanfic' ? 'fanfic' : w.type === 'comic' ? 'manga' : 'book';
+    return {
+      id: w.id,
+      slug: w.slug,
+      title: w.title,
+      author: w.author_name,
+      description: w.description || '',
+      category,
+      rating: Number(w.rating_avg) || 0,
+      classic: Boolean(w.is_classic),
+      aiUsage: w.ai_usage || 'not_declared',
+      completed: w.completion === 'completed',
+      cover: w.cover_path || null,
+      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
+    };
+  });
+
+  const tops = section === 'top'
+    ? {
+        publisher: toCards(await listTopWorks({ period, category: 'publisher', limit: 10 }).catch(() => [])),
+        selfpub: toCards(await listTopWorks({ period, category: 'selfpub', limit: 10 }).catch(() => [])),
+        fanfic: toCards(await listTopWorks({ period, category: 'fanfic', limit: 10 }).catch(() => [])),
+        graphic: toCards(await listTopWorks({ period, category: 'graphic', limit: 10 }).catch(() => [])),
+      }
+    : undefined;
+
   const genresRaw = await listGenres().catch(() => []);
   const genres = genresRaw.map((g) => ({ slug: g.slug, name: l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr }));
 
@@ -131,6 +166,8 @@ export default async function CatalogPage({
       fandom={fandom}
       aiUsage={aiUsage || ''}
       genres={genres}
+      tops={tops}
+      period={period}
     />
   );
 }

@@ -427,3 +427,63 @@ export async function countLibraryUpdates(userId: number, days = 7): Promise<num
   );
   return Number(rows[0]?.n ?? 0);
 }
+
+/* ───────────── Топы по периодам ───────────── */
+
+export type TopPeriod = 'all' | 'year' | 'month' | 'week';
+export type TopCategory = 'publisher' | 'selfpub' | 'fanfic' | 'graphic';
+
+const TOP_CATEGORY_SQL: Record<TopCategory, string> = {
+  publisher: "w.publisher_id IS NOT NULL AND w.kind <> 'fanfic'",
+  selfpub: "w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = FALSE",
+  fanfic: "w.kind = 'fanfic'",
+  graphic: "w.type = 'comic'",
+};
+
+/** Просмотр произведения: пишем событие для топов по периодам.
+ *  Ошибка статистики не должна ломать страницу. */
+export async function recordWorkView(workId: number): Promise<void> {
+  await ensure();
+  try {
+    await query('INSERT INTO work_views (work_id) VALUES ($1)', [workId]);
+  } catch { /* ignore */ }
+}
+
+/** Топ произведений категории за период.
+ *  «Всё время» — по суммарному счётчику; год/месяц/неделя — по событиям work_views. */
+export async function listTopWorks(opts: {
+  period?: TopPeriod; category?: TopCategory; limit?: number;
+} = {}): Promise<WorkCard[]> {
+  await ensure();
+  const period = opts.period || 'all';
+  const category = opts.category || 'publisher';
+  const limit = Math.max(1, Math.min(opts.limit ?? 10, 50));
+  const cat = TOP_CATEGORY_SQL[category];
+
+  const base = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
+                 w.age_rating, w.completion, w.cover_path, w.type, w.kind,
+                 CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
+                 w.is_classic, w.publisher_id, w.ai_usage, u.display_name AS author_name
+                 FROM works w JOIN users u ON u.id = w.author_id`;
+
+  if (period === 'all') {
+    return query<WorkCard>(
+      `${base} WHERE w.status = 'published' AND ${cat}
+        ORDER BY w.views_total DESC, w.rating_avg DESC LIMIT $1`,
+      [limit],
+    );
+  }
+
+  const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
+  const pg = Boolean(process.env.DATABASE_URL);
+  const cutoff = pg ? `NOW() - INTERVAL '${days} days'` : `datetime('now','-${days} days')`;
+
+  return query<WorkCard>(
+    `${base} JOIN work_views v ON v.work_id = w.id
+      WHERE w.status = 'published' AND ${cat} AND v.created_at >= ${cutoff}
+      GROUP BY w.id
+      ORDER BY COUNT(v.id) DESC, w.views_total DESC
+      LIMIT $1`,
+    [limit],
+  );
+}
