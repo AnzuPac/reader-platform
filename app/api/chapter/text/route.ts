@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     }
   }
 
-  const rl = rateLimit(`chapter-text:${session?.uid ?? clientKey(req, 'anon')}`, 60, 60_000);
+  const rl = await rateLimit(`chapter-text:${session?.uid ?? clientKey(req, 'anon')}`, 60, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: 'too_many_requests', retryAfter: rl.retryAfter },

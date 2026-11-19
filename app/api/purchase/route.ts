@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const s = await readSession();
   if (!s) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
 
-  const rl = rateLimit(`purchase:${s.uid}`, 10, 60_000);
+  const rl = await rateLimit(`purchase:${s.uid}`, 10, 60_000);
   if (!rl.ok) {
     return NextResponse.json({ error: 'too_many_requests', retryAfter: rl.retryAfter }, { status: 429 });
   }

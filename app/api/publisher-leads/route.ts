@@ -9,7 +9,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /** POST /api/publisher-leads — заявка со страницы для издателей. */
 export async function POST(req: Request) {
-  const rl = rateLimit(clientKey(req, 'publisher-lead'), 5, 10 * 60_000);
+  const rl = await rateLimit(clientKey(req, 'publisher-lead'), 5, 10 * 60_000);
   if (!rl.ok) {
     return NextResponse.json({ error: 'too_many_requests', retryAfter: rl.retryAfter }, { status: 429 });
   }

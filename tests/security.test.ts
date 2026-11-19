@@ -3,12 +3,12 @@ import { rateLimit } from '../lib/ratelimit';
 import { decideDevice, deviceFingerprint, DEVICE_LIMIT } from '../lib/devices';
 
 describe('rate limit выдачи текста', () => {
-  it('пропускает 60 запросов в минуту и блокирует 61-й', () => {
+  it('пропускает 60 запросов в минуту и блокирует 61-й', async () => {
     const key = `chapter-text:test-${Date.now()}`;
     for (let i = 0; i < 60; i += 1) {
-      expect(rateLimit(key, 60, 60_000).ok).toBe(true);
+      expect((await rateLimit(key, 60, 60_000)).ok).toBe(true);
     }
-    const blocked = rateLimit(key, 60, 60_000);
+    const blocked = await rateLimit(key, 60, 60_000);
     expect(blocked.ok).toBe(false);
     expect(blocked.retryAfter).toBeGreaterThan(0);
   });

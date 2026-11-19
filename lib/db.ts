@@ -60,6 +60,12 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN canceled_at TEXT',
     'ALTER TABLE subscriptions ADD COLUMN reminder_sent_at TEXT',
     'ALTER TABLE plans ADD COLUMN max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
+    `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+       scope_key TEXT PRIMARY KEY,
+       hits      INTEGER NOT NULL DEFAULT 0,
+       reset_at  TEXT NOT NULL
+     )`,
   ];
   for (const sql of alters) { try { db.exec(sql); } catch {} }
   try { db.exec('CREATE INDEX IF NOT EXISTS works_publisher_idx ON works(publisher_id)'); } catch {}
@@ -114,6 +120,12 @@ async function migratePg(db: any) {
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ',
     'ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ',
     'ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_profiles SMALLINT NOT NULL DEFAULT 1',
+    // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
+    `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+       scope_key TEXT PRIMARY KEY,
+       hits      INTEGER NOT NULL DEFAULT 0,
+       reset_at  TEXT NOT NULL
+     )`,
   ];
   for (const sql of alters) { try { await db.query(sql); } catch {} }
   try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}

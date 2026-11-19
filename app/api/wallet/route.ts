@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, settings });
   }
 
-  const rl = rateLimit(`wallet:${s.uid}`, 10, 60_000);
+  const rl = await rateLimit(`wallet:${s.uid}`, 10, 60_000);
   if (!rl.ok) return NextResponse.json({ error: 'too_many_requests', retryAfter: rl.retryAfter }, { status: 429 });
 
   const packageCode = String(b?.packageCode || '');

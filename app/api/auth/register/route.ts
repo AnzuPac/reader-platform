@@ -5,7 +5,7 @@ import { rateLimit, clientKey } from '@/lib/ratelimit';
 import { randomUUID } from 'node:crypto';
 
 export async function POST(req: Request) {
-  const rl = rateLimit(clientKey(req, 'register'), 5, 60 * 60_000);
+  const rl = await rateLimit(clientKey(req, 'register'), 5, 60 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: 'too_many_attempts', retryAfter: rl.retryAfter }, { status: 429 });
   const body = await req.json().catch(() => null);
   const email = String(body?.email || '').trim().toLowerCase();

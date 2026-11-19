@@ -4,7 +4,7 @@ import { verifyPassword, setSessionCookies } from '@/lib/auth';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 
 export async function POST(req: Request) {
-  const rl = rateLimit(clientKey(req, 'login'), 10, 5 * 60_000);
+  const rl = await rateLimit(clientKey(req, 'login'), 10, 5 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: 'too_many_attempts', retryAfter: rl.retryAfter }, { status: 429 });
   const body = await req.json().catch(() => null);
   const email = String(body?.email || '').trim().toLowerCase();

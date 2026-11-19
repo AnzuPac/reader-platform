@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { isLang, t, LANGS, type Lang } from '@/lib/i18n';
 import Chrome from '@/components/Chrome';
+import SessionKeeper from '@/components/SessionKeeper';
 
 export default async function LangLayout({
   children,
@@ -65,6 +66,7 @@ export default async function LangLayout({
         </div>
       </footer>
       )}>
+      <SessionKeeper />
       {children}
     </Chrome>
   );

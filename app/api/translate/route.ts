@@ -9,7 +9,7 @@ import { encodeWatermark } from '@/lib/watermark';
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
-  const rl = rateLimit(clientKey(req, 'translate'), 20, 10 * 60_000);
+  const rl = await rateLimit(clientKey(req, 'translate'), 20, 10 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: 'too_many_requests', retryAfter: rl.retryAfter }, { status: 429 });
   const b = await req.json().catch(() => null);
   const chapterId = Number(b?.chapterId);
