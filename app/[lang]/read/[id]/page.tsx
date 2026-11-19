@@ -7,6 +7,7 @@ import { chapterGate, workPrice, effectiveChapterPrice } from '@/lib/purchases';
 import { translitSr } from '@/lib/sr';
 import { flag } from '@/lib/search';
 import { one } from '@/lib/db';
+import { recordReadingEvent, evaluateAchievements } from '@/lib/reader-profile';
 import ReaderClient from '@/components/ReaderClient';
 import ReaderTTS from '@/components/ReaderTTS';
 import AdSlot from '@/components/AdSlot';
@@ -41,6 +42,12 @@ export default async function ReadPage({
   const session = await readSession();
   const gate = await chapterGate({ id: ch.id, work_id: ch.work_id, access: ch.access }, session);
   const locked = !gate.allowed;
+
+  // Журнал чтения и достижения: только когда глава действительно открыта.
+  if (session && !locked) {
+    await recordReadingEvent(session.uid, ch.work_id, ch.id);
+    void evaluateAchievements(session.uid).catch(() => {});
+  }
   const bookPrice = ch.access === 'paid' ? await workPrice(ch.work_id) : null;
   const chapterPrice = ch.access === 'paid'
     ? await effectiveChapterPrice({ id: ch.id, work_id: ch.work_id, price_cents: ch.price_cents })

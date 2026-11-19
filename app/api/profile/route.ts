@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSession } from '@/lib/auth';
 import { getProfile, updateProfile } from '@/lib/profiles';
+import { updateProfileExtras, getPrivacy } from '@/lib/reader-profile';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,13 @@ export async function PATCH(req: Request) {
   if (!s) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
 
   const body = await req.json().catch(() => null);
+  const extras = await updateProfileExtras(s.uid, {
+    bio: typeof body?.bio === 'string' ? body.bio : undefined,
+    coverUrl: body?.coverUrl === null ? null : (typeof body?.coverUrl === 'string' ? body.coverUrl : undefined),
+    privacy: body?.privacy && typeof body.privacy === 'object' ? body.privacy : undefined,
+  });
+  if (!extras) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
+
   const ok = await updateProfile(s.uid, {
     name: typeof body?.name === 'string' ? body.name : undefined,
     bio: typeof body?.bio === 'string' ? body.bio : undefined,
@@ -26,5 +34,5 @@ export async function PATCH(req: Request) {
     isPublic: typeof body?.isPublic === 'boolean' ? body.isPublic : undefined,
   });
   if (!ok) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, privacy: await getPrivacy(s.uid) });
 }

@@ -230,6 +230,61 @@ async function migrateSqlite(db: any) {
     migrationFailures.push({ name: 'work_views', error: String(e?.message || e) });
   }
 
+
+  // Профиль читателя: настройки, журнал чтения, достижения.
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS user_profile (
+      user_id INTEGER PRIMARY KEY,
+      bio TEXT,
+      cover_url TEXT,
+      public_profile INTEGER NOT NULL DEFAULT 1,
+      show_history INTEGER NOT NULL DEFAULT 1,
+      show_library INTEGER NOT NULL DEFAULT 1,
+      show_bookmarks INTEGER NOT NULL DEFAULT 1,
+      show_achievements INTEGER NOT NULL DEFAULT 1,
+      show_genres INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`);
+    db.exec(`CREATE TABLE IF NOT EXISTS reading_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      work_id INTEGER NOT NULL,
+      chapter_id INTEGER,
+      event_type TEXT NOT NULL DEFAULT 'opened',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS reading_events_user_idx ON reading_events(user_id, created_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS reading_events_chapter_idx ON reading_events(user_id, chapter_id)');
+    db.exec(`CREATE TABLE IF NOT EXISTS achievement_definitions (
+      key TEXT PRIMARY KEY,
+      title_sr TEXT NOT NULL, title_ru TEXT NOT NULL, title_en TEXT NOT NULL,
+      desc_sr TEXT NOT NULL, desc_ru TEXT NOT NULL, desc_en TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '★',
+      category TEXT NOT NULL DEFAULT 'reading',
+      threshold INTEGER NOT NULL DEFAULT 1,
+      enabled INTEGER NOT NULL DEFAULT 1
+    )`);
+    db.exec(`CREATE TABLE IF NOT EXISTS user_achievements (
+      user_id INTEGER NOT NULL,
+      achievement_key TEXT NOT NULL,
+      unlocked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      progress INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, achievement_key)
+    )`);
+    const seed = [
+      ['first_read','Prvo čitanje','Первое чтение','First read','Otvorena prva glava.','Открыта первая глава.','Opened the first chapter.','📖','reading',1],
+      ['chapters_10','10 glava','10 глав','10 chapters','Pročitano 10 glava.','Прочитано 10 глав.','Read 10 chapters.','📚','reading',10],
+      ['chapters_50','50 glava','50 глав','50 chapters','Pročitano 50 glava.','Прочитано 50 глав.','Read 50 chapters.','📚','reading',50],
+      ['chapters_100','100 glava','100 глав','100 chapters','Pročitano 100 glava.','Прочитано 100 глав.','Read 100 chapters.','🏆','reading',100],
+      ['first_bookmark','Prva zabeleška','Первая закладка','First bookmark','Sačuvana prva zabeleška.','Сохранена первая закладка.','Saved the first bookmark.','🔖','social',1],
+      ['library_first','Prvo delo u biblioteci','Первое произведение в библиотеке','First work in library','Delo je dodato u biblioteku.','Произведение добавлено в библиотеку.','Added a work to the library.','📌','social',1],
+      ['first_completed','Prvo završeno delo','Первое завершённое произведение','First completed work','Delo je označeno kao završeno.','Произведение отмечено завершённым.','Marked a work as completed.','✅','reading',1],
+    ];
+    const ins = db.prepare('INSERT OR IGNORE INTO achievement_definitions (key,title_sr,title_ru,title_en,desc_sr,desc_ru,desc_en,icon,category,threshold) VALUES (?,?,?,?,?,?,?,?,?,?)');
+    for (const row of seed) ins.run(...row);
+  } catch (e: any) {
+    migrationFailures.push({ name: 'reader_profile', error: String(e?.message || e) });
+  }
   try { db.exec('UPDATE works SET translit_allowed = 0 WHERE publisher_id IS NOT NULL AND translit_allowed = 1'); } catch {}
   try { db.exec('UPDATE works SET paragraph_comments_enabled = 0 WHERE publisher_id IS NOT NULL AND paragraph_comments_enabled = 1'); } catch {}
   // Старые комментарии main лежали в body — переносим в text (новая фича читает его).
@@ -418,6 +473,65 @@ async function migratePg(db: any) {
     }
   }
   try { await db.query('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
+  // Профиль читателя: настройки, журнал чтения, достижения.
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS user_profile (
+      user_id BIGINT PRIMARY KEY,
+      bio TEXT,
+      cover_url TEXT,
+      public_profile BOOLEAN NOT NULL DEFAULT TRUE,
+      show_history BOOLEAN NOT NULL DEFAULT TRUE,
+      show_library BOOLEAN NOT NULL DEFAULT TRUE,
+      show_bookmarks BOOLEAN NOT NULL DEFAULT TRUE,
+      show_achievements BOOLEAN NOT NULL DEFAULT TRUE,
+      show_genres BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await db.query(`CREATE TABLE IF NOT EXISTS reading_events (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL,
+      work_id BIGINT NOT NULL,
+      chapter_id BIGINT,
+      event_type TEXT NOT NULL DEFAULT 'opened',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await db.query('CREATE INDEX IF NOT EXISTS reading_events_user_idx ON reading_events(user_id, created_at)');
+    await db.query('CREATE INDEX IF NOT EXISTS reading_events_chapter_idx ON reading_events(user_id, chapter_id)');
+    await db.query(`CREATE TABLE IF NOT EXISTS achievement_definitions (
+      key TEXT PRIMARY KEY,
+      title_sr TEXT NOT NULL, title_ru TEXT NOT NULL, title_en TEXT NOT NULL,
+      desc_sr TEXT NOT NULL, desc_ru TEXT NOT NULL, desc_en TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '★',
+      category TEXT NOT NULL DEFAULT 'reading',
+      threshold INTEGER NOT NULL DEFAULT 1,
+      enabled BOOLEAN NOT NULL DEFAULT TRUE
+    )`);
+    await db.query(`CREATE TABLE IF NOT EXISTS user_achievements (
+      user_id BIGINT NOT NULL,
+      achievement_key TEXT NOT NULL,
+      unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      progress INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, achievement_key)
+    )`);
+    const seed = [
+      ['first_read','Prvo čitanje','Первое чтение','First read','Otvorena prva glava.','Открыта первая глава.','Opened the first chapter.','📖','reading',1],
+      ['chapters_10','10 glava','10 глав','10 chapters','Pročitano 10 glava.','Прочитано 10 глав.','Read 10 chapters.','📚','reading',10],
+      ['chapters_50','50 glava','50 глав','50 chapters','Pročitano 50 glava.','Прочитано 50 глав.','Read 50 chapters.','📚','reading',50],
+      ['chapters_100','100 glava','100 глав','100 chapters','Pročitano 100 glava.','Прочитано 100 глав.','Read 100 chapters.','🏆','reading',100],
+      ['first_bookmark','Prva zabeleška','Первая закладка','First bookmark','Sačuvana prva zabeleška.','Сохранена первая закладка.','Saved the first bookmark.','🔖','social',1],
+      ['library_first','Prvo delo u biblioteci','Первое произведение в библиотеке','First work in library','Delo je dodato u biblioteku.','Произведение добавлено в библиотеку.','Added a work to the library.','📌','social',1],
+      ['first_completed','Prvo završeno delo','Первое завершённое произведение','First completed work','Delo je označeno kao završeno.','Произведение отмечено завершённым.','Marked a work as completed.','✅','reading',1],
+    ];
+    for (const row of seed) {
+      await db.query(
+        'INSERT INTO achievement_definitions (key,title_sr,title_ru,title_en,desc_sr,desc_ru,desc_en,icon,category,threshold) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (key) DO NOTHING',
+        row,
+      );
+    }
+  } catch (e: any) {
+    migrationFailures.push({ name: 'reader_profile', error: String(e?.message || e) });
+  }
+
   // Топы по периодам: история просмотров.
   try {
     await db.query(`CREATE TABLE IF NOT EXISTS work_views (
