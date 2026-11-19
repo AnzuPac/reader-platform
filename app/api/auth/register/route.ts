@@ -3,6 +3,7 @@ import { query, initSchema } from '@/lib/db';
 import { hashPassword, setSessionCookies } from '@/lib/auth';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 import { randomUUID } from 'node:crypto';
+import { MIN_AGE, calcAge, parseBirthDate } from '@/lib/age';
 
 export async function POST(req: Request) {
   const rl = await rateLimit(clientKey(req, 'register'), 5, 60 * 60_000);
@@ -14,15 +15,25 @@ export async function POST(req: Request) {
   if (!email || !password || !name) return NextResponse.json({ error: 'err_required' }, { status: 400 });
   if (password.length < 8) return NextResponse.json({ error: 'weak_password' }, { status: 400 });
 
+  // Дата рождения: хранится в профиле, публично не показывается, нужна для
+  // возрастных ограничений, агрегатов и подарка на день рождения.
+  const rawBirthDate = String(body?.birthDate || '').trim();
+  if (!rawBirthDate) return NextResponse.json({ error: 'birthdate_required' }, { status: 400 });
+  const birth = parseBirthDate(rawBirthDate);
+  if (!birth) return NextResponse.json({ error: 'birthdate_invalid' }, { status: 400 });
+  if (calcAge(birth) < MIN_AGE) {
+    return NextResponse.json({ error: 'too_young', minAge: MIN_AGE }, { status: 403 });
+  }
+
   await initSchema();
   const exists = await query<{ id: number }>('SELECT id FROM users WHERE email = $1', [email]);
   if (exists.length) return NextResponse.json({ error: 'err_exists' }, { status: 409 });
 
   const hash = await hashPassword(password);
   const rows = await query<{ id: number; email: string; role: string; display_name: string }>(
-    `INSERT INTO users (email, password_hash, display_name) VALUES ($1,$2,$3)
+    `INSERT INTO users (email, password_hash, display_name, birth_date) VALUES ($1,$2,$3,$4)
      RETURNING id, email, role, display_name`,
-    [email, hash, name]
+    [email, hash, name, rawBirthDate]
   );
   const u = rows[0];
   const token = randomUUID();

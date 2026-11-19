@@ -1,4 +1,5 @@
 import { initSchema, query } from './db';
+import { maskSmallBuckets } from './age';
 
 /**
  * Статистика автора по произведениям — сводка для личного кабинета.
@@ -145,6 +146,19 @@ export async function getAuthorStats(authorId: number, now = new Date()): Promis
       region[key] = (region[key] || 0) + 1;
     }
 
+    // Приватность: при большой аудитории мелкие возрастные группы схлопываем,
+    // иначе по статистике можно опознать конкретного читателя (§3 мастер-промпта).
+    // Для маленькой аудитории маскировка бессмысленна и только мешает автору:
+    // он и так знает своих первых читателей.
+    const unknownKey = 'не указан';
+    const PRIVACY_MIN_COHORT = 20;
+    let ageMasked: Record<string, number> = age;
+    if (rows.length >= PRIVACY_MIN_COHORT) {
+      const rest = Object.fromEntries(Object.entries(age).filter(([k]) => k !== unknownKey));
+      const masked = maskSmallBuckets(rest);
+      ageMasked = { ...masked.visible, [unknownKey]: age[unknownKey] || 0 };
+    }
+
     const prog = progressMap.get(w.id);
     return {
       id: w.id,
@@ -154,7 +168,7 @@ export async function getAuthorStats(authorId: number, now = new Date()): Promis
       readers7: activeMap.get(w.id)?.readers7 ?? 0,
       readers30: activeMap.get(w.id)?.readers30 ?? 0,
       gender,
-      age,
+      age: ageMasked,
       region,
       furthestChapter: prog?.furthest ?? null,
       avgPercent: Math.round(Number(prog?.avg_percent ?? 0)),

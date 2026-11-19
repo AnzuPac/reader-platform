@@ -86,6 +86,21 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
     'ALTER TABLE works ADD COLUMN comic_format TEXT',
     "ALTER TABLE works ADD COLUMN reading_direction TEXT NOT NULL DEFAULT 'ltr'",
+    // День рождения: подарок выдаётся один раз в год, поэтому нужен журнал.
+    `CREATE TABLE IF NOT EXISTS birthday_gifts (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       gift_year INTEGER NOT NULL,
+       coins INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL,
+       UNIQUE (user_id, gift_year)
+     )`,
+    // Настройки платформы (пока — подарок на день рождения и подобное).
+    `CREATE TABLE IF NOT EXISTS app_settings (
+       key TEXT PRIMARY KEY,
+       value TEXT,
+       updated_at TEXT NOT NULL
+     )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
@@ -178,6 +193,21 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS comic_format TEXT',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS reading_direction TEXT NOT NULL DEFAULT 'ltr'",
+    // День рождения: подарок выдаётся один раз в год, поэтому нужен журнал.
+    `CREATE TABLE IF NOT EXISTS birthday_gifts (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       gift_year INTEGER NOT NULL,
+       coins INTEGER NOT NULL DEFAULT 0,
+       created_at TIMESTAMPTZ NOT NULL,
+       UNIQUE (user_id, gift_year)
+     )`,
+    // Настройки платформы.
+    `CREATE TABLE IF NOT EXISTS app_settings (
+       key TEXT PRIMARY KEY,
+       value TEXT,
+       updated_at TEXT NOT NULL
+     )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (
        scope_key TEXT PRIMARY KEY,
