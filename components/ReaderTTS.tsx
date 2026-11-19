@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { splitForSpeech } from '@/lib/offline';
+import { splitForSpeech } from '@/lib/speech';
 
 type Lang = 'sr' | 'en' | 'ru';
 

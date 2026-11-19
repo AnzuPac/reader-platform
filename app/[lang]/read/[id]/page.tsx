@@ -9,7 +9,6 @@ import { flag } from '@/lib/search';
 import { one } from '@/lib/db';
 import ReaderClient from '@/components/ReaderClient';
 import ReaderTTS from '@/components/ReaderTTS';
-import OfflineButton from '@/components/OfflineButton';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
 import ChapterBody from '@/components/ChapterBody';
@@ -174,20 +173,12 @@ export default async function ReadPage({
         </div>
       ) : null}
 
-      {/* Озвучка — только если правообладатель разрешил (works.tts_allowed),
-          и только для текстовых глав. Офлайн-копия — для разблокированного текста. */}
+      {/* Озвучка — только если правообладатель разрешил (works.tts_allowed)
+          и только для текстовых глав. Скачивание глав намеренно отсутствует:
+          локальная копия платного текста = готовый способ пиратить. */}
       {!locked && ch.work_type !== 'comic' ? (
         <div className="mt-6 flex flex-wrap items-center gap-4">
           {flag(ch.tts_allowed) ? <ReaderTTS lang={l} /> : null}
-          <OfflineButton
-            chapterId={ch.id}
-            workId={ch.work_id}
-            workTitle={ch.work_title}
-            workSlug={ch.work_slug}
-            number={ch.number}
-            title={ch.title}
-            lang={l}
-          />
         </div>
       ) : null}
 
