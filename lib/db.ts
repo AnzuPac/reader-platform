@@ -38,7 +38,9 @@ function toSqlite(sql: string, params: unknown[]): { sql: string; params: unknow
     .replace(/\$\$([^$]*)\$\$/g, "'$1'")
     .replace(/\bnow\(\)/gi, 'CURRENT_TIMESTAMP')
     .replace(/\$(\d+)/g, (_m, n: string) => {
-      out.push(params[Number(n) - 1]);
+      const v = params[Number(n) - 1];
+      // node:sqlite не принимает boolean: в SQLite это 1/0.
+      out.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
       return '?';
     });
   return { sql: converted, params: out };
@@ -343,6 +345,26 @@ async function migratePg(db: any) {
        export_policy TEXT NOT NULL DEFAULT 'disallowed',
        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
        PRIMARY KEY (work_id, publisher_id)
+     )`,
+    // Коллекции: системные, редакционные и пользовательские.
+    `CREATE TABLE IF NOT EXISTS collections (
+       id BIGSERIAL PRIMARY KEY,
+       slug TEXT UNIQUE NOT NULL,
+       title TEXT NOT NULL,
+       description TEXT NOT NULL DEFAULT '',
+       kind TEXT NOT NULL DEFAULT 'user',
+       owner_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+       is_public BOOLEAN NOT NULL DEFAULT TRUE,
+       position INTEGER NOT NULL DEFAULT 0,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS collection_items (
+       collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+       work_id BIGINT NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+       position INTEGER NOT NULL DEFAULT 0,
+       added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       PRIMARY KEY (collection_id, work_id)
      )`,
     // Счётчики частоты запросов: общие для инстансов, переживают рестарт.
     `CREATE TABLE IF NOT EXISTS rate_limit_buckets (

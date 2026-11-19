@@ -78,7 +78,7 @@ export async function updateProfile(userId: number, input: UpdateInput): Promise
     sets.push(`avatar_path = $${params.length}`);
   }
   if (typeof input.isPublic === 'boolean') {
-    params.push(input.isPublic ? 1 : 0);
+    params.push(input.isPublic);
     sets.push(`profile_public = $${params.length}`);
   }
 

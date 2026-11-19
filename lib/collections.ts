@@ -73,12 +73,12 @@ export async function listCollections(viewer: Viewer, kind?: CollectionKind): Pr
     params.push(viewer.uid);
     const own = `c.owner_id = $${params.length}`;
     if (isAdmin(viewer) || viewer.role === 'moderator') {
-      where.push('(c.is_public = 1 OR c.is_public = TRUE OR TRUE)');
+      where.push('(c.is_public = TRUE OR TRUE)');
     } else {
-      where.push(`((c.is_public = 1 OR c.is_public = TRUE) OR ${own})`);
+      where.push(`((c.is_public = TRUE) OR ${own})`);
     }
   } else {
-    where.push('(c.is_public = 1 OR c.is_public = TRUE)');
+    where.push('(c.is_public = TRUE)');
   }
 
   const sql = `SELECT c.*, (SELECT COUNT(*) FROM collection_items ci WHERE ci.collection_id = c.id) AS items_count
@@ -126,7 +126,7 @@ export async function createCollection(ownerId: number, input: CreateInput): Pro
     `INSERT INTO collections (slug, title, description, kind, owner_id, is_public, updated_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
     [slug, title, String(input.description || '').slice(0, 500), input.kind || 'user', ownerId,
-      input.isPublic === false ? 0 : 1, new Date().toISOString()],
+      input.isPublic !== false, new Date().toISOString()],
   );
   return rows[0];
 }
@@ -149,7 +149,7 @@ export async function updateCollection(
     sets.push(`description = $${params.length}`);
   }
   if (typeof patch.isPublic === 'boolean') {
-    params.push(patch.isPublic ? 1 : 0);
+    params.push(patch.isPublic);
     sets.push(`is_public = $${params.length}`);
   }
   if (!sets.length) return true;
@@ -242,7 +242,7 @@ export async function ensureSystemCollections(): Promise<void> {
     if (clash) continue;
     await query(
       `INSERT INTO collections (slug, title, description, kind, owner_id, is_public, position, updated_at)
-       VALUES ($1,$2,$3,'system',NULL,1,$4,$5)`,
+       VALUES ($1,$2,$3,'system',NULL,TRUE,$4,$5)`,
       [slug, seed.title, seed.description, position, new Date().toISOString()],
     );
     position += 1;

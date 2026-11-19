@@ -429,11 +429,11 @@ export async function upsertLicense(workId: number, publisherId: number, patch: 
     [
       workId, publisherId, territory,
       patch.starts_at || null, patch.ends_at || null,
-      flag(patch.rights_sale) ? 1 : 0,
-      flag(patch.rights_subscription) ? 1 : 0,
-      flag(patch.rights_library) ? 1 : 0,
-      flag(patch.tts_allowed) ? 1 : 0,
-      flag(patch.translit_allowed) ? 1 : 0,
+      flag(patch.rights_sale),
+      flag(patch.rights_subscription),
+      flag(patch.rights_library),
+      flag(patch.tts_allowed),
+      flag(patch.translit_allowed),
       exportPolicy, new Date().toISOString(),
     ],
   );
