@@ -102,7 +102,7 @@ export function legalPage(key: PageKey) {
     const c = CONTENT[key][l];
 
     return (
-      <main id="main" className="mx-auto max-w-3xl px-5 py-12">
+      <main id="main" className={`tl-screen tl-screen--legal tl-screen--${key} mx-auto max-w-3xl px-5 py-12`}>
         <h1 className="mb-3 text-3xl font-bold">{c.title}</h1>
         <p className="mb-8 text-lg muted">{c.lead}</p>
         <div className="space-y-6">

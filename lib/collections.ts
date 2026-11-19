@@ -25,7 +25,7 @@ export type Collection = {
 
 export type CollectionWork = {
   id: number; slug: string; title: string; author_name: string;
-  cover_path: string | null; rating_avg: string; position: number;
+  cover_path: string | null; rating_avg: string; position: number; ai_usage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
 };
 
 export type Viewer = { uid: number; role: string } | null;
@@ -96,7 +96,7 @@ export async function getCollectionBySlug(slug: string, viewer: Viewer): Promise
   if (!visible) return null;
 
   const items = await query<CollectionWork>(
-    `SELECT w.id, w.slug, w.title, u.display_name AS author_name, w.cover_path, w.rating_avg, ci.position
+    `SELECT w.id, w.slug, w.title, u.display_name AS author_name, w.cover_path, w.rating_avg, ci.position, w.ai_usage
        FROM collection_items ci
        JOIN works w ON w.id = ci.work_id AND w.status = 'published'
        JOIN users u ON u.id = w.author_id

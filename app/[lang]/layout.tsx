@@ -29,9 +29,10 @@ export default async function LangLayout({
             <Link href={`/${l}`} className="hover:text-brand">{t(l, 'nav_home')}</Link>
             <Link href={`/${l}/catalog`} className="hover:text-brand">{t(l, 'nav_catalog')}</Link>
             <Link href={`/${l}/library`} className="hover:text-brand">{t(l, 'nav_library')}</Link>
-            <Link href={`/${l}/storage`} className="hover:text-brand">{l === 'ru' ? 'Файлы' : l === 'en' ? 'Storage' : 'Prostor'}</Link>
+            <Link href={`/${l}/collections`} className="hover:text-brand">{l === 'ru' ? 'Коллекции' : l === 'en' ? 'Collections' : 'Kolekcije'}</Link>
+            <Link href={`/${l}/author`} className="hover:text-brand">{l === 'ru' ? 'Авторам' : l === 'en' ? 'For authors' : 'Autorima'}</Link>
           </nav>
-          <nav className="site-mobile-nav md:hidden" aria-label="Mobile navigation"><Link href={`/${l}`}>{t(l, 'nav_home')}</Link><Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link><Link href={`/${l}/library`}>{t(l, 'nav_library')}</Link></nav>
+          <nav className="site-mobile-nav md:hidden" aria-label="Mobile navigation"><Link href={`/${l}`}>{t(l, 'nav_home')}</Link><Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link><Link href={`/${l}/library`}>{t(l, 'nav_library')}</Link><Link href={`/${l}/collections`}>{l === 'ru' ? 'Подборки' : l === 'en' ? 'Collections' : 'Kolekcije'}</Link></nav>
 
           <form action={`/${l}/catalog`} className="hidden flex-1 md:block">
             <input className="input" name="q" placeholder={t(l, 'search_placeholder')} />
@@ -40,6 +41,7 @@ export default async function LangLayout({
           <div className="ml-auto md:ml-0"><LanguageSwitcher lang={l}/></div>
 
           <div className="site-auth hidden items-center gap-2 sm:flex">
+            <Link href={`/${l}/notifications`} className="site-notifications" aria-label={l === 'ru' ? 'Уведомления' : l === 'en' ? 'Notifications' : 'Obaveštenja'} title={l === 'ru' ? 'Уведомления' : l === 'en' ? 'Notifications' : 'Obaveštenja'}>♧</Link>
             <Link href={`/${l}/login`} className="btn btn-ghost">{t(l, 'nav_login')}</Link>
             <Link href={`/${l}/register`} className="btn btn-primary">{t(l, 'nav_register')}</Link>
           </div>
@@ -52,7 +54,12 @@ export default async function LangLayout({
           <Link href={`/${l}/catalog`}>{t(l, 'nav_catalog')}</Link>
           <Link href={`/${l}/subscribe`}>{l === 'ru' ? 'Подписка' : l === 'en' ? 'Subscription' : 'Pretplata'}</Link>
           <Link href={`/${l}/publisher`}>{l === 'ru' ? 'Издателям' : l === 'en' ? 'For publishers' : 'Za izdavače'}</Link>
-          <span className="ml-auto">© {new Date().getFullYear()}</span>
+          <Link href={`/${l}/account`}>{l === 'ru' ? 'Аккаунт' : l === 'en' ? 'Account' : 'Nalog'}</Link>
+          <Link href={`/${l}/notifications`}>{l === 'ru' ? 'Уведомления' : l === 'en' ? 'Notifications' : 'Obaveštenja'}</Link>
+          <Link href={`/${l}/help`}>{l === 'ru' ? 'Помощь' : l === 'en' ? 'Help' : 'Pomoć'}</Link>
+          <Link href={`/${l}/rules`}>{l === 'ru' ? 'Правила' : l === 'en' ? 'Rules' : 'Pravila'}</Link>
+          <Link href={`/${l}/about`}>{l === 'ru' ? 'О платформе' : l === 'en' ? 'About' : 'O platformi'}</Link>
+          <span className="ml-auto">© {new Date().getFullYear()} TeroLibrary</span>
         </div>
       </footer>
       )}>

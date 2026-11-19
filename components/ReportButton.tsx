@@ -9,15 +9,15 @@ const TXT: Record<Lang, {
 }> = {
   sr: {
     report: 'Prijavi', reason: 'Razlog', comment: 'Komentar (opciono)', send: 'Pošalji', sent: 'Prijava poslata',
-    reasons: { copyright: 'Kršenje autorskih prava', spam: 'Spam', abuse: 'Uvreda ili pretnja', other: 'Drugo' },
+    reasons: { copyright: 'Kršenje autorskih prava', spam: 'Spam', abuse: 'Uvreda ili pretnja', ai_mislabel: 'Pogrešna AI oznaka', other: 'Drugo' },
   },
   ru: {
     report: 'Жалоба', reason: 'Причина', comment: 'Комментарий (необязательно)', send: 'Отправить', sent: 'Жалоба отправлена',
-    reasons: { copyright: 'Нарушение авторских прав', spam: 'Спам', abuse: 'Оскорбление или угроза', other: 'Другое' },
+    reasons: { copyright: 'Нарушение авторских прав', spam: 'Спам', abuse: 'Оскорбление или угроза', ai_mislabel: 'Неверная отметка об использовании ИИ', other: 'Другое' },
   },
   en: {
     report: 'Report', reason: 'Reason', comment: 'Comment (optional)', send: 'Send', sent: 'Report sent',
-    reasons: { copyright: 'Copyright violation', spam: 'Spam', abuse: 'Abuse or threat', other: 'Other' },
+    reasons: { copyright: 'Copyright violation', spam: 'Spam', abuse: 'Abuse or threat', ai_mislabel: 'Incorrect AI-use label', other: 'Other' },
   },
 };
 

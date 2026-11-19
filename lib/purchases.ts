@@ -615,10 +615,10 @@ export async function chapterGate(
 /** «Kupljeno»: произведения, оплаченные пользователем (книга или хотя бы глава). */
 export async function listPurchasedWorks(userId: number) {
   return query<{
-    id: number; slug: string; title: string; description: string; cover_path: string | null;
+    id: number; slug: string; title: string; description: string; cover_path: string | null; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
     author_name: string; purchased_at: string; chapter_only: number;
   }>(
-    `SELECT w.id, w.slug, w.title, w.description, w.cover_path,
+    `SELECT w.id, w.slug, w.title, w.description, w.cover_path, w.ai_usage,
             u.display_name AS author_name,
             MAX(p.paid_at) AS purchased_at,
             CASE WHEN MAX(CASE WHEN p.chapter_id IS NULL THEN 1 ELSE 0 END) = 1 THEN 0 ELSE 1 END AS chapter_only
@@ -626,7 +626,7 @@ export async function listPurchasedWorks(userId: number) {
        JOIN works w ON w.id = p.work_id
        JOIN users u ON u.id = w.author_id
       WHERE p.user_id = $1 AND p.status = 'paid' AND w.status = 'published'
-      GROUP BY w.id, w.slug, w.title, w.description, w.cover_path, u.display_name
+      GROUP BY w.id, w.slug, w.title, w.description, w.cover_path, w.ai_usage, u.display_name
       ORDER BY MAX(p.paid_at) DESC`,
     [userId]
   );

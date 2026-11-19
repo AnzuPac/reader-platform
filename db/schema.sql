@@ -77,6 +77,7 @@ CREATE TABLE works (
   -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
   search_norm       TEXT NOT NULL DEFAULT '',
   is_classic        BOOLEAN NOT NULL DEFAULT FALSE,   -- классика (public domain)
+  ai_usage          TEXT NOT NULL DEFAULT 'not_declared' CHECK (ai_usage IN ('not_declared','no_ai','assisted','generated')), -- author disclosure
   -- NULL = по умолчанию: самиздат/классика — можно, издательские — нельзя.
   translit_allowed  BOOLEAN DEFAULT TRUE,
   -- NULL = по умолчанию: самиздат и фанфики — можно, издательские и классика — нет.

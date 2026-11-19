@@ -21,6 +21,7 @@ export type CatalogWork = {
   completed?: boolean;
   cover?: string | null;
   tone: 'blue' | 'rose' | 'gold' | 'violet' | 'green' | 'orange';
+  aiUsage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
 };
 
 const SECTION_IDS: SectionId[] = ['books', 'fanfics', 'comics'];
@@ -43,12 +44,14 @@ function Cover({ work, series }: { work: CatalogWork; series: string }) {
       <div className="bv-cover bv-cover--image">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={work.title} loading="lazy" onError={() => setBroken(true)} />
+        {work.aiUsage && work.aiUsage !== 'not_declared' ? <span className={`bv-ai-badge bv-ai-badge--${work.aiUsage}`}>{work.aiUsage === 'no_ai' ? '✓ БЕЗ ИИ' : work.aiUsage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
       </div>
     );
   }
   return (
     <div className={`bv-cover bv-cover--${work.tone}`} aria-label={work.title}>
       <span className="bv-cover__ornament" />
+      {work.aiUsage && work.aiUsage !== 'not_declared' ? <span className={`bv-ai-badge bv-ai-badge--${work.aiUsage}`}>{work.aiUsage === 'no_ai' ? '✓ БЕЗ ИИ' : work.aiUsage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
       <span className="bv-cover__series">{series}</span>
       <span className="bv-cover__title">{work.title}</span>
       <span className="bv-cover__author">{work.author}</span>
@@ -82,7 +85,7 @@ function WorkCard({ work, lang, d, percent }: { work: CatalogWork; lang: Lang; d
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
-  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '',
+  page = 1, hasMore = false, genre = '', source = '', tag = '', fandom = '', aiUsage = '',
   user = null, progress = {}, notifications = 0,
 }: {
   works: CatalogWork[];
@@ -96,6 +99,7 @@ export default function BookverseCatalog({
   source?: string;
   tag?: string;
   fandom?: string;
+  aiUsage?: string;
   user?: { name: string } | null;
   progress?: Record<number, number>;
   notifications?: number;
@@ -109,6 +113,7 @@ export default function BookverseCatalog({
   const [draftSource, setDraftSource] = useState(source);
   const [draftTag, setDraftTag] = useState(tag);
   const [draftFandom, setDraftFandom] = useState(fandom);
+  const [draftAiUsage, setDraftAiUsage] = useState(aiUsage);
   const firstRender = useRef(true);
 
   const section = initialSection;
@@ -117,7 +122,7 @@ export default function BookverseCatalog({
 
   /** Единственный способ поменять состояние: собрать URL и уйти на него.
    *  Так раздел/фильтр/поиск/страница сохраняются при refresh и в ссылке. */
-  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string; tag?: string; fandom?: string }) {
+  function go(next: { q?: string; kind?: string; filter?: CatalogFilter; page?: number; type?: string; source?: string; genre?: string; tag?: string; fandom?: string; aiUsage?: string }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
     const kind = next.kind !== undefined ? next.kind : SECTION_KIND[section];
@@ -134,6 +139,7 @@ export default function BookverseCatalog({
     if (src) params.set('source', src);
     const tg = next.tag !== undefined ? next.tag : tag; if (tg) params.set('tag', tg);
     const fd = next.fandom !== undefined ? next.fandom : fandom; if (fd) params.set('fandom', fd);
+    const ai = next.aiUsage !== undefined ? next.aiUsage : aiUsage; if (ai) params.set('ai', ai);
     if (p > 1) params.set('page', String(p));
 
     setPending(true);
@@ -162,6 +168,7 @@ export default function BookverseCatalog({
     if (source) params.set('source', source);
     if (tag) params.set('tag', tag);
     if (fandom) params.set('fandom', fandom);
+    if (aiUsage) params.set('ai', aiUsage);
     if (page > 1) params.set('page', String(page));
     const qs = params.toString();
     window.location.href = `/${code}/catalog${qs ? `?${qs}` : ''}`;
@@ -303,7 +310,8 @@ export default function BookverseCatalog({
             {filtersOpen ? <div className="bv-filter-overlay" role="dialog" aria-modal="true" aria-label={lang === 'ru' ? 'Фильтры каталога' : lang === 'en' ? 'Catalog filters' : 'Filteri kataloga'}><button className="bv-filter-overlay__scrim" aria-label={lang === 'ru' ? 'Закрыть фильтры' : lang === 'en' ? 'Close filters' : 'Zatvori filtere'} onClick={() => setFiltersOpen(false)}/><div className="bv-filter-drawer"><div className="bv-filter-drawer__head"><h2>{lang === 'ru' ? 'Фильтры' : lang === 'en' ? 'Filters' : 'Filteri'}</h2><button className="bv-filter-close" onClick={() => setFiltersOpen(false)} aria-label={lang === 'ru' ? 'Закрыть' : lang === 'en' ? 'Close' : 'Zatvori'}>×</button></div><div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Жанр / тег' : lang === 'en' ? 'Genre / tag' : 'Žanr / tag'}</span><input className="input" value={draftGenre} onChange={e => setDraftGenre(e.target.value)} placeholder={lang === 'ru' ? 'Введите жанр или тег' : lang === 'en' ? 'Enter genre or tag' : 'Unesite žanr ili tag'} /></label>
                 <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Источник' : lang === 'en' ? 'Source' : 'Izvor'}</span><select className="input" value={draftSource} onChange={e => setDraftSource(e.target.value)}><option value="">{lang === 'ru' ? 'Все источники' : lang === 'en' ? 'All sources' : 'Svi izvori'}</option><option value="publisher">{lang === 'ru' ? 'Издательства' : lang === 'en' ? 'Publishers' : 'Izdavači'}</option><option value="selfpub">{lang === 'ru' ? 'Самиздат' : lang === 'en' ? 'Self-published' : 'Samostalno'}</option><option value="classic">{lang === 'ru' ? 'Классика' : lang === 'en' ? 'Classics' : 'Klasici'}</option></select></label><label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Тег' : lang === 'en' ? 'Tag' : 'Tag'}</span><input className="input" value={draftTag} onChange={e => setDraftTag(e.target.value)} placeholder="tag-slug" /></label><label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Фандом' : lang === 'en' ? 'Fandom' : 'Fandom'}</span><input className="input" value={draftFandom} onChange={e => setDraftFandom(e.target.value)} placeholder={lang === 'ru' ? 'Название фандома' : lang === 'en' ? 'Fandom name' : 'Naziv fandoma'} /></label>
-              </div><div className="mt-4 flex justify-end gap-2"><button className="btn btn-ghost" onClick={() => {setDraftGenre('');setDraftSource('');setDraftTag('');setDraftFandom('');go({genre:'',source:'',tag:'',fandom:'',page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Сбросить' : lang === 'en' ? 'Reset' : 'Resetuj'}</button><button className="btn btn-primary" onClick={() => {go({genre:draftGenre.trim(),source:draftSource,tag:draftTag.trim(),fandom:draftFandom.trim(),page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Применить' : lang === 'en' ? 'Apply' : 'Primeni'}</button></div>
+                <label className="block text-sm"><span className="mb-1 block font-semibold">{lang === 'ru' ? 'Использование ИИ' : lang === 'en' ? 'AI disclosure' : 'AI oznaka'}</span><select className="input" value={draftAiUsage} onChange={e => setDraftAiUsage(e.target.value)}><option value="">{lang === 'ru' ? 'Любой статус' : lang === 'en' ? 'Any status' : 'Bilo koji status'}</option><option value="no_ai">{lang === 'ru' ? 'Автор заявляет: без ИИ' : lang === 'en' ? 'Author declares: no AI' : 'Autor navodi: bez AI'}</option><option value="assisted">{lang === 'ru' ? 'ИИ использовался частично' : lang === 'en' ? 'AI-assisted' : 'AI kao pomoćni alat'}</option><option value="generated">{lang === 'ru' ? 'ИИ-генерация' : lang === 'en' ? 'AI-generated' : 'AI generisano'}</option></select></label>
+              </div><div className="mt-4 flex justify-end gap-2"><button className="btn btn-ghost" onClick={() => {setDraftGenre('');setDraftSource('');setDraftTag('');setDraftFandom('');setDraftAiUsage('');go({genre:'',source:'',tag:'',fandom:'',aiUsage:'',page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Сбросить' : lang === 'en' ? 'Reset' : 'Resetuj'}</button><button className="btn btn-primary" onClick={() => {go({genre:draftGenre.trim(),source:draftSource,tag:draftTag.trim(),fandom:draftFandom.trim(),aiUsage:draftAiUsage,page:1});setFiltersOpen(false)}}>{lang === 'ru' ? 'Применить' : lang === 'en' ? 'Apply' : 'Primeni'}</button></div>
             </div></div> : null}
 
             {/* Источник издания: издательское, самиздат, классика (аудит, п.10).

@@ -8,6 +8,7 @@ export default function AuthorWorks({ lang }: { lang: string }) {
   const [works, setWorks] = useState<Work[]>([]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
+  const [aiUsage, setAiUsage] = useState('not_declared');
   const [msg, setMsg] = useState('');
 
   async function load() {
@@ -22,11 +23,11 @@ export default function AuthorWorks({ lang }: { lang: string }) {
     e.preventDefault();
     const r = await fetch('/api/author/work', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: desc }),
+      body: JSON.stringify({ title, description: desc, aiUsage }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { setMsg('Greška: ' + (j.error || r.status)); return; }
-    setTitle(''); setDesc(''); setMsg('Черновик создан');
+    setTitle(''); setDesc(''); setAiUsage('not_declared'); setMsg('Черновик создан');
     await load();
   }
 
@@ -36,6 +37,12 @@ export default function AuthorWorks({ lang }: { lang: string }) {
         <h2 className="font-semibold">Новое произведение</h2>
         <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="input" rows={3} placeholder="Opis" value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <label className="block text-sm muted">Использование ИИ
+          <select className="input mt-1 w-full" value={aiUsage} onChange={(e) => setAiUsage(e.target.value)}>
+            <option value="not_declared">Не указано</option><option value="no_ai">ИИ не использовался</option><option value="assisted">ИИ использовался частично</option><option value="generated">ИИ-генерация</option>
+          </select>
+        </label>
+        <p className="text-xs muted">Метка показывается читателям. Выбранное значение можно изменить при редактировании произведения.</p>
         <button className="btn btn-primary">Создать черновик</button>
       </form>
 

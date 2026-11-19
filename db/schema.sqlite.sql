@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS works (
   -- Нормализованный ключ поиска (lib/translit.ts): «Андрић» = «Andric» = «Andrić».
   search_norm       TEXT NOT NULL DEFAULT '',
   is_classic        INTEGER NOT NULL DEFAULT 0,   -- классика (public domain)
+  ai_usage          TEXT NOT NULL DEFAULT 'not_declared' CHECK (ai_usage IN ('not_declared','no_ai','assisted','generated')), -- author disclosure
   -- NULL = по умолчанию (самиздат/классика — можно, издательские — нельзя);
   -- 1 — можно, 0 — запрет правообладателя (издательские книги триггер ниже).
   translit_allowed  INTEGER,

@@ -25,7 +25,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ lan
   const { collection, items, canEdit } = data;
 
   return (
-    <main id="main" className="mx-auto max-w-6xl px-5 py-8">
+    <main id="main" className="tl-screen tl-screen--collection-detail mx-auto max-w-6xl px-5 py-8">
       <div className="mb-2">
         <Link href={`/${l}/collections`} className="text-sm muted hover:text-brand">{t.back}</Link>
       </div>
@@ -52,6 +52,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ lan
                   ) : (
                     <span className="relative line-clamp-3">{w.title}</span>
                   )}
+                  {w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
                 </div>
                 <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
                 <div className="text-xs muted">{w.author_name}</div>

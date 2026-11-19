@@ -20,7 +20,7 @@ export default async function NotificationsPage({ params }: { params: Promise<{ 
 
   if (!session) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="tl-screen tl-screen--notifications mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-3 text-2xl font-bold">{x.title}</h1>
           <p className="mb-5 muted">{x.login}</p>
@@ -42,7 +42,7 @@ export default async function NotificationsPage({ params }: { params: Promise<{ 
     .slice(0, 50);
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-8">
+    <main className="tl-screen tl-screen--notifications mx-auto max-w-3xl px-5 py-8">
       <h1 className="mb-6 text-2xl font-bold">{x.title}</h1>
       {updates.length === 0 ? (
         <div className="card p-8 text-center muted">{x.empty}</div>

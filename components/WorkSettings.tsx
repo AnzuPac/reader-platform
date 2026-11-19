@@ -2,16 +2,17 @@
 import { useState } from 'react';
 
 export default function WorkSettings({
-  workSlug, initialTitle, initialDescription, initialAge, initialCompletion,
+  workSlug, initialTitle, initialDescription, initialAge, initialCompletion, initialAiUsage,
 }: {
   workSlug: string; initialTitle: string; initialDescription: string;
-  initialAge: number; initialCompletion: string;
+  initialAge: number; initialCompletion: string; initialAiUsage: 'not_declared'|'no_ai'|'assisted'|'generated';
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [desc, setDesc] = useState(initialDescription);
   const [age, setAge] = useState(initialAge);
   const [completion, setCompletion] = useState(initialCompletion);
+  const [aiUsage, setAiUsage] = useState(initialAiUsage);
   const [msg, setMsg] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
@@ -31,7 +32,7 @@ export default function WorkSettings({
     e.preventDefault();
     const r = await fetch('/api/author/work', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion }),
+      body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion, aiUsage }),
     });
     const j = await r.json().catch(() => ({}));
     setMsg(r.ok ? 'Сохранено' : 'Greška: ' + (j.error || r.status));
@@ -66,6 +67,12 @@ export default function WorkSettings({
             <option value="ongoing">В работе</option>
             <option value="completed">Завершено</option>
             <option value="hiatus">Пауза</option>
+          </select>
+        </label>
+        <label className="flex min-w-[230px] flex-col gap-1">
+          <span>Использование ИИ</span>
+          <select className="input" value={aiUsage} onChange={(e) => setAiUsage(e.target.value as typeof aiUsage)}>
+            <option value="not_declared">Не указано</option><option value="no_ai">ИИ не использовался</option><option value="assisted">ИИ использовался частично</option><option value="generated">ИИ-генерация</option>
           </select>
         </label>
         <button className="btn btn-primary">Sačuvaj</button>

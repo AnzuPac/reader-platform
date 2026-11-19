@@ -1,5 +1,6 @@
 import './globals.css';
 import '../styles/bookverse.css';
+import '../styles/terolibrary-screens.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

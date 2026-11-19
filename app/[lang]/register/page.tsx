@@ -63,9 +63,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <main id="main" className="mx-auto max-w-md px-5 py-16">
-      <h1 className="mb-6 text-3xl font-bold">Registracija</h1>
-      <form onSubmit={submit} className="card space-y-4 p-6">
+    <main id="main" className="tl-screen tl-screen--register mx-auto max-w-md px-5 py-16">
+      <div className="tl-auth-intro"><span className="tl-page-eyebrow">JOIN TEROLIBRARY</span><h1 className="mb-2 text-3xl font-bold">{lang === 'ru' ? 'Создать аккаунт' : lang === 'en' ? 'Create your account' : 'Napravi nalog'}</h1><p>{lang === 'ru' ? 'Собери личную библиотеку и находи истории, к которым захочется вернуться.' : lang === 'en' ? 'Build your personal library and discover stories worth returning to.' : 'Napravi svoju biblioteku i otkrij priče kojima se vraćaš.'}</p></div>
+      <form onSubmit={submit} className="tl-auth-form card space-y-4 p-6">
         <div>
           <label className="mb-1 block text-sm muted">Ime ili nadimak</label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />

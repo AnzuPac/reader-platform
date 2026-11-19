@@ -88,8 +88,9 @@ export default async function WorkPage({
   const bookRsd = price ? formatRsd(price.amount_cents) : null;
 
   return (
-    <main id="main" className="mx-auto max-w-5xl px-5 py-8">
-      <div className="card mb-8 p-5 sm:p-7">
+    <main id="main" className={`tl-screen tl-screen--work tl-work-category--${work.kind === 'fanfic' ? 'fanfic' : work.type === 'comic' ? 'manga' : 'books'} mx-auto max-w-5xl px-5 py-8`}>
+      <div className="tl-work-hero card mb-8 p-5 sm:p-7">
+        <div className="tl-work-context">{work.kind === 'fanfic' ? (l === 'ru' ? 'ФАНФИК' : l === 'en' ? 'FAN FICTION' : 'FANFIKCIJA') : work.type === 'comic' ? (l === 'ru' ? 'МАНГА И КОМИКСЫ' : l === 'en' ? 'MANGA & COMICS' : 'MANGA I STRIPOVI') : (l === 'ru' ? 'КНИГА' : l === 'en' ? 'BOOK' : 'KNJIGA')} · TEROLIBRARY</div>
         <div className="flex flex-col gap-6 sm:flex-row">
           <div className="w-[170px] shrink-0">
             <WorkCover title={work.title} cover={work.cover_path} size="cover-lg" />
@@ -144,9 +145,14 @@ export default async function WorkPage({
                 </span>
               ) : null}
             </div>
+            <div className={`tl-ai-disclosure tl-ai-disclosure--${work.ai_usage || 'not_declared'}`}>
+              <span className="tl-ai-disclosure__icon">✦</span>
+              <span><strong>{l === 'ru' ? 'Использование ИИ' : l === 'en' ? 'AI disclosure' : 'AI oznaka'}</strong><small>{work.ai_usage === 'no_ai' ? (l === 'ru' ? 'Автор заявляет: ИИ не использовался' : l === 'en' ? 'Author declares: no AI used' : 'Autor navodi: AI nije korišćen') : work.ai_usage === 'assisted' ? (l === 'ru' ? 'ИИ использовался как вспомогательный инструмент' : l === 'en' ? 'AI used as an assistive tool' : 'AI je korišćen kao pomoćni alat') : work.ai_usage === 'generated' ? (l === 'ru' ? 'В произведении использована ИИ-генерация' : l === 'en' ? 'AI-generated content is used' : 'Korišćen je AI generisani sadržaj') : (l === 'ru' ? 'Автор не указал использование ИИ' : l === 'en' ? 'The author has not declared AI use' : 'Autor nije naveo korišćenje AI-ja')}</small></span>
+              <div className="tl-ai-disclosure__report"><ReportButton targetType="work" targetId={work.id} lang={l} /></div>
+            </div>
             <p className="mb-5 whitespace-pre-line text-sm leading-relaxed text-ink/80">{work.description}</p>
 
-            <div className="mb-4 rounded-lg border border-line p-3 text-sm">
+            <div className="tl-work-pricing mb-4 rounded-lg border border-line p-3 text-sm">
               <div className="mb-1 font-semibold">Cena</div>
               <ul className="space-y-1">
                 <li>
@@ -195,7 +201,7 @@ export default async function WorkPage({
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="tl-chapter-list card overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h2 className="font-bold">Sadržaj</h2>
           <span className="text-sm muted">{chapters.length} glava</span>

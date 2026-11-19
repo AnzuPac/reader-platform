@@ -33,9 +33,9 @@ export default function LoginPage({ params }: { params: Promise<{ lang: string }
   }
 
   return (
-    <main id="main" className="mx-auto max-w-md px-5 py-16">
-      <h1 className="mb-6 text-3xl font-bold">{t.title}</h1>
-      <form onSubmit={submit} className="card space-y-4 p-6">
+    <main id="main" className="tl-screen tl-screen--login mx-auto max-w-md px-5 py-16">
+      <div className="tl-auth-intro"><span className="tl-page-eyebrow">TEROLIBRARY · YOUR READING SPACE</span><h1 className="mb-2 text-3xl font-bold">{t.title}</h1><p>{lang === 'ru' ? 'Войди, чтобы продолжить чтение, сохранять произведения и следить за авторами.' : lang === 'en' ? 'Sign in to continue reading, save works and follow your favourite authors.' : 'Prijavi se da nastaviš čitanje, sačuvaš dela i pratiš omiljene autore.'}</p></div>
+      <form onSubmit={submit} className="tl-auth-form card space-y-4 p-6">
         <div>
           <label className="mb-1 block text-sm muted">{t.email}</label>
           <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />

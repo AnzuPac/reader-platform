@@ -176,3 +176,73 @@ input,select,textarea { color:var(--rd-field-fg); }
 .library-toolbar .library-search input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--rd-field-line); border-radius:9px; background:white; }
 .library-sort { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--rd-muted); }
 .library-sort select { border:1px solid var(--rd-field-line); background:white; color:var(--rd-field-fg); border-radius:9px; padding:9px; }
+
+/* ───────────────────────────────────────────────────────────────
+   TeroLibrary complete application skin — all route families
+   ─────────────────────────────────────────────────────────────── */
+:root{--tl-books:#71809a;--tl-books-soft:#e8edf4;--tl-fanfic:#9061c4;--tl-fanfic-soft:#f0e6fb;--tl-manga:#df843b;--tl-manga-soft:#fff0e2;--tl-radius:16px;--tl-shadow:0 8px 28px rgba(32,40,56,.055)}
+body{background:#f6f7fa!important;color:#252832!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main:not(.tl-home):not(.bv-app){max-width:1320px!important;margin-left:auto!important;margin-right:auto!important;padding:28px 24px 68px!important}
+.site-header{height:auto!important;min-height:68px;background:rgba(255,255,255,.94)!important;border-bottom:1px solid #e4e7ed!important;box-shadow:0 3px 18px rgba(26,35,50,.04)!important}
+.site-header>div{max-width:1440px!important;min-height:68px}
+.site-brand-mark{background:linear-gradient(135deg,#71809a,#4e5d75)!important;border-radius:10px!important;width:34px!important;height:34px!important}
+.site-brand-name{font-size:20px;font-weight:900;letter-spacing:-.65px;color:#252832!important}
+.site-nav{gap:17px!important;font-size:13px!important;color:#747b8b!important}.site-nav a{padding:8px 0;white-space:nowrap}.site-nav a:hover{color:#4e5d75!important}
+.site-header form .input{height:40px;background:#f5f6f9;border-color:#e5e7ed;border-radius:11px;padding-left:14px}
+.site-notifications{width:36px;height:36px;border:1px solid #e5e7ed;border-radius:10px;display:grid;place-items:center;color:#68758c;font-size:18px}
+.site-auth .btn{border-radius:10px!important;font-size:13px!important;padding:9px 14px!important}
+.btn-primary{background:#65758f!important;border-color:#65758f!important;color:#fff!important}.btn-primary:hover{background:#52627a!important}
+.btn-ghost{background:#fff!important;border:1px solid #dfe3eb!important;color:#384154!important}
+.card{border:1px solid #e5e7ed!important;border-radius:15px!important;background:#fff!important;box-shadow:0 2px 8px rgba(28,36,54,.025)!important}
+.card:hover{border-color:#cdd4e0!important;box-shadow:var(--tl-shadow)!important}
+main:not(.tl-home):not(.bv-app) h1{font-size:clamp(25px,3vw,34px)!important;font-weight:850!important;letter-spacing:-.9px!important;line-height:1.15!important;color:#252832!important;margin-bottom:10px!important}
+main:not(.tl-home):not(.bv-app) h2{font-size:20px!important;font-weight:800!important;letter-spacing:-.35px!important;color:#292d39!important}
+main:not(.tl-home):not(.bv-app) h3{font-size:15px!important;font-weight:750!important;color:#303443!important}
+main:not(.tl-home):not(.bv-app) p{line-height:1.65}
+main:not(.tl-home):not(.bv-app) .muted{color:#7d8392!important}
+main:not(.tl-home):not(.bv-app) .section-title{font-size:20px!important;font-weight:800!important}
+main:not(.tl-home):not(.bv-app) .btn{border-radius:10px!important;font-weight:700!important;min-height:38px}
+main:not(.tl-home):not(.bv-app) input:not([type=checkbox]):not([type=radio]),main:not(.tl-home):not(.bv-app) select,main:not(.tl-home):not(.bv-app) textarea{border-radius:10px!important;border:1px solid #dce0e8!important;background:#fff!important;padding:10px 12px!important}
+main:not(.tl-home):not(.bv-app) input:focus,main:not(.tl-home):not(.bv-app) select:focus,main:not(.tl-home):not(.bv-app) textarea:focus{border-color:#8b9bb3!important;box-shadow:0 0 0 3px rgba(113,128,154,.13)!important}
+main:not(.tl-home):not(.bv-app) table{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden;border-radius:12px;border:1px solid #e5e7ed;background:white}
+main:not(.tl-home):not(.bv-app) th{background:#f7f8fa;color:#747b8b;font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:800}
+main:not(.tl-home):not(.bv-app) td,main:not(.tl-home):not(.bv-app) th{padding:12px 14px!important;border-bottom:1px solid #edf0f4!important}
+main:not(.tl-home):not(.bv-app) tr:last-child td{border-bottom:0!important}
+main:not(.tl-home):not(.bv-app) nav[aria-label] a,main:not(.tl-home):not(.bv-app) nav.mb-6 a,main:not(.tl-home):not(.bv-app) nav.mb-5 a{border-radius:999px!important}
+main:not(.tl-home):not(.bv-app) .library-toolbar{box-shadow:none!important;background:#fff!important;border:1px solid #e5e7ed!important;border-radius:13px!important}
+main:not(.tl-home):not(.bv-app) .library-search input{background:#f8f9fb!important}
+main:not(.tl-home):not(.bv-app) .reader-surface{background:#fff!important;border:1px solid #e6e8ee!important;border-radius:18px!important;padding:clamp(20px,5vw,58px)!important;box-shadow:0 8px 32px rgba(24,30,45,.04)!important}
+main:not(.tl-home):not(.bv-app) .prose-reader{max-width:720px;margin:0 auto;color:#333746!important;font-size:19px!important;line-height:1.9!important}
+main:not(.tl-home):not(.bv-app) .reader-surface .prose-reader p{margin-bottom:1.2em}
+main:not(.tl-home):not(.bv-app) details.card{background:#fff!important}
+main:not(.tl-home):not(.bv-app) details summary{padding:5px 0;cursor:pointer}
+main:not(.tl-home):not(.bv-app) .cover{border-radius:12px!important;box-shadow:0 12px 26px rgba(20,25,40,.12)}
+main:not(.tl-home):not(.bv-app) .cat-book{background:#edf0f5!important;color:#58667c!important;border-color:#d8dee8!important}
+main:not(.tl-home):not(.bv-app) .cat-fanfic{background:#f0e6fb!important;color:#8251b4!important;border-color:#e2d2f4!important}
+main:not(.tl-home):not(.bv-app) .cat-manga{background:#fff0e2!important;color:#c26d2c!important;border-color:#f3d8c1!important}
+main:not(.tl-home):not(.bv-app) .tab-book.active{background:#71809a!important}.tab-fanfic.active{background:#9061c4!important}.tab-manga.active{background:#df843b!important}
+main:not(.tl-home):not(.bv-app) .card-book{border-left-color:#71809a!important}main:not(.tl-home):not(.bv-app) .card-fanfic{border-left-color:#9061c4!important}main:not(.tl-home):not(.bv-app) .card-manga{border-left-color:#df843b!important}
+.site-footer{background:#fff!important;color:#7a8090!important;border-top:1px solid #e5e7ed!important}
+.site-footer>div{max-width:1320px!important}
+/* Catalog's dedicated Bookverse experience is preserved and harmonized. */
+.bv-app{--bv-accent:#71809a!important;--bv-brand-soft:#e8edf4!important;--bv-bg:#f6f7fa!important;--bv-surface:#fff!important;--bv-line:#e5e7ed!important;--bv-text:#252832!important;--bv-muted:#7b8290!important}
+.bv-app.bv-theme-fanfics{--bv-accent:#9061c4!important;--bv-brand-soft:#f0e6fb!important}
+.bv-app.bv-theme-comics{--bv-accent:#df843b!important;--bv-brand-soft:#fff0e2!important}
+/* forms / sign in / subscription pages */
+main:not(.tl-home):not(.bv-app) .max-w-md .card,main:not(.tl-home):not(.bv-app) .max-w-xl .card{padding:clamp(22px,4vw,34px)!important;border-radius:18px!important;box-shadow:0 12px 36px rgba(25,32,48,.05)!important}
+main:not(.tl-home):not(.bv-app) .max-w-md,main:not(.tl-home):not(.bv-app) .max-w-xl{max-width:520px!important}
+main:not(.tl-home):not(.bv-app) .max-w-3xl,main:not(.tl-home):not(.bv-app) .max-w-4xl{max-width:980px!important}
+main:not(.tl-home):not(.bv-app) .max-w-5xl,main:not(.tl-home):not(.bv-app) .max-w-6xl{max-width:1320px!important}
+/* profile and creator dashboards */
+main:not(.tl-home):not(.bv-app) .grid{align-items:stretch}
+main:not(.tl-home):not(.bv-app) .grid .card{height:100%}
+main:not(.tl-home):not(.bv-app) .flex.items-center.gap-4.card{transition:background .15s,border .15s}
+/* editorial surfaces */
+main:not(.tl-home):not(.bv-app) .prose,main:not(.tl-home):not(.bv-app) article{color:#343847}
+main:not(.tl-home):not(.bv-app) .prose h2,main:not(.tl-home):not(.bv-app) .prose h3{margin-top:1.6em}
+main:not(.tl-home):not(.bv-app) .bg-brand\/10{background:#edf0f5!important}
+main:not(.tl-home):not(.bv-app) .text-brand{color:#65758f!important}
+main:not(.tl-home):not(.bv-app) .hover\:border-brand:hover{border-color:#b9c4d3!important}
+@media(max-width:900px){.site-nav{gap:10px!important}.site-nav a{font-size:12px}.site-header form{max-width:260px}}
+@media(max-width:767px){main:not(.tl-home):not(.bv-app){padding:20px 14px 60px!important}.site-header>div{padding:10px 13px!important}.site-mobile-nav{gap:0!important;justify-content:space-between!important;border-top:1px solid #edf0f4;margin-top:5px;padding:9px 0 2px!important}.site-mobile-nav a{padding:5px 10px;border-radius:8px}.site-mobile-nav a:hover{background:#f1f3f7}.site-auth{display:flex!important;margin-left:auto}.site-auth .btn-ghost{display:none}.site-notifications{width:31px;height:31px}.site-header form{display:block!important;order:6!important;flex-basis:100%!important;max-width:none!important;margin-top:3px}.site-header form .input{height:36px}.site-brand-name{font-size:18px}.site-header>div{gap:8px!important}.site-footer>div{gap:12px!important}.reader-surface{padding:20px!important}.prose-reader{font-size:17px!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

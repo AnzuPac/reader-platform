@@ -11,7 +11,7 @@ const PAGE_SIZE = 24;
 type Row = {
   id: number; slug: string; title: string; description: string;
   rating_avg: string; completion: string; author_name: string; cover_path: string | null;
-  type?: string; kind?: string; category?: string; is_classic?: number;
+  type?: string; kind?: string; category?: string; is_classic?: number; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
 };
 
 function str(v: unknown): string {
@@ -36,6 +36,8 @@ export default async function CatalogPage({
   const source = str(sp.source);
   const tag = str(sp.tag);
   const fandom = str(sp.fandom);
+  const aiRaw = str(sp.ai);
+  const aiUsage = aiRaw === 'no_ai' || aiRaw === 'assisted' || aiRaw === 'generated' ? aiRaw : undefined;
   const rawFilter = str(sp.filter);
   const filter: CatalogFilter =
     rawFilter === 'popular' || rawFilter === 'fresh' || rawFilter === 'completed' ? rawFilter : 'forYou';
@@ -60,6 +62,7 @@ export default async function CatalogPage({
   if (source) opts.source = source;
   if (tag) opts.tag = tag;
   if (fandom) opts.fandom = fandom;
+  if (aiUsage) opts.aiUsage = aiUsage;
   if (filter === 'completed') opts.completion = 'completed';
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
@@ -98,6 +101,7 @@ export default async function CatalogPage({
       category,
       rating: Number(w.rating_avg) || 0,
       classic: Boolean(w.is_classic),
+      aiUsage: w.ai_usage || 'not_declared',
       completed: w.completion === 'completed',
       cover: w.cover_path || null,
       tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
@@ -117,6 +121,7 @@ export default async function CatalogPage({
       source={source}
       tag={tag}
       fandom={fandom}
+      aiUsage={aiUsage || ''}
       user={session ? { name: session.name } : null}
       progress={progress}
       notifications={unread}

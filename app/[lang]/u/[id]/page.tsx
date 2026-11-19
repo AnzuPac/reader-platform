@@ -32,7 +32,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ la
   const allowed = canViewProfile(profile, session ? { uid: session.uid, role: session.role } : null);
   if (!allowed) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="tl-screen tl-screen--profile mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold">{profile.name}</h1>
           <p className="muted">{t.private}</p>
@@ -47,7 +47,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ la
   const followers = await followerCount(userId);
 
   return (
-    <main id="main" className="mx-auto max-w-5xl px-5 py-8">
+    <main id="main" className="tl-screen tl-screen--profile mx-auto max-w-5xl px-5 py-8">
       <div className="card mb-8 p-6">
         <div className="flex flex-wrap items-center gap-5">
           <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-brand/15 text-2xl font-bold">
@@ -91,6 +91,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ la
                 ) : (
                   <span className="relative line-clamp-3">{w.title}</span>
                 )}
+                {w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
               </div>
               <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
               <div className="text-xs muted">{w.completion === 'completed' ? '✓' : '…'}</div>

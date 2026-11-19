@@ -55,7 +55,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
   const mine = session ? all.filter((c) => c.kind === 'user' && c.owner_id === session.uid) : [];
 
   return (
-    <main id="main" className="mx-auto max-w-6xl px-5 py-8">
+    <main id="main" className="tl-screen tl-screen--collections mx-auto max-w-6xl px-5 py-8">
       <h1 className="mb-6 text-2xl font-bold">{t.title}</h1>
 
       <section className="mb-10">

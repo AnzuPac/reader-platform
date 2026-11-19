@@ -36,7 +36,7 @@ export default async function PublisherPage({
   const session = await readSession();
   if (!session) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="tl-screen tl-screen--publisher mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold">Kabinet izdavača</h1>
           <p className="mb-5 muted">Prodaje, rojaliti i izveštaji — dostupno izdavačima.</p>
@@ -55,7 +55,7 @@ export default async function PublisherPage({
 
   if (!mine && !isAdmin) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main className="tl-screen tl-screen--publisher mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8">
           <h1 className="mb-2 text-2xl font-bold">Kabinet izdavača</h1>
           <p className="muted">
@@ -77,7 +77,7 @@ export default async function PublisherPage({
 
   if (!publisherId) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main className="tl-screen tl-screen--publisher mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8">
           <h1 className="mb-2 text-2xl font-bold">Kabinet izdavača</h1>
           <p className="muted">Još nema izdavaštva u sistemu.</p>
@@ -104,7 +104,7 @@ export default async function PublisherPage({
   const payableCurrency = report.payable[0]?.currency || '';
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8">
+    <main className="tl-screen tl-screen--publisher mx-auto max-w-6xl px-5 py-8">
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="mr-auto">
           <h1 className="text-2xl font-bold">{publisher.name}</h1>

@@ -45,8 +45,8 @@ export function canViewProfile(profile: PublicProfile, viewer: ProfileViewer): b
 
 export async function listPublishedWorks(authorId: number) {
   await ensure();
-  return query<{ id: number; slug: string; title: string; cover_path: string | null; rating_avg: string; completion: string }>(
-    `SELECT id, slug, title, cover_path, rating_avg, completion
+  return query<{ id: number; slug: string; title: string; cover_path: string | null; rating_avg: string; completion: string; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated' }>(
+    `SELECT id, slug, title, cover_path, rating_avg, completion, ai_usage
        FROM works WHERE author_id = $1 AND status = 'published'
       ORDER BY published_at DESC, id DESC`,
     [authorId],

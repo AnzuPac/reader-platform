@@ -42,13 +42,15 @@ export async function POST(req: Request) {
   if (!title) return NextResponse.json({ error: 'title_required' }, { status: 400 });
   await initSchema();
 
+  const rawAi = String(b?.aiUsage || 'not_declared');
+  const aiUsage = (['not_declared','no_ai','assisted','generated'].includes(rawAi) ? rawAi : 'not_declared');
   const slugInput = String(b?.slug || '').trim();
   if (slugInput) {
     const existing = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slugInput]);
     if (!existing || existing.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     await query(
-      `UPDATE works SET title = $2, description = $3, age_rating = $4, completion = $5, updated_at = now() WHERE id = $1`,
-      [existing.id, title, String(b?.description || ''), Number(b?.ageRating) || 0, b?.completion === 'completed' ? 'completed' : 'ongoing']
+      `UPDATE works SET title = $2, description = $3, age_rating = $4, completion = $5, ai_usage = $6, updated_at = now() WHERE id = $1`,
+      [existing.id, title, String(b?.description || ''), Number(b?.ageRating) || 0, b?.completion === 'completed' ? 'completed' : 'ongoing', aiUsage]
     );
     return NextResponse.json({ ok: true, work: { id: existing.id, slug: slugInput } });
   }
@@ -56,9 +58,9 @@ export async function POST(req: Request) {
   const slug = slugify(title);
   const wtype = b?.type === 'comic' ? 'comic' : 'novel';
   const rows = await query<{ id: number; slug: string }>(
-    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description, type)
-     VALUES ($1,$2,'sr','draft',$3,$4,$5,$6,$7) RETURNING id, slug`,
-    [slug, s.uid, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || ''), wtype]
+    `INSERT INTO works (slug, author_id, original_language, status, completion, age_rating, title, description, type, ai_usage)
+     VALUES ($1,$2,'sr','draft',$3,$4,$5,$6,$7,$8) RETURNING id, slug`,
+    [slug, s.uid, b?.completion === 'completed' ? 'completed' : 'ongoing', Number(b?.ageRating) || 0, title, String(b?.description || ''), wtype, aiUsage]
   );
   return NextResponse.json({ ok: true, work: rows[0] });
 }

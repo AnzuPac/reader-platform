@@ -11,7 +11,7 @@ import { initSchema, one, query } from './db';
 export const REPORT_TARGETS = ['work', 'comment', 'review', 'user'] as const;
 export type ReportTarget = (typeof REPORT_TARGETS)[number];
 
-export const REPORT_REASONS = ['copyright', 'spam', 'abuse', 'other'] as const;
+export const REPORT_REASONS = ['copyright', 'spam', 'abuse', 'ai_mislabel', 'other'] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
 export type Report = {

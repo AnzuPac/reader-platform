@@ -8,7 +8,7 @@ export type WorkCard = {
   id: number; slug: string; title: string; description: string; cover_path: string | null;
   rating_avg: string; words_total: number; views_total: number;
   age_rating: number; completion: string; author_name: string; type?: string; kind?: string; category?: string;
-  is_classic?: number; publisher_id?: number | null;
+  is_classic?: number; publisher_id?: number | null; ai_usage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
   /** Таксономия фанфиков/комиксов (аудит, п.29-30). */
   fandom?: string | null; pairing?: string | null; content_warnings?: string | null;
   comic_format?: string | null; reading_direction?: string | null;
@@ -32,6 +32,7 @@ export type ListWorksOpts = {
   /** Подстрочный поиск по полю works.fandom (мастер-промпт §4: фандом). */
   fandom?: string;
   excludeTags?: string[];
+  aiUsage?: 'no_ai' | 'assisted' | 'generated';
 };
 
 export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
@@ -60,6 +61,7 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     }
   }
   if (opts.classic) where.push('w.is_classic = TRUE');
+  if (opts.aiUsage) { params.push(opts.aiUsage); where.push(`w.ai_usage = $${params.length}`); }
   if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
   if (opts.fanfic === false) where.push("w.kind = 'original'");
   if (wtype === 'novel' || wtype === 'comic') {
@@ -114,7 +116,7 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
   const sql = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
                  w.age_rating, w.completion, w.cover_path, w.type, w.kind,
                  CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
-                 w.is_classic, w.publisher_id, u.display_name AS author_name
+                 w.is_classic, w.publisher_id, w.ai_usage, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id
                 WHERE ${where.join(' AND ')}
                 ORDER BY ${order} LIMIT $${limIdx} OFFSET $${offIdx}`;
@@ -126,7 +128,7 @@ export async function getWork(slug: string): Promise<(WorkCard & { type: string;
   return one<WorkCard & { type: string; author_id: number }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
             w.fandom, w.pairing, w.content_warnings, w.comic_format, w.reading_direction,
-            w.age_rating, w.completion, w.cover_path, w.type, w.kind, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, w.author_id, u.display_name AS author_name
+            w.age_rating, w.completion, w.cover_path, w.type, w.kind, w.ai_usage, CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category, w.author_id, u.display_name AS author_name
        FROM works w JOIN users u ON u.id = w.author_id
       WHERE w.slug = $1 AND w.status = 'published'`, [slug]
   );
@@ -254,7 +256,7 @@ export async function listLibrary(userId: number, status?: LibraryStatus) {
   if (status) { params.push(status); filter = ` AND coalesce(l.status, 'want') = $${params.length}`; }
   return query<WorkCard & { added_at: string; status: string | null }>(
     `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
-            w.age_rating, w.completion, w.cover_path, w.type, w.kind,
+            w.age_rating, w.completion, w.cover_path, w.type, w.kind, w.ai_usage,
             CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
             u.display_name AS author_name, l.created_at AS added_at, l.status
        FROM library_items l
@@ -290,8 +292,8 @@ export async function addWorkGenre(workId: number, genreSlug: string): Promise<v
 
 export async function getAuthorWork(slug: string, authorId: number) {
   await ensure();
-  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string; type: string }>(
-    'SELECT id, slug, title, description, status, cover_path, age_rating, completion, type FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
+  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string; type: string; ai_usage: 'not_declared'|'no_ai'|'assisted'|'generated' }>(
+    'SELECT id, slug, title, description, status, cover_path, age_rating, completion, type, ai_usage FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
   );
 }
 

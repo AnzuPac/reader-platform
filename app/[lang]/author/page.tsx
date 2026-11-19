@@ -18,7 +18,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ lang: s
   const income = await authorIncome(s.uid);
 
   return (
-    <main id="main" className="mx-auto max-w-4xl px-5 py-10">
+    <main id="main" className="tl-screen tl-screen--author mx-auto max-w-4xl px-5 py-10">
       <h1 className="mb-6 text-2xl font-bold">Кабинет автора</h1>
       <EpubImportForm />
       <AuthorWorks lang={l} />

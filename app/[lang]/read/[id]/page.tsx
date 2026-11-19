@@ -56,7 +56,7 @@ export default async function ReadPage({
   const next = idx >= 0 && idx < chapters.length - 1 ? chapters[idx + 1] : null;
 
   return (
-    <main id="main" className="mx-auto max-w-3xl px-5 py-10">
+    <main id="main" className="tl-screen tl-screen--reader mx-auto max-w-3xl px-5 py-10">
       <div className="mb-6 flex items-center gap-3 text-sm muted">
         <Link href={`/${l}/work/${ch.work_slug}`} className="hover:text-violet">← {ch.work_title}</Link>
         <span>·</span>
@@ -78,7 +78,7 @@ export default async function ReadPage({
         </ul>
       </details>
 
-      <h1 className="mb-3 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1>
+      <div className="tl-reader-heading"><span className="tl-page-eyebrow">TEROLIBRARY READER · {ch.work_title}</span><h1 className="mb-3 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1><p>{l === 'ru' ? `Глава ${ch.number}` : l === 'en' ? `Chapter ${ch.number}` : `Glava ${ch.number}`}</p></div>
       {ch.translit_allowed ? (
         <div className="mb-6 flex items-center gap-2 text-sm">
           <Link href={`/${l}/read/${ch.id}?script=cir`}

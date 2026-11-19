@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 type LibItem = {
   id: number; slug: string; title: string; description: string;
   rating_avg: string; words_total: number; age_rating: number;
-  completion: string; author_name: string; added_at: string;
+  completion: string; author_name: string; added_at: string; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
 };
 
 type Tab = 'saved' | 'history' | 'bookmarks' | 'purchased';
@@ -51,7 +51,7 @@ export default async function LibraryPage({
 
   if (!session) {
     return (
-      <main id="main" className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main" className="tl-screen tl-screen--library mx-auto max-w-3xl px-5 py-16">
         <div className="card p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold">{t(l, 'nav_library')}</h1>
           <p className="mb-5 muted">
@@ -77,7 +77,7 @@ export default async function LibraryPage({
   const label = TAB_LABELS[l];
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8">
+    <main className="tl-screen tl-screen--library mx-auto max-w-6xl px-5 py-8">
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-2xl font-bold">{t(l, 'nav_library')}</h1>
         <span className="text-sm muted">{filteredItems.length}</span>
@@ -180,6 +180,7 @@ export default async function LibraryPage({
               <Link key={w.id} href={`/${l}/work/${w.slug}`} className="group">
                 <div className="cover cover-sm relative">
                   <span className="relative line-clamp-3">{w.title}</span>
+                  {w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
                   <span className="absolute right-1 top-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">
                     {w.chapter_only ? 'GLAVA' : 'KNJIGA'}
                   </span>
@@ -223,6 +224,7 @@ export default async function LibraryPage({
                 <Link href={`/${l}/work/${w.slug}`} className="group block">
                   <div className="cover cover-sm relative">
                     <span className="relative line-clamp-3">{w.title}</span>
+                    {w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}
                   </div>
                   <div className="mt-2 line-clamp-1 text-sm font-semibold group-hover:text-brand">{w.title}</div>
                   <div className="text-xs muted">{w.author_name}</div>

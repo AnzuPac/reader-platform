@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 type Card = {
   id: number; slug: string; title: string; author_name: string;
-  cover_path: string | null; rating_avg: string; completion: string; type?: string; kind?: string;
+  cover_path: string | null; rating_avg: string; completion: string; type?: string; kind?: string; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
 };
 const TXT: Record<Lang, {
   hello: string; continueReading: string; continueBtn: string; freshSub: string;
@@ -21,7 +21,7 @@ const TXT: Record<Lang, {
 };
 function WorkCard({w,lang,accent}:{w:Card;lang:Lang;accent:string}) {
   return <Link href={`/${lang}/work/${w.slug}`} className={`tl-home-card ${accent}`}>
-    <div className="tl-home-cover">{w.cover_path ? <img src={w.cover_path} alt={w.title} loading="lazy"/> : <div className="tl-cover-placeholder"><span>TEROLIBRARY</span><strong>{w.title}</strong><small>{w.author_name}</small></div>}</div>
+    <div className="tl-home-cover">{w.cover_path ? <img src={w.cover_path} alt={w.title} loading="lazy"/> : <div className="tl-cover-placeholder"><span>TEROLIBRARY</span><strong>{w.title}</strong><small>{w.author_name}</small></div>}{w.ai_usage && w.ai_usage !== 'not_declared' ? <span className={`tl-ai-badge tl-ai-badge--${w.ai_usage}`}>{w.ai_usage === 'no_ai' ? '✓ БЕЗ ИИ' : w.ai_usage === 'assisted' ? '✦ AI-ASSISTED' : '✦ AI CONTENT'}</span> : null}</div>
     <div className="tl-home-card-info"><div className="tl-home-card-meta"><span>{w.completion === 'completed' ? (lang==='ru'?'Завершено':lang==='en'?'Completed':'Završeno') : (lang==='ru'?'В процессе':lang==='en'?'Ongoing':'U toku')}</span><span>★ {Number(w.rating_avg||0).toFixed(1)}</span></div><h3>{w.title}</h3><p>{w.author_name}</p></div>
   </Link>;
 }
@@ -50,5 +50,6 @@ export default async function HomePage({params}:{params:Promise<{lang:string}>})
   <WorkRow title={x.weekly} subtitle={x.top} items={fanficTop as Card[]} lang={l} href={`${cat('fanfic')}&filter=popular`} accent="tl-fanfics tl-top" empty={x.empty}/>
   <WorkRow title={x.manga} subtitle={x.rec} items={mangaFresh as Card[]} lang={l} href={cat('manga')} accent="tl-manga" empty={x.empty}/>
   <WorkRow title={x.weekly} subtitle={x.top} items={mangaTop as Card[]} lang={l} href={`${cat('manga')}&filter=popular`} accent="tl-manga tl-top" empty={x.empty}/>
+  <section className="tl-home-creator-cta"><div><span className="tl-home-kicker">TEROLIBRARY CREATOR STUDIO</span><h2>{l==='ru'?'Публикуешь свои истории?':l==='en'?'Have a story to publish?':'Pišeš svoju priču?'}</h2><p>{l==='ru'?'Авторский кабинет, главы, статистика читателей и инструменты публикации — в одном месте.':l==='en'?'A creator workspace for chapters, reader insights and publishing tools.':'Autorski kabinet, poglavlja, statistika čitalaca i alati za objavljivanje.'}</p></div><Link href={`/${l}/author`}>{l==='ru'?'Кабинет автора':l==='en'?'Creator studio':'Autorski kabinet'} <span>→</span></Link></section>
  </main>;
 }
