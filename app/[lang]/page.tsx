@@ -87,6 +87,9 @@ function ProtoCard({ w, lang, x }: { w: Card; lang: Lang; x: (typeof TXT)[Lang] 
   return (
     <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }} aria-label={`${w.title} — ${w.author_name}`}>
       <div className={`cover ${tone(w)}`}>
+        <span className={`ai-badge ${w.ai_usage === 'no_ai' ? 'ai-badge--no' : !w.ai_usage || w.ai_usage === 'not_declared' ? 'ai-badge--unknown' : 'ai-badge--yes'}`}>
+          {w.ai_usage === 'no_ai' ? (lang === 'ru' ? 'Без ИИ' : lang === 'en' ? 'No AI' : 'Bez AI') : !w.ai_usage || w.ai_usage === 'not_declared' ? (lang === 'ru' ? 'ИИ: не заявлено' : lang === 'en' ? 'AI: not declared' : 'AI: nije navedeno') : (lang === 'ru' ? 'С ИИ' : lang === 'en' ? 'With AI' : 'Sa AI')}
+        </span>
         <div className="book-hover">
           <div className="book-hover-meta">
             <span>{w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Графика' : lang === 'en' ? 'Graphic' : 'Grafika') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga')}</span>

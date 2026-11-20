@@ -35,6 +35,7 @@ const TXT: Record<Lang, {
   sort: string; sortRecommend: string; sortPopular: string; sortNew: string; sortRating: string;
   apply: string; reset: string; genre: string; tags: string; fandom: string; source: string; ai: string;
   anyAi: string; noAi: string; assisted: string; generated: string;
+  noAiShort: string; aiYes: string; aiUnknown: string;
   sourcePublisher: string; sourceSelf: string; sourceClassic: string;
   count: (n: number) => string; prev: string; next: string; empty: string;
   activeFilters: string; remove: string; tagPlaceholder: string; fandomPlaceholder: string;
@@ -49,6 +50,7 @@ const TXT: Record<Lang, {
     sort: 'Sortiranje', sortRecommend: 'Preporučeno', sortPopular: 'Popularno', sortNew: 'Najnovije', sortRating: 'Po rejtingu',
     apply: 'Prikaži rezultate', reset: 'Resetuj', genre: 'Žanrovi', tags: 'Tagovi', fandom: 'Fandom', source: 'Izvor', ai: 'AI sadržaj',
     anyAi: 'Bilo koji', noAi: 'Autor tvrdi: bez AI', assisted: 'AI delimično', generated: 'AI generisano',
+    noAiShort: 'Bez AI', aiYes: 'Sa AI', aiUnknown: 'AI: nije navedeno',
     sourcePublisher: 'Izdavač', sourceSelf: 'Samizdat', sourceClassic: 'Klasici',
     count: (n) => `Pronađeno ${n} dela`, prev: 'Nazad', next: 'Napred', empty: 'Ništa nije pronađeno po ovim filterima.',
     activeFilters: 'Aktivni filteri', remove: 'Ukloni', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Naziv fandoma',
@@ -63,6 +65,7 @@ const TXT: Record<Lang, {
     sort: 'Сортировка', sortRecommend: 'Рекомендованные', sortPopular: 'Популярные', sortNew: 'Сначала новые', sortRating: 'По рейтингу',
     apply: 'Показать результаты', reset: 'Сбросить', genre: 'Жанры', tags: 'Теги', fandom: 'Фандом', source: 'Источник', ai: 'AI-контент',
     anyAi: 'Любой', noAi: 'Автор заявляет: без ИИ', assisted: 'ИИ использовался частично', generated: 'ИИ-генерация',
+    noAiShort: 'Без ИИ', aiYes: 'С ИИ', aiUnknown: 'ИИ: не заявлено',
     sourcePublisher: 'Издательство', sourceSelf: 'Самиздат', sourceClassic: 'Классика',
     count: (n) => `Найдено ${n} произведений`, prev: 'Назад', next: 'Вперёд', empty: 'По этим фильтрам ничего не найдено.',
     activeFilters: 'Активные фильтры', remove: 'Убрать', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Название фандома',
@@ -77,6 +80,7 @@ const TXT: Record<Lang, {
     sort: 'Sort', sortRecommend: 'Recommended', sortPopular: 'Popular', sortNew: 'Newest', sortRating: 'By rating',
     apply: 'Show results', reset: 'Reset', genre: 'Genres', tags: 'Tags', fandom: 'Fandom', source: 'Source', ai: 'AI content',
     anyAi: 'Any', noAi: 'Author declares: no AI', assisted: 'AI partially used', generated: 'AI generated',
+    noAiShort: 'No AI', aiYes: 'With AI', aiUnknown: 'AI: not declared',
     sourcePublisher: 'Publisher', sourceSelf: 'Self-published', sourceClassic: 'Classics',
     count: (n) => `Found ${n} works`, prev: 'Prev', next: 'Next', empty: 'Nothing matches these filters.',
     activeFilters: 'Active filters', remove: 'Remove', tagPlaceholder: 'tag-slug', fandomPlaceholder: 'Fandom name',
@@ -99,6 +103,9 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
         className={`cover ${tone}`}
         style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
+        <span className={`ai-badge ${w.aiUsage === 'no_ai' ? 'ai-badge--no' : !w.aiUsage || w.aiUsage === 'not_declared' ? 'ai-badge--unknown' : 'ai-badge--yes'}`}>
+          {w.aiUsage === 'no_ai' ? t.noAiShort : !w.aiUsage || w.aiUsage === 'not_declared' ? t.aiUnknown : t.aiYes}
+        </span>
         <div className="book-hover">
           <div className="book-hover-meta">
             <span>{w.category === 'manga' ? t.manga : w.category === 'fanfic' ? t.fanfics : t.books}</span>
@@ -179,7 +186,7 @@ export default function BookverseCatalog({
   if (tag) active.push({ label: `#${tag}`, clear: () => { setDraftTag(''); go({ tag: '', page: 1 }); } });
   if (fandom) active.push({ label: `${t.fandom}: ${fandom}`, clear: () => { setDraftFandom(''); go({ fandom: '', page: 1 }); } });
   if (source) active.push({ label: `${t.source}: ${source}`, clear: () => { setDraftSource(''); go({ source: '', page: 1 }); } });
-  if (aiUsage) active.push({ label: `AI: ${aiUsage}`, clear: () => { setDraftAi(''); go({ ai: '', page: 1 }); } });
+  if (aiUsage) active.push({ label: `AI: ${aiUsage === 'yes' ? t.aiYes : aiUsage === 'no_ai' ? t.noAiShort : aiUsage}`, clear: () => { setDraftAi(''); go({ ai: '', page: 1 }); } });
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
@@ -330,7 +337,7 @@ export default function BookverseCatalog({
             <div className="filterrow">
               <h3>{t.ai}</h3>
               {([
-                ['', t.anyAi], ['no_ai', t.noAi], ['assisted', t.assisted], ['generated', t.generated],
+                ['', t.anyAi], ['no_ai', t.noAiShort], ['yes', t.aiYes],
               ] as [string, string][]).map(([v, label]) => (
                 <label key={v || 'any'} className="checkbox">
                   <input type="radio" name="ai" checked={draftAi === v} onChange={() => setDraftAi(v)} /> {label}

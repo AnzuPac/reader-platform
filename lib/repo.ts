@@ -32,7 +32,7 @@ export type ListWorksOpts = {
   /** Подстрочный поиск по полю works.fandom (мастер-промпт §4: фандом). */
   fandom?: string;
   excludeTags?: string[];
-  aiUsage?: 'no_ai' | 'assisted' | 'generated';
+  aiUsage?: 'yes' | 'no_ai' | 'assisted' | 'generated';
 };
 
 export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
@@ -61,7 +61,8 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     }
   }
   if (opts.classic) where.push('w.is_classic = TRUE');
-  if (opts.aiUsage) { params.push(opts.aiUsage); where.push(`w.ai_usage = $${params.length}`); }
+  if (opts.aiUsage === 'yes') { where.push("w.ai_usage IN ('assisted','generated')"); }
+  else if (opts.aiUsage) { params.push(opts.aiUsage); where.push(`w.ai_usage = $${params.length}`); }
   if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
   if (opts.fanfic === false) where.push("w.kind = 'original'");
   if (wtype === 'novel' || wtype === 'comic') {

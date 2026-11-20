@@ -1076,3 +1076,21 @@
   .tlp .book-hover h3 { font-size: 13px; }
   .tlp .book-hover-desc { -webkit-line-clamp: 3; }
 }
+
+/* Метка ИИ на обложке: левый верхний угол. */
+.tlp .book .ai-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 7px; border-radius: 6px;
+  font: 800 9px/1.25 system-ui, sans-serif; letter-spacing: .04em;
+  color: #fff; text-transform: uppercase; white-space: nowrap;
+  pointer-events: none;
+}
+.tlp .book .ai-badge--no { background: #18844b; }
+.tlp .book .ai-badge--yes { background: #bd4d37; }
+.tlp .book .ai-badge--unknown { background: #6b7280; }
+
+.tl-ai-badge{position:absolute;top:10px;left:10px;z-index:5;padding:4px 8px;border-radius:6px;font:800 10px/1.2 system-ui;color:#fff;letter-spacing:.03em;text-transform:uppercase}
+.tl-ai-badge--no{background:#18844b}
+.tl-ai-badge--yes{background:#bd4d37}
+.tl-ai-badge--unknown{background:#6b7280}

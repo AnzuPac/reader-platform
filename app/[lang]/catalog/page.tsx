@@ -37,7 +37,7 @@ export default async function CatalogPage({
   const tag = str(sp.tag);
   const fandom = str(sp.fandom);
   const aiRaw = str(sp.ai);
-  const aiUsage = aiRaw === 'no_ai' || aiRaw === 'assisted' || aiRaw === 'generated' ? aiRaw : undefined;
+  const aiUsage = aiRaw === 'yes' || aiRaw === 'no_ai' || aiRaw === 'assisted' || aiRaw === 'generated' ? aiRaw : undefined;
   const rawFilter = str(sp.filter);
   const filter: CatalogFilter =
     rawFilter === 'popular' || rawFilter === 'fresh' || rawFilter === 'completed' ? rawFilter : 'forYou';

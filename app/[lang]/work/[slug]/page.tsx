@@ -94,7 +94,12 @@ export default async function WorkPage({
         <div className="tl-work-context">{work.kind === 'fanfic' ? (l === 'ru' ? 'ФАНФИК' : l === 'en' ? 'FAN FICTION' : 'FANFIKCIJA') : work.type === 'comic' ? (l === 'ru' ? 'МАНГА И КОМИКСЫ' : l === 'en' ? 'MANGA & COMICS' : 'MANGA I STRIPOVI') : (l === 'ru' ? 'КНИГА' : l === 'en' ? 'BOOK' : 'KNJIGA')} · TEROLIBRARY</div>
         <div className="flex flex-col gap-6 sm:flex-row">
           <div className="w-[170px] shrink-0">
-            <WorkCover title={work.title} cover={work.cover_path} size="cover-lg" />
+            <div className="work-cover-wrap" style={{ position: 'relative' }}>
+              <WorkCover title={work.title} cover={work.cover_path} size="cover-lg" />
+              <span className={`tl-ai-badge ${work.ai_usage === 'no_ai' ? 'tl-ai-badge--no' : !work.ai_usage || work.ai_usage === 'not_declared' ? 'tl-ai-badge--unknown' : 'tl-ai-badge--yes'}`}>
+                {work.ai_usage === 'no_ai' ? (l === 'ru' ? 'Без ИИ' : l === 'en' ? 'No AI' : 'Bez AI') : !work.ai_usage || work.ai_usage === 'not_declared' ? (l === 'ru' ? 'ИИ: не заявлено' : l === 'en' ? 'AI: not declared' : 'AI: nije navedeno') : (l === 'ru' ? 'С ИИ' : l === 'en' ? 'With AI' : 'Sa AI')}
+              </span>
+            </div>
           </div>
 
           <div className="min-w-0 flex-1">
