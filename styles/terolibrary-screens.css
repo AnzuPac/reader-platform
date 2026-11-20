@@ -25,20 +25,7 @@ body{background:var(--tl-bg);color:var(--tl-ink)}
 .tl-screen td,.tl-screen th{padding:13px 14px;border-bottom:1px solid #edf0f4}
 .tl-screen tr:last-child td{border-bottom:0}
 
-/* Shared application navigation and footer */
-.site-header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--tl-line)!important;box-shadow:0 3px 20px rgba(26,35,50,.035)!important;backdrop-filter:blur(16px)}
-.site-header>div{max-width:1440px!important;min-height:70px}
-.site-brand-mark{background:linear-gradient(135deg,#7b8aa3,#52637f)!important;width:35px!important;height:35px!important;border-radius:11px!important;box-shadow:0 4px 10px rgba(76,94,125,.18)}
-.site-brand-name{font-size:20px!important;letter-spacing:-.8px;font-weight:900;color:#252832!important}
-.site-nav{gap:16px!important;color:#717988!important;font-weight:650!important}
-.site-nav a{position:relative;padding:7px 0;white-space:nowrap}
-.site-nav a:hover{color:#4f607b!important}
 .site-header .input{height:40px;border-radius:11px!important;background:#f6f7f9!important;border-color:#e5e8ee!important}
-.site-footer{background:#fff!important;border-top:1px solid var(--tl-line)!important}
-.site-footer>div{max-width:1320px!important;color:#838a98!important}
-.site-footer a:hover{color:#53647f!important}
-.site-mobile-nav a{white-space:nowrap}
-
 /* Work details — book cover, information hierarchy, purchasing and chapter list */
 .tl-screen--work{max-width:1180px!important}
 .tl-work-hero{display:grid;grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:34px;padding:30px!important;align-items:start;border-radius:19px!important;background:linear-gradient(125deg,#fff 0%,#fbfcfe 100%)!important}

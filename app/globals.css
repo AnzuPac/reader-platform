@@ -53,21 +53,10 @@ a { color: inherit; text-decoration: none; }
 .cover-lg { height: 260px; }
 .cover-sm { height: 170px; }
 
-/* ----- Бейджи и разделы ----- */
-.cat-badge { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: .02em; }
-.cat-manga  { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-.cat-book   { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
-.cat-fanfic { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
 .tab-manga.active   { background: #2563eb; color: #fff; }
 .tab-book.active    { background: #6b7280; color: #fff; }
 .tab-fanfic.active  { background: #7c3aed; color: #fff; }
-.card-manga   { border-left: 4px solid #2563eb; }
-.card-book    { border-left: 4px solid #9ca3af; }
-.card-fanfic  { border-left: 4px solid #7c3aed; }
-
 .badge-hot { background: #f3f4f6; color: #374151; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; }
-.badge-rank { position: absolute; top: 8px; left: 8px; background: var(--rd-accent); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 6px; z-index: 2; }
-
 /* ----- Читалка ----- */
 .prose-reader { font-family: var(--reader-font, Georgia, 'Times New Roman', serif); font-size: var(--reader-size, 18px); line-height: var(--reader-lh, 1.9); color: var(--reader-fg, #1f2937); }
 .reader-surface { background: var(--reader-bg, transparent); border-radius: 12px; }
@@ -116,15 +105,9 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
 
 /* ----- Тёмные утилиты Tailwind, унаследованные от старой темы ----- */
 .border-white\/20, .border-white\/15, .border-white\/10 { border-color: var(--rd-line) !important; }
-.bg-white\/5 { background: var(--rd-surface-soft) !important; }
 [class*="bg-[#14121c]"] { background: var(--rd-surface) !important; border-color: var(--rd-line) !important; }
 .bg-brand, .bg-hot { background: var(--rd-muted) !important; }
 .text-brand { color: #374151 !important; }
-/* Category-separated home sections: keep the agreed neutral / purple / orange palette. */
-.home-category-books { background: linear-gradient(135deg, rgba(148,163,184,.07), transparent 65%); }
-.home-category-fanfics { background: linear-gradient(135deg, rgba(139,92,246,.10), transparent 65%); border-color: rgba(139,92,246,.24); }
-.home-category-manga { background: linear-gradient(135deg, rgba(249,115,22,.10), transparent 65%); border-color: rgba(249,115,22,.24); }
-
 /* TeroLibrary global redesign: neutral reading surfaces, category accents. */
 :root {
   --rd-bg: #f7f7fb;
@@ -140,13 +123,6 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   --rd-focus: #7c3aed;
 }
 body { background: var(--rd-bg); color: var(--rd-fg); }
-.site-header { background: rgba(255,255,255,.94); border-color: var(--rd-line); box-shadow: 0 2px 14px rgba(30,35,60,.04); }
-.site-brand-mark { background: linear-gradient(135deg,#6d28d9,#8b5cf6); box-shadow: 0 4px 12px rgba(109,40,217,.22); }
-.site-brand-name { color: #25253a; }
-.site-nav { color: #62677a; }
-.site-nav a:hover { color: #6d28d9; }
-.site-footer { background: #fff; border-color: var(--rd-line); }
-.site-footer a:hover { color: #6d28d9; }
 .language-switcher { display:flex; align-items:center; gap:3px; padding:3px; border:1px solid var(--rd-line); border-radius:999px; background:#f5f5fa; }
 .language-switcher__item { display:inline-flex; align-items:center; justify-content:center; min-width:30px; padding:5px 7px; border-radius:999px; font-size:11px; font-weight:800; color:#666b7d; }
 .language-switcher__item:hover { background:#e9e8f2; color:#28243a; }
@@ -157,21 +133,12 @@ body { background: var(--rd-bg); color: var(--rd-fg); }
 .card { transition:border-color .15s ease, box-shadow .15s ease; }
 .card:hover { border-color:#d4c8f5; box-shadow:0 5px 18px rgba(30,35,60,.06); }
 input,select,textarea { color:var(--rd-field-fg); }
-.home-category-books { background:linear-gradient(135deg,rgba(148,163,184,.08),#fff 68%); }
-.home-category-fanfics { background:linear-gradient(135deg,rgba(139,92,246,.08),#fff 68%); border-color:rgba(139,92,246,.24); }
-.home-category-manga { background:linear-gradient(135deg,rgba(249,115,22,.08),#fff 68%); border-color:rgba(249,115,22,.24); }
 @media (max-width:640px) {
-  .site-header > div { gap:8px; padding-left:12px; padding-right:12px; }
-  .site-header form { display:none; }
   .language-switcher__item { min-width:27px; padding:4px 5px; }
-  .site-brand-mark { width:30px; height:30px; }
   .btn { padding:8px 12px; }
 }
-.site-mobile-nav { display:none; }
 @media(max-width:767px) {
- .site-mobile-nav { display:flex; gap:14px; width:100%; order:5; padding-top:8px; font-size:12px; font-weight:700; color:#62677a; }
- .site-header > div { flex-wrap:wrap; }
-}
+ }
 .library-toolbar .library-search { display:flex; align-items:center; gap:8px; flex:1 1 260px; min-width:180px; }
 .library-toolbar .library-search input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--rd-field-line); border-radius:9px; background:white; }
 .library-sort { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--rd-muted); }
@@ -183,13 +150,7 @@ input,select,textarea { color:var(--rd-field-fg); }
 :root{--tl-books:#71809a;--tl-books-soft:#e8edf4;--tl-fanfic:#9061c4;--tl-fanfic-soft:#f0e6fb;--tl-manga:#df843b;--tl-manga-soft:#fff0e2;--tl-radius:16px;--tl-shadow:0 8px 28px rgba(32,40,56,.055)}
 body{background:#f6f7fa!important;color:#252832!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
 main:not(.tl-home):not(.bv-app){max-width:1320px!important;margin-left:auto!important;margin-right:auto!important;padding:28px 24px 68px!important}
-.site-header{height:auto!important;min-height:68px;background:rgba(255,255,255,.94)!important;border-bottom:1px solid #e4e7ed!important;box-shadow:0 3px 18px rgba(26,35,50,.04)!important}
-.site-header>div{max-width:1440px!important;min-height:68px}
-.site-brand-mark{background:linear-gradient(135deg,#71809a,#4e5d75)!important;border-radius:10px!important;width:34px!important;height:34px!important}
-.site-brand-name{font-size:20px;font-weight:900;letter-spacing:-.65px;color:#252832!important}
-.site-nav{gap:17px!important;font-size:13px!important;color:#747b8b!important}.site-nav a{padding:8px 0;white-space:nowrap}.site-nav a:hover{color:#4e5d75!important}
 .site-header form .input{height:40px;background:#f5f6f9;border-color:#e5e7ed;border-radius:11px;padding-left:14px}
-.site-notifications{width:36px;height:36px;border:1px solid #e5e7ed;border-radius:10px;display:grid;place-items:center;color:#68758c;font-size:18px}
 .site-auth .btn{border-radius:10px!important;font-size:13px!important;padding:9px 14px!important}
 .btn-primary{background:#65758f!important;border-color:#65758f!important;color:#fff!important}.btn-primary:hover{background:#52627a!important}
 .btn-ghost{background:#fff!important;border:1px solid #dfe3eb!important;color:#384154!important}
@@ -222,8 +183,6 @@ main:not(.tl-home):not(.bv-app) .cat-fanfic{background:#f0e6fb!important;color:#
 main:not(.tl-home):not(.bv-app) .cat-manga{background:#fff0e2!important;color:#c26d2c!important;border-color:#f3d8c1!important}
 main:not(.tl-home):not(.bv-app) .tab-book.active{background:#71809a!important}.tab-fanfic.active{background:#9061c4!important}.tab-manga.active{background:#df843b!important}
 main:not(.tl-home):not(.bv-app) .card-book{border-left-color:#71809a!important}main:not(.tl-home):not(.bv-app) .card-fanfic{border-left-color:#9061c4!important}main:not(.tl-home):not(.bv-app) .card-manga{border-left-color:#df843b!important}
-.site-footer{background:#fff!important;color:#7a8090!important;border-top:1px solid #e5e7ed!important}
-.site-footer>div{max-width:1320px!important}
 /* Catalog's dedicated Bookverse experience is preserved and harmonized. */
 .bv-app{--bv-accent:#71809a!important;--bv-brand-soft:#e8edf4!important;--bv-bg:#f6f7fa!important;--bv-surface:#fff!important;--bv-line:#e5e7ed!important;--bv-text:#252832!important;--bv-muted:#7b8290!important}
 .bv-app.bv-theme-fanfics{--bv-accent:#9061c4!important;--bv-brand-soft:#f0e6fb!important}
@@ -243,6 +202,6 @@ main:not(.tl-home):not(.bv-app) .prose h2,main:not(.tl-home):not(.bv-app) .prose
 main:not(.tl-home):not(.bv-app) .bg-brand\/10{background:#edf0f5!important}
 main:not(.tl-home):not(.bv-app) .text-brand{color:#65758f!important}
 main:not(.tl-home):not(.bv-app) .hover\:border-brand:hover{border-color:#b9c4d3!important}
-@media(max-width:900px){.site-nav{gap:10px!important}.site-nav a{font-size:12px}.site-header form{max-width:260px}}
-@media(max-width:767px){main:not(.tl-home):not(.bv-app){padding:20px 14px 60px!important}.site-header>div{padding:10px 13px!important}.site-mobile-nav{gap:0!important;justify-content:space-between!important;border-top:1px solid #edf0f4;margin-top:5px;padding:9px 0 2px!important}.site-mobile-nav a{padding:5px 10px;border-radius:8px}.site-mobile-nav a:hover{background:#f1f3f7}.site-auth{display:flex!important;margin-left:auto}.site-auth .btn-ghost{display:none}.site-notifications{width:31px;height:31px}.site-header form{display:block!important;order:6!important;flex-basis:100%!important;max-width:none!important;margin-top:3px}.site-header form .input{height:36px}.site-brand-name{font-size:18px}.site-header>div{gap:8px!important}.site-footer>div{gap:12px!important}.reader-surface{padding:20px!important}.prose-reader{font-size:17px!important}}
+@media(max-width:900px){}
+@media(max-width:767px){main:not(.tl-home):not(.bv-app){padding:20px 14px 60px!important}.site-auth .btn-ghost{display:none}.site-header form .input{height:36px}.reader-surface{padding:20px!important}.prose-reader{font-size:17px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
