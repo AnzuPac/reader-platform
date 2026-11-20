@@ -1049,3 +1049,32 @@
   .tlp .tlp-main-nav-link { font-size: 12px; }
   .tlp .tlp-literature-dropdown { min-width: 190px; }
 }
+
+/* Work descriptions: reveal on hover/focus for desktop, beside cover on mobile. */
+.tlp .book { position:relative; }
+.tlp .bookbody { color:var(--tlp-text); }
+.tlp .bookbody h3 { color:var(--tlp-text); }
+.tlp .bookbody .author, .tlp .bookbody .meta { color:var(--tlp-muted); }
+.tlp .work-description { color:var(--tlp-text); background:var(--tlp-panel-raised); border-top:1px solid var(--tlp-line); margin-top:9px; padding-top:8px; font-size:12px; line-height:1.45; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+@media (min-width:751px) {
+  .tlp .work-description { max-height:0; opacity:0; overflow:hidden; padding-top:0; margin-top:0; border-top:0; transition:max-height .22s ease,opacity .18s ease,margin .18s ease,padding .18s ease; }
+  .tlp .book:hover .work-description, .tlp .book:focus-visible .work-description { max-height:100px; opacity:1; margin-top:9px; padding-top:8px; border-top:1px solid var(--tlp-line); }
+}
+@media (max-width:750px) {
+  .tlp .book { display:flex!important; flex-direction:row; align-items:stretch; min-height:0; }
+  .tlp .book .cover { width:38%; flex:0 0 38%; aspect-ratio:3/4; height:auto; border-radius:0; }
+  .tlp .book .bookbody { width:62%; min-width:0; padding:10px; display:flex; flex-direction:column; }
+  .tlp .book .bookbody h3 { font-size:13px; }
+  .tlp .book .meta { font-size:9px; }
+  .tlp .book .work-description { margin-top:7px; padding-top:7px; border-top:1px solid var(--tlp-line); font-size:11px; -webkit-line-clamp:6; max-height:none; opacity:1; }
+  .tlp .book .cover-title { font-size:15px; }
+}
+/* Contrast guard: never use fixed dark text in dark mode. */
+.tlp[data-theme="dark"] .subnav button.subnav-btn:hover,
+.tlp.tlp-dark .subnav button.subnav-btn:hover { color:var(--tlp-text); }
+.tlp[data-theme="dark"] .bookbody,
+.tlp[data-theme="dark"] .bookbody h3,
+.tlp[data-theme="dark"] .work-description,
+.tlp.tlp-dark .bookbody,
+.tlp.tlp-dark .bookbody h3,
+.tlp.tlp-dark .work-description { color:var(--tlp-text); }

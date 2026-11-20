@@ -111,6 +111,7 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
         <div className="tags">
           <span className="status">{w.completed ? t.completed : '—'}</span>
         </div>
+        <div className="work-description" aria-label="Описание произведения">{w.description || ''}</div>
       </div>
     </Link>
   );
