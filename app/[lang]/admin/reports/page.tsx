@@ -45,7 +45,7 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <main className="tl-screen tl-screen--admin-reports mx-auto max-w-4xl px-5 py-10">
+    <main className="tl-screen tl-screen--admin-reports tlp-stage9-admin mx-auto max-w-6xl px-5 py-10">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">Жалобы</h1>
         <Link href={`/${lang}/admin`} className="text-sm text-brand hover:underline">← Админка</Link>

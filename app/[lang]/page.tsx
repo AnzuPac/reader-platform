@@ -20,7 +20,7 @@ const COLORS = {
 } as const;
 
 const TXT: Record<Lang, {
-  eyebrow: string; heroTitle: string; heroText: string; discover: string; subscribe: string;
+  eyebrow: string; heroTitle: string; heroText: string; discover: string; subscribe: string; heroTag: string; featured: string; explore: string;
   continueReading: string; library: string; directions: string; directionsSub: string;
   pubTitle: string; pubText: string; selfTitle: string; selfText: string;
   fanTitle: string; fanText: string; graphicTitle: string; graphicText: string;
@@ -29,7 +29,7 @@ const TXT: Record<Lang, {
   ctaTitle: string; ctaText: string; ctaBtn: string; completed: string; ongoing: string;
 }> = {
   sr: {
-    eyebrow: 'TVOJA SLEDEĆA PRIČA', heroTitle: 'Svetovi u koje se vraćaš', heroText: 'Knjige izdavača, samizdat, fanfikcija i grafička literatura. Nađi omiljeno, sakupi biblioteku i prati nove glave.',
+    eyebrow: 'TVOJA SLEDEĆA PRIČA', heroTag: 'ČETIRI SVETA · JEDNA POLICA', featured: 'Izdvojene priče', explore: 'Istraži', heroTitle: 'Svetovi u koje se vraćaš', heroText: 'Knjige izdavača, samizdat, fanfikcija i grafička literatura. Nađi omiljeno, sakupi biblioteku i prati nove glave.',
     discover: 'Otvori katalog', subscribe: 'Pretplata', continueReading: 'Nastavi čitanje', library: 'Moja biblioteka',
     directions: 'Izaberi pravac', directionsSub: 'Četiri kataloga · jedna platforma',
     pubTitle: 'Knjige izdavača', pubText: 'Knjige izdavačkih kuća.',
@@ -42,7 +42,7 @@ const TXT: Record<Lang, {
     completed: 'Završeno', ongoing: 'U toku',
   },
   ru: {
-    eyebrow: 'ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ', heroTitle: 'Миры, в которые хочется возвращаться', heroText: 'Книги издательств, самиздат, фанфики и графическая литература. Найди любимое, собери библиотеку и следи за новыми главами.',
+    eyebrow: 'ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ', heroTag: 'ЧЕТЫРЕ МИРА · ОДНА БИБЛИОТЕКА', featured: 'Истории для тебя', explore: 'Исследовать', heroTitle: 'Миры, в которые хочется возвращаться', heroText: 'Книги издательств, самиздат, фанфики и графическая литература. Найди любимое, собери библиотеку и следи за новыми главами.',
     discover: 'Открыть каталог', subscribe: 'Подписка', continueReading: 'Продолжить чтение', library: 'Моя библиотека',
     directions: 'Выбери направление', directionsSub: 'Четыре каталога · одна платформа',
     pubTitle: 'Книги издательств', pubText: 'Книги издательских домов.',
@@ -55,7 +55,7 @@ const TXT: Record<Lang, {
     completed: 'Завершено', ongoing: 'В процессе',
   },
   en: {
-    eyebrow: 'YOUR NEXT STORY', heroTitle: 'Worlds worth returning to', heroText: 'Publisher books, self-published works, fan fiction and graphic literature. Find a favourite, build a library and follow new chapters.',
+    eyebrow: 'YOUR NEXT STORY', heroTag: 'FOUR WORLDS · ONE LIBRARY', featured: 'Featured stories', explore: 'Explore', heroTitle: 'Worlds worth returning to', heroText: 'Publisher books, self-published works, fan fiction and graphic literature. Find a favourite, build a library and follow new chapters.',
     discover: 'Open catalog', subscribe: 'Subscription', continueReading: 'Continue reading', library: 'My library',
     directions: 'Choose a direction', directionsSub: 'Four catalogs · one platform',
     pubTitle: 'Publisher books', pubText: 'Books from publishing houses.',
@@ -142,24 +142,44 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <main id="main" className="shell">
-      <section className="hero">
-        <div>
+      <section className="tl-home-hero">
+        <div className="tl-home-hero-copy">
+          <span className="tl-home-kicker">{x.heroTag}</span>
           <div className="eyebrow">{x.eyebrow}</div>
           <h1>{x.heroTitle}</h1>
           <p>{x.heroText}</p>
-          <Link className="btn primary" href={`/${l}/catalog`}>{x.discover} →</Link>{' '}
-          <Link className="btn" href={`/${l}/subscribe`}>{x.subscribe}</Link>
+          <div className="tl-home-hero-actions">
+            <Link className="btn primary" href={`/${l}/catalog`}>{x.discover} <span aria-hidden="true">↗</span></Link>
+            <Link className="btn" href={`/${l}/subscribe`}>{x.subscribe}</Link>
+          </div>
+          <div className="tl-home-hero-note"><span className="tl-home-note-dot" /> {l === 'ru' ? 'Читайте, сохраняйте и открывайте новое' : l === 'en' ? 'Read, save and discover something new' : 'Čitaj, sačuvaj i otkrij nešto novo'}</div>
         </div>
-        <div className="heroart" aria-hidden="true">
-          {heroItems.map((w) => (
-            <div key={w.id} className={`cover ${tone(w)}`}>
-              <span className="tiny">TEROLIBRARY</span>
-              <span className="cover-title">{w.title}</span>
-              <span className="cover-author">{w.author_name}</span>
-            </div>
-          ))}
+        <div className="tl-home-hero-visual" aria-label={x.featured}>
+          <div className="tl-home-hero-orbit tl-home-hero-orbit-one" />
+          <div className="tl-home-hero-orbit tl-home-hero-orbit-two" />
+          <div className="tl-home-hero-books">
+            {heroItems.map((w, i) => (
+              <Link key={w.id} href={`/${l}/work/${w.slug}`} className={`tl-home-feature-cover tl-home-feature-cover-${i}`}>
+                <div className={`cover ${tone(w)}`}>
+                  <span className="tiny">TEROLIBRARY</span>
+                  <span className="cover-title">{w.title}</span>
+                  <span className="cover-author">{w.author_name}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="tl-home-feature-label"><span className="tl-home-feature-icon">✦</span><div><strong>{x.featured}</strong><span>{l === 'ru' ? 'Подборка из каталога' : l === 'en' ? 'Selected from the catalog' : 'Izbor iz kataloga'}</span></div></div>
         </div>
       </section>
+
+      <div className="tl-home-quicklinks" aria-label={x.directions}>
+        {sections.map((s) => (
+          <Link key={s.key} href={s.href} className={`tl-home-quicklink tl-home-quicklink-${s.key}`}>
+            <span className="tl-home-quicklink-mark">{s.key === 'publisher' ? '▤' : s.key === 'selfpub' ? '✎' : s.key === 'fanfic' ? '✦' : '▧'}</span>
+            <span>{s.title}</span><span className="tl-home-quicklink-arrow">↗</span>
+          </Link>
+        ))}
+      </div>
 
       {cont ? (
         <div className="section">
@@ -167,16 +187,10 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             <h2>{x.continueReading}</h2>
             <Link className="btn" href={`/${l}/library`}>{x.library} →</Link>
           </div>
-          <div className="grid4">
-            <Link href={`/${l}/read/${cont.chapter_id}`} className="panel" style={{ display: 'block' }}>
-              <div className="eyebrow">{x.continueReading} · {cont.percent}%</div>
-              <h2 style={{ marginTop: 8 }}>{cont.work_title}</h2>
-              <p className="muted" style={{ marginTop: 6 }}>
-                {cont.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${cont.number}`}
-              </p>
-              <span className="btn primary" style={{ marginTop: 14, display: 'inline-block' }}>{l === 'ru' ? 'Продолжить' : l === 'en' ? 'Continue' : 'Nastavi'} →</span>
-            </Link>
-          </div>
+          <Link href={`/${l}/read/${cont.chapter_id}`} className="tl-home-continue-card">
+            <div className="tl-home-continue-art"><span className="tl-home-continue-symbol">◉</span><span className="tl-home-continue-percent">{cont.percent}%</span></div>
+            <div className="tl-home-continue-content"><div className="eyebrow">{x.continueReading}</div><h2>{cont.work_title}</h2><p className="muted">{cont.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${cont.number}`}</p><div className="tl-home-progress"><span style={{ width: `${Math.max(0, Math.min(100, Number(cont.percent) || 0))}%` }} /></div><span className="tl-home-continue-button">{l === 'ru' ? 'Продолжить чтение' : l === 'en' ? 'Continue reading' : 'Nastavi čitanje'} <span>→</span></span></div>
+          </Link>
         </div>
       ) : null}
 
@@ -185,40 +199,40 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <h2>{x.directions}</h2>
           <span className="muted">{x.directionsSub}</span>
         </div>
-        <div className="grid4">
+        <div className="tl-home-directions-grid">
           {sections.map((s) => (
-            <div key={s.key} className="panel" style={{ borderTop: `3px solid ${s.color.line}` }}>
+            <Link key={s.key} href={s.href} className={`tl-home-direction-card tl-home-direction-${s.key}`} style={{ borderTop: `3px solid ${s.color.line}` }}>
               <div className="eyebrow" style={{ color: s.color.fg }}>{s.key === 'publisher' ? 'PUBLISHERS' : s.key === 'selfpub' ? 'SELF-PUBLISHED' : s.key === 'fanfic' ? 'FANFICTION' : 'GRAPHIC LITERATURE'}</div>
               <h2>{s.title}</h2>
               <p className="muted" style={{ marginTop: 6 }}>{s.key === 'publisher' ? x.pubText : s.key === 'selfpub' ? x.selfText : s.key === 'fanfic' ? x.fanText : x.graphicText}</p>
-              <Link className="btn soft" style={{ marginTop: 12, display: 'inline-block' }} href={s.href}>{x.openCatalog} →</Link>
-            </div>
+              <span className="tl-home-direction-action">{x.openCatalog} <span>↗</span></span>
+            </Link>
           ))}
         </div>
       </div>
 
       {sections.map((s) => (
-        <div key={s.key} className="section">
-          <div className="sectionhead">
-            <h2 style={{ color: s.color.fg }}>{s.title} · {x.rec}</h2>
+        <section key={s.key} className={`tl-home-content-section tl-home-content-${s.key}`}>
+          <div className="tl-home-section-heading">
+            <div><span className="tl-home-section-kicker">{s.key === 'publisher' ? 'PUBLISHERS' : s.key === 'selfpub' ? 'CREATORS' : s.key === 'fanfic' ? 'FANDOM' : 'GRAPHIC'}</span><h2 style={{ color: s.color.fg }}>{s.title}</h2></div>
             <Link className="btn" href={s.href}>{x.allCatalog} →</Link>
           </div>
           <Grid items={s.rec} lang={l} x={x} />
-          <div className="sectionhead" style={{ marginTop: 22 }}>
+          <div className="tl-home-top-heading">
             <h3>{s.topTitle}</h3>
             <Link className="btn" href={`${s.href}&filter=popular`}>{x.rating} →</Link>
           </div>
           <Grid items={s.top} lang={l} x={x} />
-        </div>
+        </section>
       ))}
 
-      <div className="section banner">
+      <section className="tl-home-author-banner">
         <div>
           <h2>{x.ctaTitle}</h2>
           <p>{x.ctaText}</p>
         </div>
         <Link className="btn primary" href={`/${l}/author`}>{x.ctaBtn} →</Link>
-      </div>
+      </section>
     </main>
   );
 }

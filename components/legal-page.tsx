@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { isLang, type Lang } from '@/lib/i18n';
 
-export const dynamic = 'force-static';
-
 type PageKey = 'about' | 'rules' | 'help';
 
 const CONTENT: Record<PageKey, Record<Lang, { title: string; lead: string; blocks: { h: string; p: string }[] }>> = {

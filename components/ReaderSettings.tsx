@@ -53,10 +53,10 @@ export default function ReaderSettings() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
+    <div className="tlp-reader-settings fixed bottom-5 right-5 z-40">
       {open ? (
-        <div className="card mb-2 w-64 p-4 shadow-lg">
-          <div className="mb-3 text-sm font-semibold">Čitanje</div>
+        <div className="tlp-reader-settings-panel card mb-2 w-64 p-4 shadow-lg">
+          <div className="tlp-reader-settings-title mb-3 text-sm font-semibold">Čitanje</div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="muted">Font</span>

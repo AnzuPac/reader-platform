@@ -1,22 +1,23 @@
 'use client';
 
-/**
- * Общая шапка и подвал сайта. Каталог по макету BOOKVERSE несёт собственную
- * навигацию (сайдбар и топбар), поэтому на его маршрутах общий хром скрывается,
- * чтобы не было двух меню подряд.
- */
+import { Suspense } from 'react';
+import BottomNavPill from '@/components/BottomNavPill';
+import CategoryThemeBinder from '@/components/CategoryThemeBinder';
+import type { Lang } from '@/lib/i18n';
+
+/** Общая оболочка платформы. Все существующие страницы остаются в прежних маршрутах. */
 export default function Chrome({
-  header, footer, children,
+  lang, userId, children,
 }: {
-  header: React.ReactNode;
-  footer: React.ReactNode;
+  lang: Lang;
+  userId: number | null;
   children: React.ReactNode;
 }) {
   return (
     <div className="tlp min-h-screen">
-      {header}
+      <Suspense fallback={null}><CategoryThemeBinder /></Suspense>
       {children}
-      {footer}
+      <BottomNavPill lang={lang} userId={userId} />
     </div>
   );
 }

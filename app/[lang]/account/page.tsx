@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { requireAuthor } from '@/lib/author';
 import { readSession } from '@/lib/auth';
 import AccountForm from '@/components/AccountForm';
@@ -15,9 +15,10 @@ function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export default async function AccountPage() {
+export default async function AccountPage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
   const s = await readSession();
-  if (!s) notFound();
+  if (!s) redirect(`/${lang}/login`);
   const localeRow = await one<{ locale: string }>('SELECT locale FROM users WHERE id = $1', [s.uid]);
   const profileRow = await one<{ bio: string | null; profile_public: number | boolean | null }>(
     'SELECT bio, profile_public FROM users WHERE id = $1', [s.uid],

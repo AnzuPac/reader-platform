@@ -105,7 +105,9 @@ export default async function PublisherPage({
 
   return (
     <main className="tl-screen tl-screen--publisher mx-auto max-w-6xl px-5 py-8">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <section className="tlp-stage8-publisher-hero mb-6"><div><p className="tlp-stage8-kicker">TeroLibrary Publisher</p><h1 className="text-2xl font-bold">{publisher.name}</h1><p className="text-sm muted">Prodaja, prava, tim i finansije na jednom mestu.</p></div><Link href={`/${l}/publishers`} className="btn btn-ghost">Informacije za izdavače</Link></section>
+      <nav className="tlp-stage8-studio-nav" aria-label="Publisher dashboard sections"><a href="#overview">Pregled</a><a href="#report">Izveštaji</a><a href="#works">Dela</a><a href="#licenses">Licence</a><a href="#members">Tim</a><a href="#payouts">Isplate</a></nav>
+      <div id="overview" className="mb-6 flex flex-wrap items-center gap-3">
         <div className="mr-auto">
           <h1 className="text-2xl font-bold">{publisher.name}</h1>
           <p className="text-sm muted">
@@ -140,14 +142,14 @@ export default async function PublisherPage({
         </div>
       </div>
 
-      <PublisherReport
+      <section id="report" className="tlp-stage8-section"><PublisherReport
         publisherId={publisherId}
         initialFrom={from}
         initialTo={to}
         initialReport={report}
-      />
+      /></section>
 
-      <section className="card mt-6 overflow-hidden">
+      <section id="works" className="card mt-6 overflow-hidden tlp-stage8-section">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h2 className="font-bold">Knjige, cene i prodaje</h2>
           <span className="text-sm muted">{works.length}</span>
@@ -221,14 +223,14 @@ export default async function PublisherPage({
         </div>
       </section>
 
-      <PublisherLicenses
+      <div id="licenses" className="tlp-stage8-section"><PublisherLicenses
         publisherId={publisherId}
         works={works.map((w) => ({ id: w.id, title: w.title }))}
       />
 
-      <PublisherMembers publisherId={publisherId} />
+      </div><div id="members" className="tlp-stage8-section"><PublisherMembers publisherId={publisherId} /></div>
 
-      <section className="card mt-6 p-5">
+      <section id="payouts" className="card mt-6 p-5 tlp-stage8-section">
         <h2 className="mb-3 font-bold">Isplate</h2>
         <PayoutForm publisherId={publisherId} />
         <ul className="mt-4 divide-y divide-line text-sm">

@@ -105,7 +105,7 @@ export default function ComicReader({
 
   return (
     <div>
-      <div className="sticky top-[57px] z-30 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-[#150f21]/95 px-3 py-2 text-xs backdrop-blur">
+      <div className="tlp-comic-toolbar sticky top-[57px] z-30 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-[#150f21]/95 px-3 py-2 text-xs backdrop-blur">
         <div className="flex rounded border border-line">
           <button onClick={() => setMode('scroll')} className={`px-2 py-1 ${mode === 'scroll' ? 'bg-brand text-white' : 'text-mist'}`}>Lenta</button>
           <button onClick={() => setMode('single')} className={`px-2 py-1 ${mode === 'single' ? 'bg-brand text-white' : 'text-mist'}`}>Stranica</button>
@@ -123,7 +123,7 @@ export default function ComicReader({
 
       {mode === 'scroll' ? (
         <div
-          className="mx-auto space-y-2"
+          className="tlp-comic-pages mx-auto space-y-2"
           style={{ maxWidth: `${width}%` }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -137,7 +137,7 @@ export default function ComicReader({
         </div>
       ) : (
         <div
-          className="mx-auto"
+          className="tlp-comic-single mx-auto"
           style={{ maxWidth: `${width}%` }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}

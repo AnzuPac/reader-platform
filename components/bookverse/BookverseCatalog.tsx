@@ -209,7 +209,7 @@ export default function BookverseCatalog({
             </button>
           ))}
         </nav>
-        <div className="row catalog-title">
+        <div className="catalog-title">
           <div>
             <div className="eyebrow">TEROLIBRARY · TOP</div>
             <h1>{t.topTab}</h1>
@@ -240,7 +240,7 @@ export default function BookverseCatalog({
 
   return (
     <main id="main" className="shell">
-      <div className={`tlp-cat-category ${initialSection}`}>
+      <div className={`tlp-cat-category tlp-catalog ${initialSection}`}>
         <nav className="subnav" aria-label="Categories">
           {(['books', 'selfpub', 'fanfics', 'comics', 'top'] as SectionId[]).map((s) => (
             <button
@@ -253,7 +253,7 @@ export default function BookverseCatalog({
           ))}
         </nav>
 
-        <div className="row catalog-title">
+        <div className="catalog-title">
           <div>
             <div className="eyebrow">{t.eyebrows[initialSection]}</div>
             <h1>{t.titles[initialSection]}</h1>
@@ -288,10 +288,10 @@ export default function BookverseCatalog({
           </div>
         ) : null}
 
-        <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>{t.count(works.length)}</div>
+        <div className="catalog-results"><span className="catalog-results-count">{t.count(works.length)}</span><span className="catalog-results-note">{initialSection === 'comics' ? t.manga : initialSection === 'fanfics' ? t.fanfics : t.books}</span></div>
 
         {works.length ? (
-          <div className={view === 'grid' ? 'grid' : 'grid4'}>
+          <div className={view === 'grid' ? 'grid catalog-grid' : 'catalog-list'}>
             {works.map((w) => <Card key={w.id} w={w} lang={lang} t={t} />)}
           </div>
         ) : (
