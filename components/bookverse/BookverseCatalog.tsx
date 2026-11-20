@@ -84,35 +84,22 @@ const TXT: Record<Lang, {
   },
 };
 
-function aiBadge(ai: string | undefined, t: (typeof TXT)[Lang]) {
-  if (!ai || ai === 'not_declared') return null;
-  if (ai === 'no_ai') return <span className="ai">✓ {t.noAi.split(':')[0]}</span>;
-  if (ai === 'assisted') return <span className="ai assist">✦ AI</span>;
-  return <span className="ai gen">✦ AI</span>;
-}
+
 
 function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang] }) {
   const tone = w.tone || (w.category === 'manga' ? 'orange' : w.category === 'fanfic' ? 'purple' : 'blue');
   return (
-    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }}>
-      <div className={`cover ${tone}`} style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
-        {aiBadge(w.aiUsage, t)}
-        <span className="tiny">TEROLIBRARY</span>
-        <span className="cover-title">{w.title}</span>
-        <span className="cover-author">{w.author}</span>
-      </div>
-      <div className="bookbody">
-        <div className="meta">
-          <span>{w.category === 'manga' ? t.manga : w.category === 'fanfic' ? t.fanfics : t.books}</span>
-          <span className="rating">★ {w.rating.toFixed(1)}</span>
-        </div>
-        <h3>{w.title}</h3>
-        <div className="author">{w.author}</div>
-        <div className="tags">
-          <span className="status">{w.completed ? t.completed : '—'}</span>
-        </div>
-        <div className="work-description" aria-label="Описание произведения">{w.description || ''}</div>
-      </div>
+    <Link
+      href={`/${lang}/work/${w.slug}`}
+      className="book"
+      style={{ display: 'block' }}
+      aria-label={`${w.title} — ${w.author}`}
+      title={`${w.title} — ${w.author}`}
+    >
+      <div
+        className={`cover ${tone}`}
+        style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      />
     </Link>
   );
 }

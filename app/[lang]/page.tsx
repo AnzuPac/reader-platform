@@ -83,26 +83,15 @@ function aiLabel(ai: Card['ai_usage'], l: Lang): { cls: string; text: string } |
 }
 
 function ProtoCard({ w, lang, x }: { w: Card; lang: Lang; x: (typeof TXT)[Lang] }) {
-  const ai = aiLabel(w.ai_usage, lang);
   return (
-    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }}>
-      <div className={`cover ${tone(w)}`}>
-        {ai ? <span className={ai.cls}>{ai.text}</span> : null}
-        <span className="tiny">TEROLIBRARY</span>
-        <span className="cover-title">{w.title}</span>
-        <span className="cover-author">{w.author_name}</span>
-      </div>
-      <div className="bookbody">
-        <div className="meta">
-          <span>{w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Графика' : lang === 'en' ? 'Graphic' : 'Grafika') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga')}</span>
-          <span className="rating">★ {Number(w.rating_avg || 0).toFixed(1)}</span>
-        </div>
-        <h3>{w.title}</h3>
-        <div className="author">{w.author_name}</div>
-        <div className="tags">
-          <span className="status">{w.completion === 'completed' ? x.completed : x.ongoing}</span>
-        </div>
-      </div>
+    <Link
+      href={`/${lang}/work/${w.slug}`}
+      className="book"
+      style={{ display: 'block' }}
+      aria-label={`${w.title} — ${w.author_name}`}
+      title={`${w.title} — ${w.author_name}`}
+    >
+      <div className={`cover ${tone(w)}`} />
     </Link>
   );
 }
@@ -159,12 +148,8 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <div className="tl-home-hero-orbit tl-home-hero-orbit-two" />
           <div className="tl-home-hero-books">
             {heroItems.map((w, i) => (
-              <Link key={w.id} href={`/${l}/work/${w.slug}`} className={`tl-home-feature-cover tl-home-feature-cover-${i}`}>
-                <div className={`cover ${tone(w)}`}>
-                  <span className="tiny">TEROLIBRARY</span>
-                  <span className="cover-title">{w.title}</span>
-                  <span className="cover-author">{w.author_name}</span>
-                </div>
+              <Link key={w.id} href={`/${l}/work/${w.slug}`} className={`tl-home-feature-cover tl-home-feature-cover-${i}`} aria-label={`${w.title} — ${w.author_name}`} title={`${w.title} — ${w.author_name}`}>
+                <div className={`cover ${tone(w)}`} />
               </Link>
             ))}
           </div>
