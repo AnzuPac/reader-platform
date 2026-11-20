@@ -972,3 +972,80 @@
     font-size: .875rem;
   }
 }
+
+/* Main header navigation: literature dropdown + always-visible destinations */
+.tlp .tlp-main-navigation {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.25vw, 20px);
+  white-space: nowrap;
+}
+.tlp .tlp-literature-menu { position: relative; flex: 0 0 auto; }
+.tlp .tlp-literature-trigger,
+.tlp .tlp-main-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  color: var(--tlp-muted);
+  font-size: clamp(14px, 1.15vw, 18px);
+  font-weight: 750;
+  letter-spacing: -.35px;
+  transition: color .16s ease, background .16s ease;
+}
+.tlp .tlp-literature-trigger:hover,
+.tlp .tlp-main-nav-link:hover,
+.tlp .tlp-main-nav-link.is-active { color: var(--tlp-text); }
+.tlp .tlp-literature-trigger.is-open { color: var(--tlp-accent-text); }
+.tlp .tlp-menu-chevron { font-size: 15px; transition: transform .16s ease; }
+.tlp .tlp-literature-trigger.is-open .tlp-menu-chevron { transform: rotate(180deg); }
+.tlp .tlp-literature-dropdown {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  padding: 7px;
+  border: 1px solid var(--tlp-line);
+  border-radius: 14px;
+  background: var(--tlp-panel);
+  box-shadow: 0 16px 40px rgba(0,0,0,.18);
+}
+.tlp .tlp-literature-item {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: var(--tlp-muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+.tlp .tlp-literature-item:hover,
+.tlp .tlp-literature-item.is-active { background: var(--tlp-panel-2); color: var(--tlp-text); }
+@media (max-width: 980px) {
+  .tlp .tlp-main-navigation {
+    order: 5;
+    flex: 0 0 calc(100% + 28px);
+    width: calc(100% + 28px);
+    margin: 0 -14px -12px;
+    padding: 7px 14px 8px;
+    justify-content: flex-start;
+    overflow: visible;
+    border-top: 1px solid var(--tlp-line);
+    gap: 18px;
+  }
+  .tlp .tlp-literature-trigger,
+  .tlp .tlp-main-nav-link { min-height: 34px; font-size: 13px; }
+  .tlp .tlp-literature-dropdown { top: calc(100% + 5px); }
+}
+@media (max-width: 480px) {
+  .tlp .tlp-main-navigation { gap: 13px; }
+  .tlp .tlp-literature-trigger,
+  .tlp .tlp-main-nav-link { font-size: 12px; }
+  .tlp .tlp-literature-dropdown { min-width: 190px; }
+}

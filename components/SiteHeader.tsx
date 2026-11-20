@@ -10,22 +10,22 @@ import GlobalSearchForm from '@/components/GlobalSearchForm';
 const COPY: Record<Lang, {
   home: string; publisher: string; selfpub: string; fanfic: string; graphic: string; top: string;
   search: string; searchPlaceholder: string; notifications: string; wallet: string; signIn: string;
-  profile: string; directions: string;
+  profile: string; directions: string; literature: string; catalog: string; myLibrary: string;
 }> = {
   sr: {
     home: 'Početna', publisher: 'Izdavači', selfpub: 'Samizdat', fanfic: 'Fanfikcija', graphic: 'Strip i manga', top: 'Top',
     search: 'Pretraga', searchPlaceholder: 'Pretraži knjigu, autora ili fandom', notifications: 'Obaveštenja', wallet: 'Novčanik',
-    signIn: 'Prijava', profile: 'Profil', directions: 'Pravci čitanja',
+    signIn: 'Prijava', profile: 'Profil', directions: 'Pravci čitanja', literature: 'Literatura', catalog: 'Katalog', myLibrary: 'Moja biblioteka',
   },
   ru: {
     home: 'Главная', publisher: 'Издательства', selfpub: 'Самиздат', fanfic: 'Фанфики', graphic: 'Комиксы и манга', top: 'Топ',
     search: 'Поиск', searchPlaceholder: 'Найти книгу, автора или фандом', notifications: 'Уведомления', wallet: 'Кошелёк',
-    signIn: 'Войти', profile: 'Профиль', directions: 'Направления чтения',
+    signIn: 'Войти', profile: 'Профиль', directions: 'Направления чтения', literature: 'Литература', catalog: 'Каталог', myLibrary: 'Моя библиотека',
   },
   en: {
     home: 'Home', publisher: 'Publishers', selfpub: 'Self-published', fanfic: 'Fan fiction', graphic: 'Comics & manga', top: 'Top',
     search: 'Search', searchPlaceholder: 'Search books, authors or fandoms', notifications: 'Notifications', wallet: 'Wallet',
-    signIn: 'Sign in', profile: 'Profile', directions: 'Browse sections',
+    signIn: 'Sign in', profile: 'Profile', directions: 'Browse sections', literature: 'Literature', catalog: 'Catalog', myLibrary: 'My library',
   },
 };
 
@@ -47,7 +47,7 @@ export default function SiteHeader({
           <span>terolibrary</span>
         </Link>
 
-<Suspense fallback={<nav className="tlp-direction-tabs" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} /></Suspense>
+<Suspense fallback={<nav className="tlp-direction-tabs" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} libraryHref={session ? `/${lang}/u/${session.uid}?tab=library` : `/${lang}/login?next=${encodeURIComponent(`/${lang}/account`)}`} /></Suspense>
 
         <div className="right tlp-header-tools">
           <Suspense fallback={<span className="tlp-search-placeholder" />}>
