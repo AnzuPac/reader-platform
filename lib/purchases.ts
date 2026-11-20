@@ -1,4 +1,5 @@
 import { one, query, withTx } from './db';
+import { isCommerciallyEligible } from './monetization-policy';
 import { subscriptionAvailable } from './rights';
 import { decideChapterAccess, type GateResult } from './access';
 import { splitRoyalty } from './royalty';
@@ -53,7 +54,7 @@ export type StartResult =
 
 type WorkRow = {
   id: number; slug: string; title: string; status: string; type: string;
-  publisher_id: number | null; author_id: number;
+  publisher_id: number | null; author_id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number;
 };
 
 type ChapterRow = {
@@ -154,6 +155,8 @@ export async function setChapterCoins(
   if (!Number.isInteger(requested) || requested < 0) return { ok: false, error: 'invalid_amount' };
   const ch = await one<{ id: number; work_id: number }>('SELECT id, work_id FROM chapters WHERE id = $1', [chapterId]);
   if (!ch) return { ok: false, error: 'not_found' };
+  const policy = await one<{ kind: string; is_classic: boolean | number; publisher_id: number | null }>('SELECT kind, is_classic, publisher_id FROM works WHERE id = $1', [ch.work_id]);
+  if (!policy || policy.publisher_id !== null || !isCommerciallyEligible(policy)) return { ok: false, error: 'not_found' };
 
   let applied = requested;
   let capped = false;
@@ -242,9 +245,10 @@ export async function resolveTarget(input: { workId?: number | null; chapterId?:
     const price = await effectiveChapterPrice(ch);
     if (!price) return { ok: false, error: 'not_for_sale' };
     const w = await one<WorkRow>(
-      'SELECT id, slug, title, status, type, publisher_id, author_id FROM works WHERE id = $1', [ch.work_id]
+      'SELECT id, slug, title, status, type, publisher_id, author_id, kind, is_classic, rights_confirmed FROM works WHERE id = $1', [ch.work_id]
     );
     if (!w || w.status !== 'published') return { ok: false, error: 'work_not_found' };
+    if (!isCommerciallyEligible(w)) return { ok: false, error: 'not_for_sale' };
     return {
       ok: true,
       target: {
@@ -261,9 +265,10 @@ export async function resolveTarget(input: { workId?: number | null; chapterId?:
 
   if (!workId) return { ok: false, error: 'bad_target' };
   const w = await one<WorkRow>(
-    'SELECT id, slug, title, status, type, publisher_id, author_id FROM works WHERE id = $1', [workId]
+    'SELECT id, slug, title, status, type, publisher_id, author_id, kind, is_classic, rights_confirmed FROM works WHERE id = $1', [workId]
   );
   if (!w || w.status !== 'published') return { ok: false, error: 'work_not_found' };
+  if (!isCommerciallyEligible(w)) return { ok: false, error: 'not_for_sale' };
   const price = await workPrice(w.id);
   if (!price || price.amount_cents <= 0) return { ok: false, error: 'not_for_sale' };
   return {
@@ -348,6 +353,8 @@ export async function purchaseChapterWithCoins(
   );
   if (!ch || ch.status !== 'published') return { ok: false, error: 'not_found' };
   if (ch.access !== 'paid') return { ok: false, error: 'not_for_sale' };
+  const workPolicy = await one<{ kind: string; is_classic: boolean | number; rights_confirmed: boolean | number }>('SELECT kind, is_classic, rights_confirmed FROM works WHERE id = $1', [ch.work_id]);
+  if (!workPolicy || !isCommerciallyEligible(workPolicy)) return { ok: false, error: 'not_for_sale' };
   const price = await effectiveChapterPrice(ch);
   if (!price) return { ok: false, error: 'not_for_sale' };
 

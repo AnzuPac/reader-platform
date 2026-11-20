@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initSchema, query, one } from '@/lib/db';
 import { adminTokenOk } from '@/lib/admin';
+import { isCommerciallyEligible } from '@/lib/work-monetization-rules';
 
 export async function POST(req: Request) {
   if (!adminTokenOk(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -10,8 +11,9 @@ export async function POST(req: Request) {
   const number = Number(b?.number);
   if (!slug || !content || !Number.isFinite(number)) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
   await initSchema();
-  const work = await one<{ id: number }>('SELECT id FROM works WHERE slug = $1', [slug]);
+  const work = await one<{ id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number }>('SELECT id, kind, is_classic, rights_confirmed FROM works WHERE slug = $1', [slug]);
   if (!work) return NextResponse.json({ error: 'work_not_found' }, { status: 404 });
+  if (b?.access === 'paid' && !isCommerciallyEligible(work)) return NextResponse.json({ error: 'non_commercial_work' }, { status: 403 });
   const words = content.trim().split(/\s+/).filter(Boolean).length;
   const rows = await query<{ id: number; number: number }>(
     `INSERT INTO chapters (work_id, number, title, content, word_count, access, status, published_at)

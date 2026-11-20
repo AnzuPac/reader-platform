@@ -5,6 +5,7 @@ import AccountForm from '@/components/AccountForm';
 import ProfileSettings from '@/components/ProfileSettings';
 import WalletPanel from '@/components/WalletPanel';
 import AccountDangerZone from '@/components/AccountDangerZone';
+import AuthorActivation from '@/components/AuthorActivation';
 import { ensureWallet, listCoinPackages, listWalletHistory, getEconomySettings } from '@/lib/coins';
 import { one } from '@/lib/db';
 
@@ -34,6 +35,7 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
     <main id="main" className="tl-screen tl-screen--account mx-auto max-w-xl px-5 py-10">
       <h1 className="mb-6 text-2xl font-bold">Nalog</h1>
       <AccountForm initialName={s.name} email={s.email} role={s.role} />
+      <AuthorActivation role={s.role} lang={localeRow?.locale || 'sr'} />
       <ProfileSettings
         lang={(localeRow?.locale === 'ru' || localeRow?.locale === 'en' ? localeRow.locale : 'sr') as 'sr' | 'ru' | 'en'}
         initialName={s.name}

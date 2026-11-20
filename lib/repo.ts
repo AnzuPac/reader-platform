@@ -292,8 +292,8 @@ export async function addWorkGenre(workId: number, genreSlug: string): Promise<v
 
 export async function getAuthorWork(slug: string, authorId: number) {
   await ensure();
-  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string; type: string; ai_usage: 'not_declared'|'no_ai'|'assisted'|'generated' }>(
-    'SELECT id, slug, title, description, status, cover_path, age_rating, completion, type, ai_usage FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
+  return one<{ id: number; slug: string; title: string; description: string; status: string; cover_path: string | null; age_rating: number; completion: string; type: string; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number; ai_usage: 'not_declared'|'no_ai'|'assisted'|'generated' }>(
+    'SELECT id, slug, title, description, status, cover_path, age_rating, completion, type, kind, is_classic, rights_confirmed, ai_usage FROM works WHERE slug = $1 AND author_id = $2', [slug, authorId]
   );
 }
 

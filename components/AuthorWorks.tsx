@@ -9,6 +9,10 @@ export default function AuthorWorks({ lang }: { lang: string }) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [aiUsage, setAiUsage] = useState('not_declared');
+  const [workType, setWorkType] = useState<'novel'|'comic'>('novel');
+  const [kind, setKind] = useState<'original'|'fanfic'>('original');
+  const [isClassic, setIsClassic] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [msg, setMsg] = useState('');
 
   async function load() {
@@ -23,11 +27,11 @@ export default function AuthorWorks({ lang }: { lang: string }) {
     e.preventDefault();
     const r = await fetch('/api/author/work', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: desc, aiUsage }),
+      body: JSON.stringify({ title, description: desc, aiUsage, type: workType, kind, isClassic, rightsConfirmed }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { setMsg('Greška: ' + (j.error || r.status)); return; }
-    setTitle(''); setDesc(''); setAiUsage('not_declared'); setMsg('Черновик создан');
+    setTitle(''); setDesc(''); setAiUsage('not_declared'); setWorkType('novel'); setKind('original'); setIsClassic(false); setRightsConfirmed(false); setMsg('Черновик создан');
     await load();
   }
 
@@ -37,6 +41,10 @@ export default function AuthorWorks({ lang }: { lang: string }) {
         <h2 className="font-semibold">Новое произведение</h2>
         <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="input" rows={3} placeholder="Opis" value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm">Тип<select className="input mt-1 w-full" value={workType} onChange={(e) => setWorkType(e.target.value as 'novel'|'comic')}><option value="novel">Книга / произведение</option><option value="comic">Оригинальный комикс</option></select></label><label className="block text-sm">Права<select className="input mt-1 w-full" value={kind} onChange={(e) => setKind(e.target.value as 'original'|'fanfic')}><option value="original">Оригинальное произведение</option><option value="fanfic">Фанфик</option></select></label></div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isClassic} onChange={(e) => setIsClassic(e.target.checked)} /> Произведение в общественном достоянии</label>
+        {kind === 'original' && !isClassic ? <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} /> Я подтверждаю, что обладаю правами на оригинальное произведение или имею разрешение на коммерческое размещение.</label> : null}
+        <p className="text-xs muted">Фанфики и произведения в общественном достоянии нельзя продавать или размещать платные главы. Для них разрешены только добровольные пожертвования.</p>
         <label className="block text-sm muted">Использование ИИ
           <select className="input mt-1 w-full" value={aiUsage} onChange={(e) => setAiUsage(e.target.value)}>
             <option value="not_declared">Не указано</option><option value="no_ai">ИИ не использовался</option><option value="assisted">ИИ использовался частично</option><option value="generated">ИИ-генерация</option>

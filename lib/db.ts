@@ -62,6 +62,7 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN paragraph_comments_enabled INTEGER',
     'ALTER TABLE works ADD COLUMN rights_sale INTEGER NOT NULL DEFAULT 1',
     'ALTER TABLE works ADD COLUMN is_classic INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE works ADD COLUMN rights_confirmed INTEGER NOT NULL DEFAULT 1',
     "ALTER TABLE works ADD COLUMN ai_usage TEXT NOT NULL DEFAULT 'not_declared'",
     'ALTER TABLE author_payouts ADD COLUMN gross_cents INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE author_payouts ADD COLUMN tax_cents INTEGER NOT NULL DEFAULT 0',
@@ -295,6 +296,10 @@ async function migrateSqlite(db: any) {
       db.prepare('UPDATE works SET search_norm = ? WHERE id = ?').run(normalizeSr(String(r.title || '') + ' ' + String(r.display_name || '')), r.id);
     }
   } catch {}
+  // Монетизация: fanfic и public-domain作品 переводятся в бесплатный доступ; донаты не затрагиваются.
+  try { db.exec("UPDATE chapters SET access = 'free', price_cents = 0 WHERE work_id IN (SELECT id FROM works WHERE kind = 'fanfic' OR is_classic = 1) AND access = 'paid'"); } catch {}
+  try { db.exec("UPDATE chapter_prices SET active = 0 WHERE chapter_id IN (SELECT c.id FROM chapters c JOIN works w ON w.id = c.work_id WHERE w.kind = 'fanfic' OR w.is_classic = 1)"); } catch {}
+  try { db.exec("UPDATE book_prices SET active = 0 WHERE work_id IN (SELECT id FROM works WHERE kind = 'fanfic' OR is_classic = 1)"); } catch {}
   // Экономика v0.2: старые тарифы выключаем, цены глав переводим в монеты.
   try { db.exec('CREATE INDEX IF NOT EXISTS works_search_norm_idx ON works(search_norm)'); } catch {}
   // Экономика v0.2: старые tarifaы выключаем, цены глав переводим в монеты.
@@ -314,6 +319,7 @@ async function migratePg(db: any) {
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS search_norm TEXT NOT NULL DEFAULT ''",
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS translit_allowed BOOLEAN',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS is_classic BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS rights_confirmed BOOLEAN NOT NULL DEFAULT TRUE',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS ai_usage TEXT NOT NULL DEFAULT 'not_declared'",
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS paragraph_comments_enabled BOOLEAN',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS rights_sale SMALLINT NOT NULL DEFAULT 1',
@@ -557,6 +563,10 @@ async function migratePg(db: any) {
       await db.query('UPDATE works SET search_norm = $1 WHERE id = $2', [normalizeSr(`${r.title} ${r.display_name}`), r.id]);
     }
   } catch {}
+  // Non-commercial fanfiction/public-domain works: stop future sales, preserve donation records and paid entitlements.
+  try { await db.query("UPDATE chapters SET access = 'free', price_cents = 0 WHERE work_id IN (SELECT id FROM works WHERE kind = 'fanfic' OR is_classic = TRUE) AND access = 'paid'"); } catch {}
+  try { await db.query("UPDATE chapter_prices SET active = FALSE WHERE chapter_id IN (SELECT c.id FROM chapters c JOIN works w ON w.id = c.work_id WHERE w.kind = 'fanfic' OR w.is_classic = TRUE)"); } catch {}
+  try { await db.query("UPDATE book_prices SET active = FALSE WHERE work_id IN (SELECT id FROM works WHERE kind = 'fanfic' OR is_classic = TRUE)"); } catch {}
   try { await db.query("UPDATE plans SET active = FALSE WHERE code IN ('free','reader','reader_plus')"); } catch {}
   try { await db.query("UPDATE plans SET max_profiles = 5 WHERE code = 'family'"); } catch {}
   try {

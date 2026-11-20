@@ -28,7 +28,7 @@ export default async function AuthorWorkPage({
         <span className="text-sm muted">·</span>
         <span className="text-sm">{work.title}</span>
       </div>
-      <WorkSettings workSlug={slug} initialTitle={work.title} initialDescription={work.description || ''} initialAge={work.age_rating || 0} initialCompletion={work.completion || 'ongoing'} initialAiUsage={work.ai_usage || 'not_declared'} />
+      <WorkSettings workSlug={slug} initialTitle={work.title} initialDescription={work.description || ''} initialAge={work.age_rating || 0} initialCompletion={work.completion || 'ongoing'} initialAiUsage={work.ai_usage || 'not_declared'} initialKind={work.kind === 'fanfic' ? 'fanfic' : 'original'} initialType={work.type === 'comic' ? 'comic' : 'novel'} initialClassic={Boolean(work.is_classic)} initialRightsConfirmed={Boolean(work.rights_confirmed)} />
       <ChapterEditor workSlug={slug} />
       {work.type === 'comic' ? (
         <>

@@ -1,4 +1,5 @@
 import { one, query } from './db';
+import { isCommerciallyEligible } from './monetization-policy';
 
 /**
  * Kabinet izdavača: членство, книги, цены, продажи, роялти, отчёты, выплаты.
@@ -120,10 +121,11 @@ export async function setWorkPrice(
   const currency = String(price.currency || '').toUpperCase().slice(0, 3);
   if (!/^[A-Z]{3}$/.test(currency)) return { ok: false, error: 'invalid_currency' };
 
-  const work = await one<{ id: number }>(
-    'SELECT id FROM works WHERE id = $1 AND publisher_id = $2', [workId, publisherId]
+  const work = await one<{ id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number }>(
+    'SELECT id, kind, is_classic, rights_confirmed FROM works WHERE id = $1 AND publisher_id = $2', [workId, publisherId]
   );
   if (!work) return { ok: false, error: 'not_found' };
+  if (price.active !== false && price.amount_cents > 0 && !isCommerciallyEligible(work)) return { ok: false, error: 'non_commercial_work' };
 
   const active = price.active === false ? 0 : 1;
   await query(

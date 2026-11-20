@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initSchema, one, query } from '@/lib/db';
 import { adminTokenOk } from '@/lib/admin';
+import { isCommerciallyEligible } from '@/lib/work-monetization-rules';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +17,9 @@ export async function POST(req: Request) {
   const workId = Number(b?.workId) || null;
   const workSlug = String(b?.workSlug || '').trim();
   const work = workId
-    ? await one<{ id: number; type: string }>('SELECT id, type FROM works WHERE id = $1', [workId])
+    ? await one<{ id: number; type: string; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number }>('SELECT id, type, kind, is_classic, rights_confirmed FROM works WHERE id = $1', [workId])
     : workSlug
-      ? await one<{ id: number; type: string }>('SELECT id, type FROM works WHERE slug = $1', [workSlug])
+      ? await one<{ id: number; type: string; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number }>('SELECT id, type, kind, is_classic, rights_confirmed FROM works WHERE slug = $1', [workSlug])
       : null;
   if (!work) return NextResponse.json({ error: 'work_not_found' }, { status: 404 });
 
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
     if (!Number.isFinite(priceCents) || priceCents < 0) {
       return NextResponse.json({ error: 'invalid_price' }, { status: 400 });
     }
+    if (priceCents > 0 && !isCommerciallyEligible(work)) return NextResponse.json({ error: 'non_commercial_work' }, { status: 403 });
     await query(
       `INSERT INTO book_prices (work_id, amount_cents, currency, active)
        VALUES ($1,$2,$3,1)

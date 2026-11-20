@@ -3,6 +3,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { initSchema, query, one } from '@/lib/db';
 import { requireAuthor } from '@/lib/author';
 import { setChapterPrice } from '@/lib/purchases';
+import { isCommerciallyEligible } from '@/lib/monetization-policy';
 
 function plainText(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   const words = plainText(clean).split(/\s+/).filter(Boolean).length;
 
   await initSchema();
-  const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [workSlug]);
+  const work = await one<{ id: number; author_id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number; publisher_id: number | null }>('SELECT id, author_id, kind, is_classic, rights_confirmed, publisher_id FROM works WHERE slug = $1', [workSlug]);
   if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const access = ['free','subscribers','paid'].includes(String(b?.access)) ? String(b?.access) : 'free';

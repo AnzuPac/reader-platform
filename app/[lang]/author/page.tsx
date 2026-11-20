@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { readSession } from '@/lib/auth';
 import { isLang, type Lang } from '@/lib/i18n';
 import { requireAuthor } from '@/lib/author';
-import { readSession } from '@/lib/auth';
 import AuthorWorks from '@/components/AuthorWorks';
 import AuthorDonations from '@/components/AuthorDonations';
 import AuthorIncome from '@/components/AuthorIncome';
@@ -16,11 +16,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ lang: s
   const { lang } = await params;
   const l = (isLang(lang) ? lang : 'sr') as Lang;
   const s = await requireAuthor();
-  if (!s) {
-    // Гость — на вход; вошедший без роли автора — в аккаунт с заявкой.
-    const session = await readSession();
-    redirect(session ? `/${l}/account` : `/${l}/login`);
-  }
+  if (!s) { const session = await readSession(); redirect(session ? `/${l}/account` : `/${l}/login`); }
   const income = await authorIncome(s.uid);
 
   return (

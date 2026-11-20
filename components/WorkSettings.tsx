@@ -2,10 +2,10 @@
 import { useState } from 'react';
 
 export default function WorkSettings({
-  workSlug, initialTitle, initialDescription, initialAge, initialCompletion, initialAiUsage,
+  workSlug, initialTitle, initialDescription, initialAge, initialCompletion, initialAiUsage, initialKind = 'original', initialType = 'novel', initialClassic = false, initialRightsConfirmed = true,
 }: {
   workSlug: string; initialTitle: string; initialDescription: string;
-  initialAge: number; initialCompletion: string; initialAiUsage: 'not_declared'|'no_ai'|'assisted'|'generated';
+  initialAge: number; initialCompletion: string; initialAiUsage: 'not_declared'|'no_ai'|'assisted'|'generated'; initialKind?: 'original'|'fanfic'; initialType?: 'novel'|'comic'; initialClassic?: boolean; initialRightsConfirmed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initialTitle);
@@ -13,6 +13,10 @@ export default function WorkSettings({
   const [age, setAge] = useState(initialAge);
   const [completion, setCompletion] = useState(initialCompletion);
   const [aiUsage, setAiUsage] = useState(initialAiUsage);
+  const [kind, setKind] = useState(initialKind);
+  const [isClassic, setIsClassic] = useState(initialClassic);
+  const [rightsConfirmed, setRightsConfirmed] = useState(initialRightsConfirmed);
+  const [priceRsd, setPriceRsd] = useState('0');
   const [msg, setMsg] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
@@ -32,10 +36,17 @@ export default function WorkSettings({
     e.preventDefault();
     const r = await fetch('/api/author/work', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion, aiUsage }),
+      body: JSON.stringify({ slug: workSlug, title, description: desc, ageRating: age, completion, aiUsage, kind, isClassic, rightsConfirmed }),
     });
     const j = await r.json().catch(() => ({}));
     setMsg(r.ok ? 'Сохранено' : 'Greška: ' + (j.error || r.status));
+  }
+
+  async function savePrice() {
+    const amount = Math.max(0, Math.round(Number(priceRsd) * 100));
+    const r = await fetch('/api/author/work-price', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workSlug, amountCents: amount, currency: 'RSD' }) });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? (amount > 0 ? 'Цена книги сохранена' : 'Продажа книги отключена') : 'Ошибка: ' + (j.message || j.error || r.status));
   }
 
   if (!open) {
@@ -52,6 +63,11 @@ export default function WorkSettings({
       </div>
       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Naslov" />
       <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opis" />
+      <label className="block text-sm">Тип прав<select className="input mt-1 w-full" value={kind} onChange={(e) => setKind(e.target.value as 'original'|'fanfic')}><option value="original">Оригинальное произведение</option><option value="fanfic">Фанфик</option></select></label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isClassic} onChange={(e) => setIsClassic(e.target.checked)} /> Произведение в общественном достоянии</label>
+      {kind === 'original' && !isClassic ? <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} /> Подтверждаю права на оригинальное произведение или разрешение на коммерческое размещение.</label> : null}
+      <p className="text-xs muted">Фанфики и произведения в общественном достоянии доступны бесплатно; разрешены только добровольные пожертвования.</p>
+      {kind === 'original' && !isClassic ? <div className="flex flex-wrap items-end gap-3"><label className="block text-sm">Цена книги (RSD)<input className="input mt-1 w-36" type="number" min="0" step="1" value={priceRsd} onChange={(e) => setPriceRsd(e.target.value)} /></label><button type="button" className="btn btn-ghost" onClick={savePrice}>Сохранить цену</button></div> : <p className="text-sm muted">Для этого произведения разрешены только добровольные пожертвования.</p>}
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <label className="flex items-center gap-2">
           Uzrast:
