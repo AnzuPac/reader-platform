@@ -1053,3 +1053,26 @@
 /* Книжная карточка: только обложка. */
 .tlp .book .cover { width:100%; height:100%; }
 .tlp .book .cover-title, .tlp .book .cover-author, .tlp .book .tiny { display:none; }
+
+/* Карточка книги: обложка по умолчанию, текст всплывает при наведении/фокусе. */
+.tlp .book .cover { position: relative; overflow: hidden; }
+.tlp .book .book-hover {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
+  padding: 14px; color: #fff;
+  background: linear-gradient(180deg, rgba(10,12,16,0) 18%, rgba(10,12,16,.9) 76%);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.tlp .book:hover .book-hover,
+.tlp .book:focus-visible .book-hover { opacity: 1; transform: translateY(0); }
+.tlp .book-hover-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.tlp .book-hover h3 { color: #fff; font-size: 15px; line-height: 1.25; }
+.tlp .book-hover-author { font-size: 11px; opacity: .85; }
+.tlp .book-hover-desc { font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+@media (max-width: 750px) {
+  /* На мобильных наведения нет — показываем компактную подпись сразу. */
+  .tlp .book .book-hover { opacity: 1; transform: none; padding: 10px; }
+  .tlp .book-hover h3 { font-size: 13px; }
+  .tlp .book-hover-desc { -webkit-line-clamp: 3; }
+}

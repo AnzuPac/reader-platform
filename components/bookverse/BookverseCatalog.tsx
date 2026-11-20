@@ -94,12 +94,21 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
       className="book"
       style={{ display: 'block' }}
       aria-label={`${w.title} — ${w.author}`}
-      title={`${w.title} — ${w.author}`}
     >
       <div
         className={`cover ${tone}`}
         style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-      />
+      >
+        <div className="book-hover">
+          <div className="book-hover-meta">
+            <span>{w.category === 'manga' ? t.manga : w.category === 'fanfic' ? t.fanfics : t.books}</span>
+            <span className="rating">★ {w.rating.toFixed(1)}</span>
+          </div>
+          <h3>{w.title}</h3>
+          <div className="book-hover-author">{w.author}</div>
+          {w.description ? <div className="book-hover-desc">{w.description}</div> : null}
+        </div>
+      </div>
     </Link>
   );
 }

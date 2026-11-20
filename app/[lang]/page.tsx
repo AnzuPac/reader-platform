@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 type Card = {
   id: number; slug: string; title: string; author_name: string;
   cover_path: string | null; rating_avg: string; completion: string;
+  description?: string | null;
   type?: string; kind?: string;
   ai_usage?: 'not_declared' | 'no_ai' | 'assisted' | 'generated';
 };
@@ -84,14 +85,18 @@ function aiLabel(ai: Card['ai_usage'], l: Lang): { cls: string; text: string } |
 
 function ProtoCard({ w, lang, x }: { w: Card; lang: Lang; x: (typeof TXT)[Lang] }) {
   return (
-    <Link
-      href={`/${lang}/work/${w.slug}`}
-      className="book"
-      style={{ display: 'block' }}
-      aria-label={`${w.title} — ${w.author_name}`}
-      title={`${w.title} — ${w.author_name}`}
-    >
-      <div className={`cover ${tone(w)}`} />
+    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }} aria-label={`${w.title} — ${w.author_name}`}>
+      <div className={`cover ${tone(w)}`}>
+        <div className="book-hover">
+          <div className="book-hover-meta">
+            <span>{w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Графика' : lang === 'en' ? 'Graphic' : 'Grafika') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga')}</span>
+            <span className="rating">★ {Number(w.rating_avg || 0).toFixed(1)}</span>
+          </div>
+          <h3>{w.title}</h3>
+          <div className="book-hover-author">{w.author_name}</div>
+          {w.description ? <div className="book-hover-desc">{w.description}</div> : null}
+        </div>
+      </div>
     </Link>
   );
 }
