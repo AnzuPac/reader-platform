@@ -1,0 +1,194 @@
+# TeroLibrary — Anti-Piracy & DRM Implementation Specification
+
+## Design consistency and usability
+Review https://terolibrary.com/ru and the current repository UI before building protection controls, publisher settings, export dialogs, reader security states or admin workflows. Keep every new screen within the existing TeroLibrary design system. Reuse established colors, typography, spacing, cards, buttons, navigation, form fields, dialogs and responsive patterns. Do not create a separate visual style for DRM or security. Explain complex settings in clear user-facing language; use progressive disclosure and sensible defaults so protection controls remain understandable and do not overwhelm authors or publishers. Match existing localization patterns. Validate visual consistency on desktop and mobile and inspect loading, empty, error, success and restricted-access states.
+
+
+## Goal and security posture
+Implement defense-in-depth for all paid content and all copyrighted content, including free-to-read works whose rights holders require protection. Protection is enabled by default. The system must enforce access on the server; client-side UI restrictions are supplementary. No solution can prevent every capture (for example, an external camera photographing a display), and the product must not promise absolute prevention.
+
+## 1. Content classification and policy
+Every work and chapter must have an explicit rights/access policy:
+- Rights status: copyrighted, public domain, licensed, user-owned, or disputed/under review.
+- Access: public/free, subscription, purchase, preview, restricted, removed.
+- Protection profile: Standard Protected, Enhanced Protected, DRM Protected, or Public Domain/Unprotected where applicable.
+- Export policy: disallowed, allowed with watermark, or permitted original export.
+- Copy/print policy and device/session limits.
+- License terms, territory, expiration and rights-holder permissions where applicable.
+
+Default policy: copyrighted and paid works are protected; public-domain content can be configured separately. Missing/ambiguous rights metadata must not silently make a work exportable or unprotected. Publisher/author settings may tighten protection but cannot weaken platform security or legal requirements.
+
+## 2. Threat model
+Design and test against:
+- Unauthenticated access and IDOR.
+- Users without purchase/subscription/preview entitlement.
+- API scraping and automated bulk extraction.
+- Replaying signed URLs or license requests.
+- Shared accounts and excessive device/session use.
+- Client cache, browser storage, service worker and CDN leakage.
+- Direct access to originals, EPUB/PDF files, images and chapter endpoints.
+- Copy/select/print/save UI actions.
+- Screen capture/recording where OS permits.
+- Malicious uploaded files and content injection.
+- Admin or publisher permission misuse.
+Document residual risks and limitations.
+
+## 3. Protected content architecture
+- Store original manuscripts and publication source files in private storage, never in public web roots.
+- Separate original uploads, processed publication assets, preview assets and protected delivery artifacts.
+- Use encryption at rest where supported by storage; TLS for all transport.
+- Do not expose storage paths, bucket keys or permanent public URLs.
+- Avoid sending whole books to clients. Deliver only the authorized chapter/segment needed for reading.
+- Check rights and entitlement server-side on every chapter, asset, export and license request.
+- Keep protected content out of public caches, shared caches, search indexes, analytics payloads, error logs and telemetry.
+- Set restrictive cache headers for protected responses (e.g. private/no-store) and verify CDN behavior.
+- Do not persist plaintext protected chapters in localStorage, IndexedDB, persistent browser caches or service-worker caches. If temporary memory/cache is unavoidable, minimize duration and document it.
+- Ensure chapter images and embedded assets are also protected, not just text.
+- Use least-privilege storage credentials and access roles.
+
+## 4. Entitlement and license service
+Implement a centralized server-side authorization service with checks for:
+- User identity and account status.
+- Work/chapter rights and current publication status.
+- Free preview rules.
+- Purchase, subscription, gift or other valid entitlement.
+- License territory and time period, where applicable.
+- Device/session limits.
+- Publisher-defined restrictions.
+- Suspensions, refunds, chargebacks and revoked access.
+
+Entitlements must be authoritative in the database. Client flags must never grant access. Purchases and subscription state must be updated from verified payment webhooks, with idempotency. Refunds/chargebacks should trigger policy-based entitlement revocation. Return safe errors without leaking whether private resources exist.
+
+## 5. Protected reader delivery
+- Reader API returns only the requested chapter or a small authorized segment, never an entire work.
+- Use authenticated requests; short-lived tokens may supplement but must not replace authorization.
+- Bind access tokens to user/session and, where feasible, device/session context.
+- Rotate/revoke credentials and invalidate sessions after account security events.
+- Prevent sequential bulk requests through rate limits, anomaly detection and policy enforcement. Avoid breaking legitimate accessibility use; provide configurable, fair limits.
+- Avoid exposing content in HTML source, page props, server-rendered payloads, debug output or logs before authorization.
+- Sanitize chapter markup; validate allowed elements and URLs; protect against XSS.
+- Secure images and attachments with the same entitlement checks.
+- Add tests for unauthorized chapter IDs, changed user IDs, expired/replayed tokens, revoked entitlements and direct asset URLs.
+
+## 6. Watermarking
+Support visible and, if technically feasible, forensic/invisible watermarking:
+- Per-reader/per-license identifiers; use pseudonymous IDs, not raw email, phone, payment details or birth date.
+- Visible watermark should be dynamic: vary placement, opacity and pattern within readability/accessibility constraints.
+- Consider repeating watermark for enhanced protection and for authorized PDF exports.
+- Watermark chapter delivery or rendering where feasible; protect images and export files too.
+- Store a mapping from watermark identifier to account/license in restricted audit storage.
+- Publisher settings may configure allowed watermark style, but cannot disable required platform watermarking on protected exports.
+- Log watermark generation and export events.
+- Test that watermarking is unique per entitlement and does not expose sensitive personal information.
+
+## 7. Web protections
+For protected reader mode, implement supplementary UI controls:
+- Disable selection and copying where appropriate.
+- Block context-menu copy and common copy/select/print/save shortcuts in reader UI.
+- Prevent drag-copy and printing; use print CSS to hide or blank protected content.
+- Avoid exposing a full text DOM or full-book data to the client.
+- Do not treat these controls as security boundaries; test server authorization independently.
+- Detect suspicious automation patterns where feasible; use rate limits, progressive throttling and temporary restrictions.
+- Do not use invasive fingerprinting. Prefer transparent session/device controls and minimal data collection.
+
+## 8. PDF and export policy
+- Export is disabled by default for paid and protected copyrighted content unless rights-holder/platform policy explicitly allows it.
+- Enforce export policy server-side before generation.
+- Export only selected chapters or the whole work if the entitlement and policy allow it.
+- For permitted exports, add a personalized watermark (pseudonymous user/license ID, export timestamp or unique export ID) as policy dictates.
+- Provide configurable page size, margins, typography, page numbering, table of contents and metadata where supported.
+- Ensure Cyrillic and other supported Unicode characters render correctly; embed suitable fonts where licensing permits.
+- Use secure, short-lived download delivery; never create permanent public links.
+- Log export request, user, work, scope, policy decision and result, without logging chapter text.
+- Verify generated files are non-empty, valid and readable. Clean temporary files securely and promptly.
+- Respect DRM restrictions; do not offer export that circumvents DRM.
+
+## 9. Native mobile protections
+### Android
+- Use FLAG_SECURE for protected screens where appropriate.
+- Restrict screenshots, screen recording and insecure display/mirroring where platform APIs allow.
+- Hide sensitive previews in Recents/app switcher.
+- Hide protected content when app enters background.
+- Avoid plaintext persistent storage; encrypt any permitted offline cache and bind it to device/license.
+### iOS
+- Detect screen recording/capture/mirroring and hide protected content where supported.
+- Protect app-switcher previews and background transitions.
+- Use supported capture notifications/indicators; do not claim universal screenshot prevention.
+- Avoid plaintext persistent storage; encrypt any permitted offline cache and bind it to device/license.
+### Offline access
+- Disabled by default for protected content unless a DRM/license system is implemented.
+- If supported, encrypted content, device-bound keys, expiry/renewal, revocation strategy and secure deletion must be specified and tested.
+
+## 10. DRM integration
+Create a provider abstraction, not a fake DRM implementation. Evaluate and integrate Readium LCP or a suitable licensed solution when project requirements, platform support and license terms allow.
+- Document vendor, licensing, supported formats/platforms, key/license server requirements, deployment and operational costs.
+- Integrate real license acquisition, validation, renewal, expiry and revocation flows.
+- Securely handle keys; never expose them in frontend code, logs or repository.
+- Verify protected content cannot be opened without a valid license in the supported reader.
+- If external licensing/infrastructure is unavailable, mark DRM as BLOCKED/NOT IMPLEMENTED and retain non-DRM defense-in-depth; do not label it DRM-secured.
+
+## 11. Publisher and author controls
+Dashboard must show, per work:
+- Rights/access classification and protection profile.
+- Export and print permissions.
+- Preview/paid chapter rules.
+- Watermark configuration within platform policy.
+- Device/session policy.
+- License status, expiration and territory if relevant.
+- Security/access events and export history.
+- Suspicious activity summary and available actions.
+- Takedown/rights complaint workflow.
+
+Provide understandable explanations of what each protection does and its limitations. Authors/publishers must not see reader personal data beyond authorized operational needs.
+
+## 12. Abuse detection and response
+- Detect excessive chapter requests, sequential high-speed reads, unusual concurrent sessions, repeated failed entitlement checks, suspicious exports and token replay.
+- Apply graduated responses: throttling, challenge, temporary session restriction, alert, review; avoid automatic permanent bans based only on a single heuristic.
+- Maintain tamper-resistant audit records for security-sensitive actions.
+- Admin workflows for investigating leaks, identifying watermark/license, suspending access and handling appeals.
+- Retention and access controls for security logs; avoid storing chapter text.
+
+## 13. Privacy and compliance
+- Collect only necessary data.
+- Keep birth date and other personal data out of watermarks and author analytics.
+- Use aggregated age analytics only with minimum cohort thresholds; do not expose identifiable reader records.
+- Document retention, deletion, access, consent and privacy notices for relevant telemetry.
+- Restrict access to watermark identity mappings and security logs.
+- Review applicable law and platform policies before launch; this specification is technical and not legal advice.
+
+## 14. Required tests and acceptance criteria
+Tests must prove:
+1. Unauthenticated requests cannot access protected chapter or asset content.
+2. A user without entitlement cannot access paid chapters or export files.
+3. A valid entitlement grants only allowed content and scope.
+4. Revoked, expired, refunded or suspended access is denied according to policy.
+5. Changing user/work/chapter IDs does not bypass authorization (IDOR).
+6. Direct original-file and asset URLs are not publicly accessible.
+7. Chapter API never returns an entire protected book unexpectedly.
+8. Rate limits and bulk-extraction detection operate and are documented.
+9. Protected responses are not publicly cached or persisted in browser/service-worker storage.
+10. Watermarks are unique, pseudonymous and traceable under restricted access.
+11. PDF export obeys rights policy, watermark policy and Unicode requirements.
+12. Android protections work on supported devices; limitations documented.
+13. iOS capture detection/hiding works where supported; limitations documented.
+14. DRM is tested with real licensing if integrated; otherwise clearly marked unavailable.
+15. Publisher dashboard settings cannot bypass platform-required safeguards.
+16. Security events are logged without leaking content or personal data.
+
+## 15. Implementation deliverables
+- Threat model and architecture note.
+- Rights/access policy schema and migrations.
+- Central entitlement service.
+- Protected reader and assets delivery.
+- Watermark service.
+- PDF export policy and generator.
+- Web protections.
+- Mobile protection integration points or implementations supported by current app architecture.
+- DRM provider abstraction and integration status.
+- Publisher protection dashboard.
+- Abuse monitoring and admin workflows.
+- Automated tests and manual test checklist.
+- Documentation of residual risks, dependencies, licensing and configuration.
+
+## 16. Execution instructions for the coding agent
+Inspect the existing repository and integrate these requirements without redesigning the UI. Implement actual code, database migrations, API routes, tests and documentation. Work incrementally, run checks, and report only verified results. Never claim absolute protection or completed DRM if it is not genuinely integrated and tested. Prioritize server-side authorization and secure content delivery over cosmetic client restrictions.
