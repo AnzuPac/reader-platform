@@ -610,7 +610,7 @@ export async function chapterGate(
   return decideChapterAccess({
     access: chapter.access,
     loggedIn: true,
-    isAuthor: work?.author_id === session.uid,
+    isAuthor: Number(work?.author_id) === Number(session.uid),
     isAdmin: session.role === 'admin',
     hasSubscription: sub && (work ? subscriptionAvailable(work) : false),
     hasWorkPurchase: workBuy,

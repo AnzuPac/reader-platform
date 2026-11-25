@@ -789,3 +789,18 @@ CREATE TABLE IF NOT EXISTS watermark_records (
   kind       TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Версии глав (автосохранение и история)
+CREATE TABLE IF NOT EXISTS chapter_versions (
+  id         BIGSERIAL PRIMARY KEY,
+  chapter_id BIGINT NOT NULL,
+  work_id    BIGINT NOT NULL,
+  user_id    BIGINT NOT NULL,
+  number     INTEGER NOT NULL,
+  title      TEXT NOT NULL,
+  content    TEXT NOT NULL,
+  word_count INTEGER NOT NULL DEFAULT 0,
+  source     TEXT NOT NULL DEFAULT 'autosave',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS chapter_versions_idx ON chapter_versions(chapter_id, id);

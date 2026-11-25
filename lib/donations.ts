@@ -111,7 +111,7 @@ export async function createDonation(
 
   const work = await one<WorkRow>('SELECT id, author_id, status, title, kind FROM works WHERE id = $1', [workId]);
   if (!work || work.status !== 'published') return { ok: false, error: 'work_not_found' };
-  if (work.author_id === userId) return { ok: false, error: 'self_donation' };
+  if (Number(work.author_id) === Number(userId)) return { ok: false, error: 'self_donation' };
 
   const currencyRow = await one<{ currency: string }>(
     'SELECT currency FROM book_prices WHERE work_id = $1 AND active = 1',

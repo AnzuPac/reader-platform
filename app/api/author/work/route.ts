@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   const slugInput = String(b?.slug || '').trim();
   if (slugInput) {
     const existing = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slugInput]);
-    if (!existing || existing.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (!existing || Number(existing.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     await query(
       `UPDATE works SET title = $2, description = $3, age_rating = $4, completion = $5, ai_usage = $6, kind = $7, is_classic = $8, rights_confirmed = $9, updated_at = now() WHERE id = $1`,
       [existing.id, title, String(b?.description || ''), Number(b?.ageRating) || 0, b?.completion === 'completed' ? 'completed' : 'ongoing', aiUsage, kind, isClassic, rightsConfirmed]

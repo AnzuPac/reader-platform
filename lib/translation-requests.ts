@@ -28,7 +28,7 @@ export async function requestTranslation(input: {
        FROM chapters c JOIN works w ON w.id = c.work_id
       WHERE c.id = $1`, [input.chapterId]
   );
-  if (!ch || ch.author_id !== input.userId) return { ok: false, error: 'not_found' };
+  if (!ch || Number(ch.author_id) !== Number(input.userId)) return { ok: false, error: 'not_found' };
   if (ch.status !== 'published') return { ok: false, error: 'not_published' };
 
   const dup = await one<{ id: number }>(

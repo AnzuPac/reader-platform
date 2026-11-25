@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const slug = url.searchParams.get('work') || '';
   await initSchema();
   const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   const rows = await query(
     'SELECT id, lang, term, translation FROM glossary_terms WHERE work_id = $1 ORDER BY lang, term', [work.id]
   );
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
   await initSchema();
   const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   await query(
     `INSERT INTO glossary_terms (work_id, lang, term, translation) VALUES ($1,$2,$3,$4)

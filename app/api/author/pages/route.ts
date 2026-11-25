@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   await initSchema();
   const work = await one<{ id: number; author_id: number; type: string }>('SELECT id, author_id, type FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const chapter = await query<{ id: number }>(
     `INSERT INTO chapters (work_id, number, title, content, word_count, access, status)
@@ -68,7 +68,7 @@ export async function GET(req: Request) {
   const number = Number(url.searchParams.get('number'));
   await initSchema();
   const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   const ch = await one<{ id: number }>('SELECT id FROM chapters WHERE work_id = $1 AND number = $2', [work.id, number]);
   if (!ch) return NextResponse.json({ pages: [] });
   const pages = await query('SELECT id, page_no, file_path FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [ch.id]);

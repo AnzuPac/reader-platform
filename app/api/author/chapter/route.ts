@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   await initSchema();
   const work = await one<{ id: number; author_id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number; publisher_id: number | null }>('SELECT id, author_id, kind, is_classic, rights_confirmed, publisher_id FROM works WHERE slug = $1', [workSlug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const access = ['free','subscribers','paid'].includes(String(b?.access)) ? String(b?.access) : 'free';
   const rows = await query<{ id: number; number: number }>(
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
   const slug = url.searchParams.get('work') || '';
   await initSchema();
   const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   const fullParam = url.searchParams.get('full');
   if (fullParam) {
     const one = await query<{ content: string; title: string; access: string }>(

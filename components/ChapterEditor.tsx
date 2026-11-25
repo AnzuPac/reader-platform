@@ -27,6 +27,12 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   const [font, setFont] = useState(FONTS[0].value);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [savedAt, setSavedAt] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versions, setVersions] = useState<Array<{ id: number; title: string; word_count: number; source: string; created_at: string }>>([]);
+  const suspendRef = useRef(false);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const fontRef = useRef<HTMLInputElement>(null);
   const [fontName, setFontName] = useState('');
@@ -90,7 +96,11 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const full = await fetch(`/api/author/chapter?work=${encodeURIComponent(workSlug)}&full=${n}`);
     if (full.ok) {
       const fj = await full.json();
-      if (fj.content) editor?.commands.setContent(fj.content);
+      if (fj.content) {
+        suspendRef.current = true;
+        editor?.commands.setContent(fj.content);
+        setTimeout(() => { suspendRef.current = false; }, 150);
+      }
     }
   }
 
@@ -179,6 +189,70 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     }
   }
 
+  async function autosave() {
+    if (!editor || suspendRef.current) return;
+    const body = editor.getHTML();
+    if (!body || body === '<p></p>') return;
+    setSaveState('saving');
+    const wrapped = `<div style="font-family:${font}">${body}</div>`;
+    const r = await fetch('/api/author/chapter/autosave', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workSlug, number, title, content: wrapped, access }),
+    }).catch(() => null);
+    if (!r || !r.ok) { setSaveState('error'); return; }
+    const j = await r.json().catch(() => ({}));
+    setSaveState('saved');
+    setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    if (j.mode === 'version_only') {
+      setMsg('Глава опубликована: автосохранение сохранено как версия, публикация не изменена.');
+    }
+    if (historyOpen) void loadVersions();
+  }
+
+  async function loadVersions() {
+    const r = await fetch(`/api/author/chapter/versions?work=${encodeURIComponent(workSlug)}&number=${number}`);
+    if (!r.ok) { setVersions([]); return; }
+    const j = await r.json().catch(() => ({}));
+    setVersions(Array.isArray(j.versions) ? j.versions : []);
+  }
+
+  async function restoreVersion(id: number) {
+    if (!window.confirm('Восстановить эту версию? Текущий текст будет сохранён в историю.')) return;
+    const r = await fetch('/api/author/chapter/restore', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ versionId: id }),
+    }).catch(() => null);
+    if (!r || !r.ok) {
+      const j = r ? await r.json().catch(() => ({})) : {};
+      setMsg(j.error === 'published_needs_revision'
+        ? 'Глава опубликована: восстановление доступно через заявку на правку.'
+        : 'Не удалось восстановить версию.');
+      return;
+    }
+    const j = await r.json().catch(() => ({}));
+    suspendRef.current = true;
+    editor?.commands.setContent(j.content || '');
+    setTimeout(() => { suspendRef.current = false; }, 150);
+    setTitle(j.title || title);
+    await loadChapters();
+    await loadVersions();
+    setMsg('Версия восстановлена.');
+  }
+
+  useEffect(() => {
+    if (!editor) return;
+    const onUpdate = () => {
+      if (suspendRef.current) return;
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = setTimeout(() => { void autosave(); }, 2000);
+    };
+    editor.on('update', onUpdate);
+    return () => {
+      editor.off('update', onUpdate);
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [editor, number, title, font, access, historyOpen]);
+
   const B = ({ on, active, children, onClick, title: ttl }: any) => (
     <button type="button" onClick={onClick} title={ttl}
       className={`rounded px-2 py-1 text-xs font-semibold ${active ? 'bg-brand text-white' : 'bg-[#221a35] text-mist hover:text-ink'}`}>
@@ -231,6 +305,12 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button className="btn btn-primary" onClick={save} disabled={busy}>Sačuvaj главу</button>
+          <button className="btn btn-ghost" onClick={() => { const next = !historyOpen; setHistoryOpen(next); if (next) void loadVersions(); }}>
+            История
+          </button>
+          <span className="text-xs muted">
+            {saveState === 'saving' ? 'Автосохранение…' : saveState === 'saved' ? `Сохранено ${savedAt}` : saveState === 'error' ? 'Ошибка автосохранения' : ''}
+          </span>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
           <input ref={importRef} type="file" accept=".docx,.pdf,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />
@@ -243,6 +323,21 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         </div>
         {msg ? <p className="mt-2 text-sm text-hot">{msg}</p> : null}
       </div>
+
+      {historyOpen ? (
+        <div className="card overflow-hidden">
+          <div className="border-b border-line px-4 py-3 font-semibold">История версий · глава {number}</div>
+          <ul className="divide-y divide-line">
+            {versions.map((v) => (
+              <li key={v.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                <span className="flex-1">{new Date(v.created_at).toLocaleString()} · {v.word_count} слов · {v.source}</span>
+                <button className="btn btn-ghost" onClick={() => restoreVersion(v.id)}>Восстановить</button>
+              </li>
+            ))}
+            {versions.length === 0 ? <li className="px-4 py-3 text-sm muted">Версий пока нет — начните печатать, автосохранение создаст первую.</li> : null}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="card overflow-hidden">
         <div className="border-b border-line px-4 py-3 font-semibold">Главы ({chapters.length})</div>

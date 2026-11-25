@@ -31,7 +31,7 @@ export async function submitChapterEdit(input: {
   const work = await one<{ id: number; author_id: number }>(
     'SELECT id, author_id FROM works WHERE slug = $1', [input.workSlug]
   );
-  if (!work || work.author_id !== input.authorId) return { ok: false, error: 'not_found' };
+  if (!work || Number(work.author_id) !== Number(input.authorId)) return { ok: false, error: 'not_found' };
 
   const ch = await one<{ id: number; status: string }>(
     'SELECT id, status FROM chapters WHERE work_id = $1 AND number = $2', [work.id, input.number]

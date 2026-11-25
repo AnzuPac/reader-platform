@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   await initSchema();
   const work = await one<{ id: number; author_id: number }>('SELECT id, author_id FROM works WHERE slug = $1', [slug]);
-  if (!work || work.author_id !== s.uid) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const safeFamily = name.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 40) || 'Custom';
   const fileName = `${slug}-${safeFamily.replace(/\s+/g, '-')}.${ext}`;
