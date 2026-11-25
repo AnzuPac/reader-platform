@@ -5,6 +5,7 @@ import { readSession } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { resolveStoredFile } from '@/lib/user-files';
 import { normalizeText, splitParagraphs } from '@/lib/personal-reader';
+import { parseEpub, listComicPages } from '@/lib/epub';
 import { isLang, type Lang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +18,10 @@ const TXT: Record<Lang, {
   en: { back: 'Back to library', download: 'Download file', empty: 'Text not found.', unsupported: 'This format is not yet supported in the reader — download the file.', reading: 'Reading' },
 };
 
-export default async function ReadFilePage({ params }: { params: Promise<{ lang: string; id: string }> }) {
+export default async function ReadFilePage({ params, searchParams }: { params: Promise<{ lang: string; id: string }>; searchParams: Promise<{ page?: string }> }) {
   const { lang, id } = await params;
+  const { page: pageRaw } = await searchParams;
+  const page = Math.max(1, Number(pageRaw) || 1);
   const l = (isLang(lang) ? lang : 'sr') as Lang;
   const t = TXT[l];
 
@@ -72,6 +75,77 @@ export default async function ReadFilePage({ params }: { params: Promise<{ lang:
           title={file.title}
           src={`/api/library/files/${file.id}?inline=1`}
           style={{ width: '100%', height: '82vh', border: 0, borderRadius: 12 }}
+        />
+      </main>
+    );
+  }
+
+  if (file.format === 'epub') {
+    let parsed: ReturnType<typeof parseEpub> | null = null;
+    try {
+      parsed = parseEpub(await fs.readFile(resolveStoredFile(file.path)));
+    } catch {
+      parsed = null;
+    }
+    if (!parsed) {
+      return (
+        <main id="main" className="shell">
+          {bar}
+          <div className="card p-6"><h1>{file.title}</h1><p className="muted">{t.unsupported}</p></div>
+        </main>
+      );
+    }
+    return (
+      <main id="main" className="shell">
+        {bar}
+        <article className="reader" aria-label={t.reading}>
+          <h1 style={{ marginBottom: 6 }}>{file.title}</h1>
+          <p className="muted" style={{ fontSize: 12, marginBottom: 18 }}>
+            EPUB · {parsed.chapters.length} {lang === 'ru' ? 'глав' : lang === 'en' ? 'chapters' : 'glava'}
+            {parsed.warnings.length ? ` · ${parsed.warnings.length} ${lang === 'ru' ? 'предупреждений' : 'warnings'}` : ''}
+          </p>
+          {parsed.chapters.map((chapter, index) => (
+            <section key={index} style={{ marginBottom: 28 }}>
+              <h2 style={{ marginBottom: 10 }}>{chapter.title}</h2>
+              <div dangerouslySetInnerHTML={{ __html: chapter.html }} />
+            </section>
+          ))}
+        </article>
+      </main>
+    );
+  }
+
+  if (file.format === 'cbz') {
+    let pages: ReturnType<typeof listComicPages> = [];
+    try {
+      pages = listComicPages(await fs.readFile(resolveStoredFile(file.path)));
+    } catch {
+      pages = [];
+    }
+    if (!pages.length) {
+      return (
+        <main id="main" className="shell">
+          {bar}
+          <div className="card p-6"><h1>{file.title}</h1><p className="muted">{t.unsupported}</p></div>
+        </main>
+      );
+    }
+    const current = Math.min(Math.max(1, page), pages.length);
+    const prev = current > 1 ? current - 1 : null;
+    const next = current < pages.length ? current + 1 : null;
+    const href = (n: number) => `/${lang}/read-file/${file.id}?page=${n}`;
+    return (
+      <main id="main" className="shell">
+        {bar}
+        <div className="flex items-center justify-between" style={{ margin: '8px 0 12px' }}>
+          {prev ? <Link className="btn" href={href(prev)}>←</Link> : <span />}
+          <strong>{current} / {pages.length}</strong>
+          {next ? <Link className="btn" href={href(next)}>→</Link> : <span />}
+        </div>
+        <img
+          src={`/api/library/files/${file.id}/page/${current}`}
+          alt={`${file.title} — ${current}`}
+          style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 12 }}
         />
       </main>
     );
