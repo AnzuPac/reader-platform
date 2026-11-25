@@ -17,7 +17,7 @@ export default function Chrome({
     <div className="tlp min-h-screen">
       <Suspense fallback={null}><CategoryThemeBinder /></Suspense>
       {children}
-      <BottomNavPill lang={lang} userId={userId} />
+      <Suspense fallback={null}><BottomNavPill lang={lang} userId={userId} /></Suspense>
     </div>
   );
 }
