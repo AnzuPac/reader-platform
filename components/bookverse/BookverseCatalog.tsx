@@ -123,6 +123,7 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
   page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
+  aiUsages = [], includeTags = [], excludeTags = [], includeMode = 'all', tags = [],
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -138,6 +139,11 @@ export default function BookverseCatalog({
   tag?: string;
   fandom?: string;
   aiUsage?: string;
+  aiUsages?: string[];
+  includeTags?: string[];
+  excludeTags?: string[];
+  includeMode?: 'all' | 'any';
+  tags?: Array<{ slug: string; name: string; count: number }>;
   genres?: CatalogGenre[];
 }) {
   const t = TXT[lang];
@@ -149,11 +155,27 @@ export default function BookverseCatalog({
   const [draftFandom, setDraftFandom] = useState(fandom);
   const [draftSource, setDraftSource] = useState(source);
   const [draftAi, setDraftAi] = useState(aiUsage);
+  const [draftAiList, setDraftAiList] = useState<string[]>(aiUsages);
+  const [draftInclude, setDraftInclude] = useState<string[]>(includeTags);
+  const [draftExclude, setDraftExclude] = useState<string[]>(excludeTags);
+  const [draftIncludeMode, setDraftIncludeMode] = useState<'all' | 'any'>(includeMode);
+  const [tagTab, setTagTab] = useState<'include' | 'exclude'>('include');
   const [view, setView] = useState<'grid' | 'list'>('grid');
+
+  function toggleTag(slug: string) {
+    if (tagTab === 'include') {
+      setDraftInclude((prev) => prev.includes(slug) ? prev.filter((x) => x !== slug) : [...prev, slug]);
+      setDraftExclude((prev) => prev.filter((x) => x !== slug));
+    } else {
+      setDraftExclude((prev) => prev.includes(slug) ? prev.filter((x) => x !== slug) : [...prev, slug]);
+      setDraftInclude((prev) => prev.filter((x) => x !== slug));
+    }
+  }
 
   function go(next: {
     q?: string; kind?: string; filter?: CatalogFilter; page?: number;
     genre?: string; tag?: string; fandom?: string; source?: string; ai?: string; period?: string;
+    aiList?: string[]; include?: string[]; exclude?: string[]; includeMode?: 'all' | 'any';
   }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
@@ -164,6 +186,10 @@ export default function BookverseCatalog({
     const fd = next.fandom !== undefined ? next.fandom : fandom;
     const src = next.source !== undefined ? next.source : source;
     const ai = next.ai !== undefined ? next.ai : aiUsage;
+    const aiList = next.aiList !== undefined ? next.aiList : draftAiList;
+    const inc = next.include !== undefined ? next.include : draftInclude;
+    const exc = next.exclude !== undefined ? next.exclude : draftExclude;
+    const incMode = next.includeMode !== undefined ? next.includeMode : draftIncludeMode;
     const per = next.period !== undefined ? next.period : period;
     const p = next.page !== undefined ? next.page : 1;
     if (q.trim()) params.set('q', q.trim());
@@ -173,7 +199,11 @@ export default function BookverseCatalog({
     if (tg) params.set('tag', tg);
     if (fd) params.set('fandom', fd);
     if (src) params.set('source', src);
-    if (ai) params.set('ai', ai);
+    if (aiList.length) aiList.forEach((v) => params.append('ai', v));
+    else if (ai) params.set('ai', ai);
+    if (inc.length) params.set('include', inc.join(','));
+    if (exc.length) params.set('exclude', exc.join(','));
+    if (inc.length && incMode === 'any') params.set('includeMode', 'any');
     if (per && per !== 'all') params.set('period', per);
     if (p > 1) params.set('page', String(p));
     const qs = params.toString();
@@ -187,6 +217,9 @@ export default function BookverseCatalog({
   if (fandom) active.push({ label: `${t.fandom}: ${fandom}`, clear: () => { setDraftFandom(''); go({ fandom: '', page: 1 }); } });
   if (source) active.push({ label: `${t.source}: ${source}`, clear: () => { setDraftSource(''); go({ source: '', page: 1 }); } });
   if (aiUsage) active.push({ label: `AI: ${aiUsage === 'yes' ? t.aiYes : aiUsage === 'no_ai' ? t.noAiShort : aiUsage}`, clear: () => { setDraftAi(''); go({ ai: '', page: 1 }); } });
+  if (draftAiList.length) active.push({ label: `AI: ${draftAiList.map((v) => v === 'used' ? t.aiYes : v === 'no_ai' ? t.noAiShort : t.aiUnknown).join(' / ')}`, clear: () => { setDraftAiList([]); go({ aiList: [], page: 1 }); } });
+  if (draftInclude.length) active.push({ label: `+${draftInclude.map((v) => '#' + v).join(' ')}`, clear: () => { setDraftInclude([]); go({ include: [], page: 1 }); } });
+  if (draftExclude.length) active.push({ label: `−${draftExclude.map((v) => '#' + v).join(' ')}`, clear: () => { setDraftExclude([]); go({ exclude: [], page: 1 }); } });
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
@@ -203,7 +236,7 @@ export default function BookverseCatalog({
     return (
       <main id="main" className="shell">
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'selfpub', 'fanfics', 'comics', 'top'] as SectionId[]).map((sec) => (
+          {(['books', 'fanfics', 'comics', 'top'] as SectionId[]).map((sec) => (
             <button
               key={sec}
               className={`subnav-btn subnav-btn--${SECTION_COLOR[sec]} ${sec === 'top' ? 'active' : ''}`}
@@ -246,7 +279,7 @@ export default function BookverseCatalog({
     <main id="main" className="shell">
       <div className={`tlp-cat-category tlp-catalog ${initialSection}`}>
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'selfpub', 'fanfics', 'comics', 'top'] as SectionId[]).map((s) => (
+          {(['books', 'fanfics', 'comics', 'top'] as SectionId[]).map((s) => (
             <button
               key={s}
               className={`subnav-btn subnav-btn--${SECTION_COLOR[s]} ${initialSection === s ? 'active' : ''}`}
@@ -256,6 +289,17 @@ export default function BookverseCatalog({
             </button>
           ))}
         </nav>
+
+        {initialSection === 'books' ? (
+          <div className="chips" style={{ marginBottom: 14 }}>
+            {([['', lang === 'ru' ? 'Все книги' : lang === 'en' ? 'All books' : 'Sve knjige'],
+               ['publisher', t.sourcePublisher],
+               ['selfpub', t.sourceSelf]] as [string, string][]).map(([v, label]) => (
+              <button key={v || 'all'} className={`chip ${source === v ? 'selected' : ''}`}
+                onClick={() => go({ source: v, page: 1 })}>{label}</button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="catalog-title">
           <div>
@@ -329,7 +373,41 @@ export default function BookverseCatalog({
 
             <div className="filterrow">
               <h3>{t.tags}</h3>
-              <input className="taginput" value={draftTag} placeholder={t.tagPlaceholder} onChange={(e) => setDraftTag(e.target.value)} />
+              <div className="chips" style={{ marginBottom: 8 }}>
+                <button className={`chip ${tagTab === 'include' ? 'selected' : ''}`} onClick={() => setTagTab('include')}>
+                  {lang === 'ru' ? 'Включить' : lang === 'en' ? 'Include' : 'Uključi'}
+                </button>
+                <button className={`chip ${tagTab === 'exclude' ? 'selected' : ''}`} onClick={() => setTagTab('exclude')}>
+                  {lang === 'ru' ? 'Исключить' : lang === 'en' ? 'Exclude' : 'Isključi'}
+                </button>
+              </div>
+              {tags.length === 0 ? (
+                <p className="muted" style={{ fontSize: 11 }}>
+                  {lang === 'ru' ? 'Теги пока не заведены в базе — фильтр появится, когда авторы их добавят.'
+                    : lang === 'en' ? 'No tags in the database yet — the filter appears once authors add them.'
+                    : 'Tagovi još nisu uneseni u bazu — filter se pojavljuje kada ih autori dodaju.'}
+                </p>
+              ) : (
+                <div className="chips">
+                  {tags.slice(0, 60).map((tag) => {
+                    const list = tagTab === 'include' ? draftInclude : draftExclude;
+                    return (
+                      <button key={tag.slug} className={`chip ${list.includes(tag.slug) ? 'selected' : ''}`}
+                        onClick={() => toggleTag(tag.slug)}>#{tag.name}</button>
+                    );
+                  })}
+                </div>
+              )}
+              {draftInclude.length > 1 ? (
+                <div style={{ marginTop: 8 }}>
+                  {([['all', lang === 'ru' ? 'Все выбранные' : lang === 'en' ? 'Match all' : 'Svi izabrani'],
+                     ['any', lang === 'ru' ? 'Любой выбранный' : lang === 'en' ? 'Match any' : 'Bilo koji']] as ['all' | 'any', string][]).map(([v, label]) => (
+                    <label key={v} className="checkbox">
+                      <input type="radio" name="includeMode" checked={draftIncludeMode === v} onChange={() => setDraftIncludeMode(v)} /> {label}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
               <h3 style={{ marginTop: 12 }}>{t.fandom}</h3>
               <input className="taginput" value={draftFandom} placeholder={t.fandomPlaceholder} onChange={(e) => setDraftFandom(e.target.value)} />
             </div>
@@ -337,12 +415,18 @@ export default function BookverseCatalog({
             <div className="filterrow">
               <h3>{t.ai}</h3>
               {([
-                ['', t.anyAi], ['no_ai', t.noAiShort], ['yes', t.aiYes],
+                ['used', t.aiYes], ['no_ai', t.noAiShort], ['not_declared', t.aiUnknown],
               ] as [string, string][]).map(([v, label]) => (
-                <label key={v || 'any'} className="checkbox">
-                  <input type="radio" name="ai" checked={draftAi === v} onChange={() => setDraftAi(v)} /> {label}
+                <label key={v} className="checkbox">
+                  <input type="checkbox" checked={draftAiList.includes(v)}
+                    onChange={() => setDraftAiList((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v])} /> {label}
                 </label>
               ))}
+              <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>
+                {lang === 'ru' ? 'Несколько галочек объединяются: использовался ИИ или без ИИ, либо не указано.'
+                  : lang === 'en' ? 'Multiple boxes combine: AI used, no AI, or not declared.'
+                  : 'Više oznaka se kombinuje: AI korišćen, bez AI ili nije navedeno.'}
+              </p>
             </div>
 
             <div className="filterrow">
@@ -359,11 +443,13 @@ export default function BookverseCatalog({
             <div className="row" style={{ marginTop: 20 }}>
               <button className="btn" onClick={() => {
                 setDraftGenre(''); setDraftTag(''); setDraftFandom(''); setDraftSource(''); setDraftAi('');
-                go({ genre: '', tag: '', fandom: '', source: '', ai: '', page: 1 });
+                setDraftAiList([]); setDraftInclude([]); setDraftExclude([]); setDraftIncludeMode('all');
+                go({ genre: '', tag: '', fandom: '', source: '', ai: '', aiList: [], include: [], exclude: [], includeMode: 'all', page: 1 });
                 setFiltersOpen(false);
               }}>{t.reset}</button>
               <button className="btn primary" onClick={() => {
-                go({ genre: draftGenre, tag: draftTag, fandom: draftFandom, source: draftSource, ai: draftAi, page: 1 });
+                go({ genre: draftGenre, tag: draftTag, fandom: draftFandom, source: draftSource, ai: draftAi,
+                     aiList: draftAiList, include: draftInclude, exclude: draftExclude, includeMode: draftIncludeMode, page: 1 });
                 setFiltersOpen(false);
               }}>{t.apply}</button>
             </div>

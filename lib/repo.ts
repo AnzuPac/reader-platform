@@ -32,7 +32,12 @@ export type ListWorksOpts = {
   /** Подстрочный поиск по полю works.fandom (мастер-промпт §4: фандом). */
   fandom?: string;
   excludeTags?: string[];
+  includeTags?: string[];
+  /** Include-режим: все выбранные теги (AND) или любой (OR). */
+  includeMode?: 'all' | 'any';
   aiUsage?: 'yes' | 'no_ai' | 'assisted' | 'generated';
+  /** Несколько AI-статусов: used = assisted+generated; no_ai; not_declared. */
+  aiUsages?: Array<'used' | 'no_ai' | 'not_declared' | 'assisted' | 'generated'>;
 };
 
 export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
@@ -61,8 +66,20 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     }
   }
   if (opts.classic) where.push('w.is_classic = TRUE');
-  if (opts.aiUsage === 'yes') { where.push("w.ai_usage IN ('assisted','generated')"); }
-  else if (opts.aiUsage) { params.push(opts.aiUsage); where.push(`w.ai_usage = $${params.length}`); }
+  const aiStatuses = new Set<string>();
+  for (const value of opts.aiUsages || []) {
+    if (value === 'used' || value === 'assisted' || value === 'generated') {
+      aiStatuses.add('assisted'); aiStatuses.add('generated');
+    } else if (value === 'no_ai') aiStatuses.add('no_ai');
+    else if (value === 'not_declared') aiStatuses.add('not_declared');
+  }
+  if (opts.aiUsage === 'yes') { aiStatuses.add('assisted'); aiStatuses.add('generated'); }
+  else if (opts.aiUsage) aiStatuses.add(opts.aiUsage);
+  if (aiStatuses.size) {
+    const list = Array.from(aiStatuses);
+    const ph = list.map((v) => { params.push(v); return `$${params.length}`; });
+    where.push(`w.ai_usage IN (${ph.join(',')})`);
+  }
   if (opts.fanfic === true) where.push("w.kind = 'fanfic'");
   if (opts.fanfic === false) where.push("w.kind = 'original'");
   if (wtype === 'novel' || wtype === 'comic') {
@@ -94,6 +111,20 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     params.push(tag);
     where.push(`EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
                         WHERE wt.work_id = w.id AND t.slug = $${params.length})`);
+  }
+  const includeTags = (opts.includeTags || []).map((t) => t.trim()).filter(Boolean);
+  if (includeTags.length) {
+    if ((opts.includeMode || 'all') === 'any') {
+      const placeholders = includeTags.map((t) => { params.push(t); return `$${params.length}`; });
+      where.push(`EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
+                          WHERE wt.work_id = w.id AND t.slug IN (${placeholders.join(',')}))`);
+    } else {
+      for (const slug of includeTags) {
+        params.push(slug);
+        where.push(`EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
+                            WHERE wt.work_id = w.id AND t.slug = $${params.length})`);
+      }
+    }
   }
   if (excludeTags.length) {
     const placeholders = excludeTags.map((t) => { params.push(t); return `$${params.length}`; });
@@ -487,4 +518,19 @@ export async function listTopWorks(opts: {
       LIMIT $1`,
     [limit],
   );
+}
+
+
+/** Теги из БД с числом произведений — для панели фильтров. */
+export async function listTags(limit = 300): Promise<Array<{ slug: string; name: string; count: number }>> {
+  await ensure();
+  const rows = await query<{ slug: string; name: string; count: number | string }>(
+    `SELECT t.slug, t.name, COUNT(wt.work_id) AS count
+       FROM tags t LEFT JOIN work_tags wt ON wt.tag_id = t.id
+      GROUP BY t.id, t.slug, t.name
+      ORDER BY count DESC, t.slug ASC
+      LIMIT $1`,
+    [limit],
+  );
+  return rows.map((r) => ({ slug: r.slug, name: r.name, count: Number(r.count) || 0 }));
 }

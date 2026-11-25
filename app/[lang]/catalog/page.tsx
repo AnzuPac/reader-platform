@@ -1,5 +1,5 @@
 import { isLang, type Lang } from '@/lib/i18n';
-import { listWorks, listGenres, listTopWorks, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { listWorks, listGenres, listTopWorks, listTags, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
 import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
@@ -36,8 +36,13 @@ export default async function CatalogPage({
   const source = str(sp.source);
   const tag = str(sp.tag);
   const fandom = str(sp.fandom);
-  const aiRaw = str(sp.ai);
-  const aiUsage = aiRaw === 'yes' || aiRaw === 'no_ai' || aiRaw === 'assisted' || aiRaw === 'generated' ? aiRaw : undefined;
+  const listOf = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? v.split(',') : []).map((x) => x.trim()).filter(Boolean);
+  const includeTags = listOf(sp.include);
+  const excludeTags = listOf(sp.exclude);
+  const includeMode = str(sp.includeMode) === 'any' ? 'any' as const : 'all' as const;
+  const aiRawList = listOf(sp.ai);
+  const aiUsages = aiRawList.filter((v): v is 'used' | 'no_ai' | 'not_declared' | 'assisted' | 'generated' =>
+    ['used', 'no_ai', 'not_declared', 'assisted', 'generated'].includes(v));
   const rawFilter = str(sp.filter);
   const filter: CatalogFilter =
     rawFilter === 'popular' || rawFilter === 'fresh' || rawFilter === 'completed' ? rawFilter : 'forYou';
@@ -47,8 +52,8 @@ export default async function CatalogPage({
     kind === 'top' || typeParam === 'top' ? 'top'
       : typeParam === 'manga' || kind === 'comic' || kind === 'manga' ? 'comics'
         : typeParam === 'fanfic' || kind === 'fanfic' ? 'fanfics'
-          : kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub'
-            : 'books';
+          : 'books';
+  const bookSource = kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub' : source;
 
   const periodRaw = str(sp.period);
   const period = periodRaw === 'year' || periodRaw === 'month' || periodRaw === 'week' ? periodRaw : 'all';
@@ -66,16 +71,18 @@ export default async function CatalogPage({
   if (genre) opts.genre = genre;
   // Книги — только издательские; самиздат — только авторский. Источник из URL
   // не должен «размывать» вкладку, поэтому задаётся разделом.
-  if (section === 'books') opts.source = 'publisher';
-  else if (section === 'selfpub') opts.source = 'selfpub';
-  else if (source) opts.source = source;
+  if (section === 'books') {
+    if (bookSource) opts.source = bookSource;
+  } else if (source) opts.source = source;
+  if (includeTags.length) { opts.includeTags = includeTags; opts.includeMode = includeMode; }
+  if (excludeTags.length) opts.excludeTags = excludeTags;
   if (tag) opts.tag = tag;
   if (fandom) opts.fandom = fandom;
-  if (aiUsage) opts.aiUsage = aiUsage;
+  if (aiUsages.length) opts.aiUsages = aiUsages;
   if (filter === 'completed') opts.completion = 'completed';
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
-  if (section === 'books' || section === 'selfpub') opts.type = 'novel';
+  if (section === 'books') opts.type = 'novel';
 
   let rows: Row[] = [];
   if (section !== 'top') {
@@ -149,6 +156,7 @@ export default async function CatalogPage({
     : undefined;
 
   const genresRaw = await listGenres().catch(() => []);
+  const tags = (await listTags().catch(() => [])).map((t) => ({ slug: t.slug, name: t.name, count: t.count }));
   const genres = genresRaw.map((g) => ({ slug: g.slug, name: l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr }));
 
   return (
@@ -161,11 +169,15 @@ export default async function CatalogPage({
       page={page}
       hasMore={hasMore}
       genre={genre}
-      source={source}
+      source={bookSource}
       tag={tag}
       fandom={fandom}
-      aiUsage={aiUsage || ''}
+      aiUsages={aiUsages}
+      includeTags={includeTags}
+      excludeTags={excludeTags}
+      includeMode={includeMode}
       genres={genres}
+      tags={tags}
       tops={tops}
       period={period}
     />
