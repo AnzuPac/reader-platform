@@ -1,27 +1,31 @@
 'use client';
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Turnstile from '@/components/Turnstile';
 
 const TXT = {
   sr: {
     need: 'Popuni sva polja', exists: 'Nalog sa ovom e-poštom već postoji',
     birth: 'Datum rođenja', birthHint: 'Ne prikazuje se javno. Koristi se za uzrasna ograničenja i statistiku.',
     birthRequired: 'Unesi datum rođenja', birthInvalid: 'Datum rođenja nije ispravan',
-    tooYoung: 'Registracija je moguća od 13 godina', weak: 'Lozinka je prekratka (min. 8)',
+    tooYoung: 'Registracija je moguća od 13 godina', weak: 'Lozinka je prekratka (min. 12)',
+    mismatch: 'Lozinke se ne poklapaju', captcha: 'Potvrdite da niste robot',
     fail: 'Greška pri registraciji',
   },
   ru: {
     need: 'Заполни все поля', exists: 'Аккаунт с такой почтой уже есть',
     birth: 'Дата рождения', birthHint: 'Публично не показывается. Нужна для возрастных ограничений и статистики.',
     birthRequired: 'Укажи дату рождения', birthInvalid: 'Дата рождения указана неверно',
-    tooYoung: 'Регистрация доступна с 13 лет', weak: 'Пароль слишком короткий (мин. 8)',
+    tooYoung: 'Регистрация доступна с 13 лет', weak: 'Пароль слишком короткий (мин. 12)',
+    mismatch: 'Пароли не совпадают', captcha: 'Подтвердите, что вы не робот',
     fail: 'Ошибка регистрации',
   },
   en: {
     need: 'Fill in all fields', exists: 'An account with this email already exists',
     birth: 'Date of birth', birthHint: 'Not shown publicly. Used for age limits and statistics.',
     birthRequired: 'Enter your date of birth', birthInvalid: 'Date of birth is invalid',
-    tooYoung: 'Registration is available from age 13', weak: 'Password is too short (min. 8)',
+    tooYoung: 'Registration is available from age 13', weak: 'Password is too short (min. 12)',
+    mismatch: 'Passwords do not match', captcha: 'Please confirm you are not a robot',
     fail: 'Registration failed',
   },
 } as const;
@@ -30,6 +34,8 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,11 +45,13 @@ export default function RegisterPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !email || !password || !birthDate) { setError(TXT[lang].need); return; }
+    if (!name || !email || !password || !confirmPassword || !birthDate) { setError(TXT[lang].need); return; }
+    if (password.length < 12) { setError(TXT[lang].weak); return; }
+    if (password !== confirmPassword) { setError(TXT[lang].mismatch); return; }
     setBusy(true); setError('');
     const res = await fetch('/api/auth/register', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, birthDate }),
+      body: JSON.stringify({ name, email, password, confirmPassword, birthDate, lang, turnstileToken }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -54,6 +62,10 @@ export default function RegisterPage() {
         birthdate_invalid: TXT[lang].birthInvalid,
         too_young: TXT[lang].tooYoung,
         weak_password: TXT[lang].weak,
+        password_mismatch: TXT[lang].mismatch,
+        turnstile_required: TXT[lang].captcha,
+        turnstile_failed: TXT[lang].captcha,
+        turnstile_not_configured: TXT[lang].fail,
       };
       setError(map[String(j.error)] || TXT[lang].fail);
       return;
@@ -75,8 +87,16 @@ export default function RegisterPage() {
           <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
-          <label className="mb-1 block text-sm muted">Lozinka (min. 8)</label>
-          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="mb-1 block text-sm muted">
+            {lang === 'ru' ? 'Пароль (мин. 12)' : lang === 'en' ? 'Password (min. 12)' : 'Lozinka (min. 12)'}
+          </label>
+          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm muted">
+            {lang === 'ru' ? 'Повторите пароль' : lang === 'en' ? 'Repeat password' : 'Ponovi lozinku'}
+          </label>
+          <input className="input" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
         </div>
         <div>
           <label className="mb-1 block text-sm muted">{TXT[lang].birth}</label>
@@ -90,6 +110,7 @@ export default function RegisterPage() {
           <p className="mt-1 text-xs muted">{TXT[lang].birthHint}</p>
         </div>
         {error ? <p className="text-sm text-sakura">{error}</p> : null}
+        <Turnstile onToken={setTurnstileToken} />
         <button className="btn btn-primary w-full justify-center" disabled={busy}>Napravi nalog</button>
       </form>
     </main>

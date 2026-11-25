@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initSchema, query, one } from '@/lib/db';
+import { hashEmailToken } from '@/lib/auth';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -10,8 +11,10 @@ export async function GET(req: Request) {
   if (!token) return NextResponse.json({ error: 'token_required' }, { status: 400 });
 
   await initSchema();
+  // Токен хранится хешем; старые строки с открытым токеном поддерживаем.
+  const tokenHash = hashEmailToken(token);
   const row = await one<{ id: number; user_id: number; used_at: string | null; expires_at: string }>(
-    'SELECT id, user_id, used_at, expires_at FROM email_tokens WHERE token = $1', [token]
+    'SELECT id, user_id, used_at, expires_at FROM email_tokens WHERE token = $1 OR token = $2', [tokenHash, token]
   );
   if (!row) return NextResponse.json({ error: 'invalid_token' }, { status: 404 });
   if (row.used_at) return NextResponse.redirect(new URL(`/${lang}?verified=already`, url.origin));

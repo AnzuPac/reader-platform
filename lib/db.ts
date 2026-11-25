@@ -91,6 +91,14 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN fandom TEXT',
     'ALTER TABLE works ADD COLUMN pairing TEXT',
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL,
+       token_hash TEXT NOT NULL UNIQUE,
+       expires_at TEXT NOT NULL,
+       used_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
     'ALTER TABLE works ADD COLUMN comic_format TEXT',
     'ALTER TABLE works ADD COLUMN color_mode TEXT',
     'ALTER TABLE works ADD COLUMN demographic TEXT',
@@ -352,6 +360,14 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS fandom TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       token_hash TEXT NOT NULL UNIQUE,
+       expires_at TIMESTAMPTZ NOT NULL,
+       used_at TIMESTAMPTZ,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS comic_format TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS color_mode TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS demographic TEXT',

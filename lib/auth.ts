@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import * as nodeCrypto from 'node:crypto';
 import { getJwtSecret } from './secrets';
 import { one, query } from './db';
 
@@ -14,6 +15,10 @@ const REFRESH_TTL = 60 * 60 * 24 * 30; // 30 дней
 // на первом обращении к сессии, а не подписывает токены известной строкой.
 function secret(): Uint8Array {
   return getJwtSecret();
+}
+
+export function hashEmailToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 function hashToken(token: string): string {
@@ -39,12 +44,62 @@ async function revokeRefreshToken(token: string): Promise<void> {
 
 export type Session = { uid: number; email: string; role: string; name: string };
 
+// Argon2id — требование ТЗ. Node 24 даёт argon2Sync нативно, поэтому
+// внешняя зависимость не нужна (реестр npm закрыт политикой).
+const ARGON2 = { memory: 19456, passes: 2, parallelism: 1, tagLength: 32 } as const;
+const argon2Sync = (nodeCrypto as unknown as {
+  argon2Sync: (algorithm: 'argon2id', params: { message: Buffer; nonce: Buffer; memory: number; passes: number; parallelism: number; tagLength: number }) => Buffer;
+}).argon2Sync;
+
+const ARGON2_RE = /^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/=]+)\$([A-Za-z0-9+/=]+)$/;
+
+function b64(buf: Buffer): string { return buf.toString('base64'); }
+
 export async function hashPassword(pw: string): Promise<string> {
-  return bcrypt.hash(pw, 11);
+  const salt = randomBytes(16);
+  const tag = argon2Sync('argon2id', {
+    message: Buffer.from(pw, 'utf8'),
+    nonce: salt,
+    memory: ARGON2.memory,
+    passes: ARGON2.passes,
+    parallelism: ARGON2.parallelism,
+    tagLength: ARGON2.tagLength,
+  });
+  return `$argon2id$v=19$m=${ARGON2.memory},t=${ARGON2.passes},p=${ARGON2.parallelism}$${b64(salt)}$${b64(Buffer.from(tag))}`;
+}
+
+/** Старые хеши bcrypt продолжают работать; при успешном входе их заменяют. */
+export function needsRehash(hash: string): boolean {
+  if (!hash) return false;
+  const m = ARGON2_RE.exec(hash);
+  if (!m) return hash.startsWith('$2');
+  return Number(m[1]) < ARGON2.memory || Number(m[2]) < ARGON2.passes;
 }
 
 export async function verifyPassword(pw: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(pw, hash);
+  if (!hash) return false;
+  const m = ARGON2_RE.exec(hash);
+  if (m) {
+    try {
+      const salt = Buffer.from(m[4], 'base64');
+      const expected = Buffer.from(m[5], 'base64');
+      const tag = Buffer.from(argon2Sync('argon2id', {
+        message: Buffer.from(pw, 'utf8'),
+        nonce: salt,
+        memory: Number(m[1]),
+        passes: Number(m[2]),
+        parallelism: Number(m[3]),
+        tagLength: expected.length,
+      }));
+      return tag.length === expected.length && timingSafeEqual(tag, expected);
+    } catch {
+      return false;
+    }
+  }
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
+    return bcrypt.compare(pw, hash);
+  }
+  return false;
 }
 
 export async function signAccess(s: Session): Promise<string> {

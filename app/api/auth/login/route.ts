@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query, initSchema } from '@/lib/db';
-import { verifyPassword, setSessionCookies } from '@/lib/auth';
+import { verifyPassword, setSessionCookies, hashPassword, needsRehash } from '@/lib/auth';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 
 export async function POST(req: Request) {
@@ -18,6 +18,12 @@ export async function POST(req: Request) {
   const u = rows[0];
   if (!u || !u.password_hash || !(await verifyPassword(password, u.password_hash))) {
     return NextResponse.json({ error: 'err_credentials' }, { status: 401 });
+  }
+  // Старый bcrypt-хеш заменяем на Argon2id при первом успешном входе.
+  if (needsRehash(u.password_hash)) {
+    hashPassword(password)
+      .then((fresh) => query('UPDATE users SET password_hash = $1 WHERE id = $2', [fresh, u.id]))
+      .catch(() => {});
   }
   await setSessionCookies({ uid: u.id, email: u.email, role: u.role, name: u.display_name });
   return NextResponse.json({ ok: true, user: { id: u.id, email: u.email, name: u.display_name, role: u.role } });

@@ -46,6 +46,9 @@ export default function LoginPage({ params }: { params: Promise<{ lang: string }
         </div>
         {error ? <p className="text-sm text-sakura">{error}</p> : null}
         <button className="btn btn-primary w-full justify-center" disabled={busy}>{t.submit}</button>
+        <a className="block text-center text-sm muted" href={`/${lang}/forgot`}>
+          {lang === 'ru' ? 'Забыли пароль?' : lang === 'en' ? 'Forgot password?' : 'Zaboravljena lozinka?'}
+        </a>
       </form>
     </main>
   );
