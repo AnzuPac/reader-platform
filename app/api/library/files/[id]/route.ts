@@ -20,7 +20,7 @@ async function ownedFile(sessionUid: number, id: string) {
   return rows[0] || null;
 }
 
-export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await readSession();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await context.params;
@@ -35,14 +35,16 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     return NextResponse.json({ error: 'file_missing' }, { status: 410 });
   }
 
+  const inline = new URL(req.url).searchParams.get('inline') === '1' && file.mime === 'application/pdf';
   const ascii = file.title.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(0, 120) || 'book';
   return new Response(new Uint8Array(data), {
     headers: {
       'content-type': file.mime || 'application/octet-stream',
       'content-length': String(data.length),
-      'content-disposition': `attachment; filename="${ascii}.${file.format}"; filename*=UTF-8''${encodeURIComponent(file.title)}.${file.format}`,
+      'content-disposition': `${inline ? 'inline' : 'attachment'}; filename="${ascii}.${file.format}"; filename*=UTF-8''${encodeURIComponent(file.title)}.${file.format}`,
       'cache-control': 'private, no-store, max-age=0',
       'x-content-type-options': 'nosniff',
+      'content-security-policy': "frame-ancestors 'self'",
     },
   });
 }

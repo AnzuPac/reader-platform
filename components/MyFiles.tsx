@@ -11,21 +11,21 @@ type Data = { books: Book[]; usage: number; quota: number; maxFileBytes: number;
 const TXT = {
   sr: {
     title: 'Moji fajlovi', add: 'Dodaj knjigu', hint: 'EPUB, FB2, TXT, PDF, CBZ, CBR — privatno, samo za vas.',
-    empty: 'Još nema ličnih fajlova.', download: 'Preuzmi', remove: 'Obriši', used: 'Iskorišćeno',
+    empty: 'Još nema ličnih fajlova.', download: 'Preuzmi', remove: 'Obriši', read: 'Čitaj', used: 'Iskorišćeno',
     quota: 'Kvota', tooBig: 'Fajl je prevelik', quotaFull: 'Nema dovoljno mesta u kvoti',
     badFormat: 'Format nije podržan', badContent: 'Sadržaj ne odgovara formatu', uploadFail: 'Greška pri otpremanju',
     confirm: 'Obrisati fajl? Radnja je nepovratna.', busy: 'Otpremanje…',
   },
   ru: {
     title: 'Мои файлы', add: 'Добавить книгу', hint: 'EPUB, FB2, TXT, PDF, CBZ, CBR — приватно, только для вас.',
-    empty: 'Личных файлов пока нет.', download: 'Скачать', remove: 'Удалить', used: 'Использовано',
+    empty: 'Личных файлов пока нет.', download: 'Скачать', remove: 'Удалить', read: 'Читать', used: 'Использовано',
     quota: 'Квота', tooBig: 'Файл слишком большой', quotaFull: 'Недостаточно места в квоте',
     badFormat: 'Формат не поддерживается', badContent: 'Содержимое не соответствует формату', uploadFail: 'Ошибка загрузки',
     confirm: 'Удалить файл? Действие необратимо.', busy: 'Загрузка…',
   },
   en: {
     title: 'My files', add: 'Add a book', hint: 'EPUB, FB2, TXT, PDF, CBZ, CBR — private, only for you.',
-    empty: 'No personal files yet.', download: 'Download', remove: 'Delete', used: 'Used',
+    empty: 'No personal files yet.', download: 'Download', remove: 'Delete', read: 'Read', used: 'Used',
     quota: 'Quota', tooBig: 'File is too large', quotaFull: 'Not enough quota space',
     badFormat: 'Format is not supported', badContent: 'Content does not match the format', uploadFail: 'Upload failed',
     confirm: 'Delete this file? This cannot be undone.', busy: 'Uploading…',
@@ -137,6 +137,9 @@ export default function MyFiles({ lang }: { lang: 'sr' | 'ru' | 'en' }) {
               </div>
               {book.file_id ? (
                 <>
+                  {(book.format === 'txt' || book.format === 'pdf') ? (
+                    <a className="btn btn-primary" href={`/${lang}/read-file/${book.file_id}`}>{TXT[lang].read}</a>
+                  ) : null}
                   <a className="btn btn-ghost" href={`/api/library/files/${book.file_id}`}>{t.download}</a>
                   <button type="button" className="btn btn-ghost" onClick={() => remove(book.file_id as number)}>{t.remove}</button>
                 </>
