@@ -124,6 +124,7 @@ export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
   page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
   aiUsages = [], includeTags = [], excludeTags = [], includeMode = 'all', tags = [],
+  comicFormat = '', colorMode = '', readingDirection = '', demographic = '', free = false,
 }: {
   works: CatalogWork[];
   lang: Lang;
@@ -144,6 +145,11 @@ export default function BookverseCatalog({
   excludeTags?: string[];
   includeMode?: 'all' | 'any';
   tags?: Array<{ slug: string; name: string; count: number }>;
+  comicFormat?: string;
+  colorMode?: string;
+  readingDirection?: string;
+  demographic?: string;
+  free?: boolean;
   genres?: CatalogGenre[];
 }) {
   const t = TXT[lang];
@@ -160,6 +166,11 @@ export default function BookverseCatalog({
   const [draftExclude, setDraftExclude] = useState<string[]>(excludeTags);
   const [draftIncludeMode, setDraftIncludeMode] = useState<'all' | 'any'>(includeMode);
   const [tagTab, setTagTab] = useState<'include' | 'exclude'>('include');
+  const [draftComicFormat, setDraftComicFormat] = useState(comicFormat);
+  const [draftColorMode, setDraftColorMode] = useState(colorMode);
+  const [draftDirection, setDraftDirection] = useState(readingDirection);
+  const [draftDemographic, setDraftDemographic] = useState(demographic);
+  const [draftFree, setDraftFree] = useState(Boolean(free));
   const [view, setView] = useState<'grid' | 'list'>('grid');
 
   function toggleTag(slug: string) {
@@ -176,6 +187,7 @@ export default function BookverseCatalog({
     q?: string; kind?: string; filter?: CatalogFilter; page?: number;
     genre?: string; tag?: string; fandom?: string; source?: string; ai?: string; period?: string;
     aiList?: string[]; include?: string[]; exclude?: string[]; includeMode?: 'all' | 'any';
+    gfmt?: string; gcolor?: string; gdir?: string; gdemo?: string; free?: boolean;
   }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
@@ -204,6 +216,16 @@ export default function BookverseCatalog({
     if (inc.length) params.set('include', inc.join(','));
     if (exc.length) params.set('exclude', exc.join(','));
     if (inc.length && incMode === 'any') params.set('includeMode', 'any');
+    const gfmt = next.gfmt !== undefined ? next.gfmt : draftComicFormat;
+    const gcolor = next.gcolor !== undefined ? next.gcolor : draftColorMode;
+    const gdir = next.gdir !== undefined ? next.gdir : draftDirection;
+    const gdemo = next.gdemo !== undefined ? next.gdemo : draftDemographic;
+    const isFree = next.free !== undefined ? next.free : draftFree;
+    if (gfmt) params.set('gfmt', gfmt);
+    if (gcolor) params.set('gcolor', gcolor);
+    if (gdir) params.set('gdir', gdir);
+    if (gdemo) params.set('gdemo', gdemo);
+    if (isFree) params.set('free', '1');
     if (per && per !== 'all') params.set('period', per);
     if (p > 1) params.set('page', String(p));
     const qs = params.toString();
@@ -220,6 +242,11 @@ export default function BookverseCatalog({
   if (draftAiList.length) active.push({ label: `AI: ${draftAiList.map((v) => v === 'used' ? t.aiYes : v === 'no_ai' ? t.noAiShort : t.aiUnknown).join(' / ')}`, clear: () => { setDraftAiList([]); go({ aiList: [], page: 1 }); } });
   if (draftInclude.length) active.push({ label: `+${draftInclude.map((v) => '#' + v).join(' ')}`, clear: () => { setDraftInclude([]); go({ include: [], page: 1 }); } });
   if (draftExclude.length) active.push({ label: `−${draftExclude.map((v) => '#' + v).join(' ')}`, clear: () => { setDraftExclude([]); go({ exclude: [], page: 1 }); } });
+  if (draftComicFormat) active.push({ label: draftComicFormat, clear: () => { setDraftComicFormat(''); go({ gfmt: '', page: 1 }); } });
+  if (draftColorMode) active.push({ label: draftColorMode, clear: () => { setDraftColorMode(''); go({ gcolor: '', page: 1 }); } });
+  if (draftDirection) active.push({ label: draftDirection.toUpperCase(), clear: () => { setDraftDirection(''); go({ gdir: '', page: 1 }); } });
+  if (draftDemographic) active.push({ label: draftDemographic, clear: () => { setDraftDemographic(''); go({ gdemo: '', page: 1 }); } });
+  if (draftFree) active.push({ label: lang === 'ru' ? 'Бесплатные' : 'Free', clear: () => { setDraftFree(false); go({ free: false, page: 1 }); } });
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
@@ -429,6 +456,41 @@ export default function BookverseCatalog({
               </p>
             </div>
 
+            {initialSection === 'comics' ? (
+              <div className="filterrow">
+                <h3>{lang === 'ru' ? 'Графическая литература' : lang === 'en' ? 'Graphic literature' : 'Grafička literatura'}</h3>
+                {([
+                  ['gfmt', lang === 'ru' ? 'Формат' : lang === 'en' ? 'Format' : 'Format',
+                    draftComicFormat, setDraftComicFormat,
+                    [['manga', 'Manga'], ['manhwa', 'Manhwa'], ['manhua', 'Manhua'], ['webtoon', 'Webtoon'], ['comic', 'Comic']]],
+                  ['gcolor', lang === 'ru' ? 'Цветность' : lang === 'en' ? 'Colour' : 'Boja',
+                    draftColorMode, setDraftColorMode, [['color', lang === 'ru' ? 'Цветное' : lang === 'en' ? 'Colour' : 'Kolor'], ['bw', lang === 'ru' ? 'Ч/б' : lang === 'en' ? 'B&W' : 'Crno-belo']]],
+                  ['gdir', lang === 'ru' ? 'Направление' : lang === 'en' ? 'Direction' : 'Smer',
+                    draftDirection, setDraftDirection, [['ltr', 'LTR'], ['rtl', 'RTL']]],
+                  ['gdemo', lang === 'ru' ? 'Демография' : lang === 'en' ? 'Demographic' : 'Demografija',
+                    draftDemographic, setDraftDemographic, [['shounen', 'Shounen'], ['shoujo', 'Shoujo'], ['seinen', 'Seinen'], ['josei', 'Josei']]],
+                ] as Array<[string, string, string, (v: string) => void, Array<[string, string]>]>).map(([key, title, value, setValue, options]) => (
+                  <div key={key} style={{ marginBottom: 10 }}>
+                    <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>{title}</div>
+                    <div className="chips">
+                      {options.map(([v, label]) => (
+                        <button key={v} className={`chip ${value === v ? 'selected' : ''}`}
+                          onClick={() => setValue(value === v ? '' : v)}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="filterrow">
+              <h3>{lang === 'ru' ? 'Доступ' : lang === 'en' ? 'Access' : 'Pristup'}</h3>
+              <label className="checkbox">
+                <input type="checkbox" checked={draftFree} onChange={(event) => setDraftFree(event.target.checked)} />
+                {lang === 'ru' ? 'Бесплатные' : lang === 'en' ? 'Free works' : 'Besplatna dela'}
+              </label>
+            </div>
+
             <div className="filterrow">
               <h3>{t.source}</h3>
               {([
@@ -444,12 +506,16 @@ export default function BookverseCatalog({
               <button className="btn" onClick={() => {
                 setDraftGenre(''); setDraftTag(''); setDraftFandom(''); setDraftSource(''); setDraftAi('');
                 setDraftAiList([]); setDraftInclude([]); setDraftExclude([]); setDraftIncludeMode('all');
-                go({ genre: '', tag: '', fandom: '', source: '', ai: '', aiList: [], include: [], exclude: [], includeMode: 'all', page: 1 });
+                setDraftComicFormat(''); setDraftColorMode(''); setDraftDirection(''); setDraftDemographic(''); setDraftFree(false);
+                go({ genre: '', tag: '', fandom: '', source: '', ai: '', aiList: [], include: [], exclude: [], includeMode: 'all',
+                     gfmt: '', gcolor: '', gdir: '', gdemo: '', free: false, page: 1 });
                 setFiltersOpen(false);
               }}>{t.reset}</button>
               <button className="btn primary" onClick={() => {
                 go({ genre: draftGenre, tag: draftTag, fandom: draftFandom, source: draftSource, ai: draftAi,
-                     aiList: draftAiList, include: draftInclude, exclude: draftExclude, includeMode: draftIncludeMode, page: 1 });
+                     aiList: draftAiList, include: draftInclude, exclude: draftExclude, includeMode: draftIncludeMode,
+                     gfmt: draftComicFormat, gcolor: draftColorMode, gdir: draftDirection, gdemo: draftDemographic,
+                     free: draftFree, page: 1 });
                 setFiltersOpen(false);
               }}>{t.apply}</button>
             </div>

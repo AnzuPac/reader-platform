@@ -38,6 +38,8 @@ export type ListWorksOpts = {
   aiUsage?: 'yes' | 'no_ai' | 'assisted' | 'generated';
   /** Несколько AI-статусов: used = assisted+generated; no_ai; not_declared. */
   aiUsages?: Array<'used' | 'no_ai' | 'not_declared' | 'assisted' | 'generated'>;
+  /** Графическая литература: формат, цветность, направление, демография. */
+  comicFormat?: string; colorMode?: string; readingDirection?: string; demographic?: string;
 };
 
 export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
@@ -130,6 +132,12 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
     const placeholders = excludeTags.map((t) => { params.push(t); return `$${params.length}`; });
     where.push(`NOT EXISTS (SELECT 1 FROM work_tags wt JOIN tags t ON t.id = wt.tag_id
                              WHERE wt.work_id = w.id AND t.slug IN (${placeholders.join(',')}))`);
+  }
+  for (const [field, value] of [
+    ['comic_format', opts.comicFormat], ['color_mode', opts.colorMode],
+    ['reading_direction', opts.readingDirection], ['demographic', opts.demographic],
+  ] as Array<[string, string | undefined]>) {
+    if (value) { params.push(value); where.push(`w.${field} = $${params.length}`); }
   }
   if (genre) {
     params.push(genre);
@@ -347,9 +355,11 @@ export async function listReadingHistory(userId: number, limit = 50) {
   await ensure();
   return query<{
     work_id: number; slug: string; title: string; author_name: string; cover_path: string | null;
+    kind: string; type: string; publisher_id: number | null;
     chapter_id: number; chapter_title: string | null; number: number; percent: number; updated_at: string;
   }>(
-    `SELECT w.id AS work_id, w.slug, w.title, w.cover_path, u.display_name AS author_name,
+    `SELECT w.id AS work_id, w.slug, w.title, w.cover_path, w.kind, w.type, w.publisher_id,
+            u.display_name AS author_name,
             c.id AS chapter_id, c.title AS chapter_title, c.number, p.percent, p.updated_at
        FROM reading_progress p
        JOIN works w ON w.id = p.work_id AND w.status = 'published'

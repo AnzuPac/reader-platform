@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
-import { listWorks, getContinueReading } from '@/lib/repo';
+import { listWorks, getContinueReading, listReadingHistory } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,6 +116,25 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   const session = await readSession();
   const cont = session ? await getContinueReading(session.uid).catch(() => null) : null;
+  const history = session ? await listReadingHistory(session.uid, 80).catch(() => []) : [];
+  const counts = { publisher: 0, selfpub: 0, fanfic: 0, graphic: 0 };
+  for (const row of history) {
+    if (row.kind === 'fanfic') counts.fanfic += 1;
+    else if (row.type === 'comic') counts.graphic += 1;
+    else if (row.publisher_id) counts.publisher += 1;
+    else counts.selfpub += 1;
+  }
+  const topCategory = history.length >= 3
+    ? (Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as keyof typeof counts)
+    : null;
+  const forYou = topCategory
+    ? await listWorks(
+        topCategory === 'publisher' ? { type: 'novel', source: 'publisher', sort: 'rating', limit: 10 }
+          : topCategory === 'selfpub' ? { type: 'novel', source: 'selfpub', sort: 'rating', limit: 10 }
+            : topCategory === 'fanfic' ? { fanfic: true, sort: 'rating', limit: 10 }
+              : { type: 'comic', sort: 'rating', limit: 10 },
+      ).catch(() => [])
+    : [];
 
   const [pubRec, pubTop, selfRec, selfTop, fanRec, fanTop, graphicRec, graphicTop] = await Promise.all([
     listWorks({ type: 'novel', source: 'publisher', sort: 'new', limit: 5 }).catch(() => []),
@@ -164,6 +183,19 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <div className="tl-home-feature-label"><span className="tl-home-feature-icon">✦</span><div><strong>{x.featured}</strong><span>{l === 'ru' ? 'Подборка из каталога' : l === 'en' ? 'Selected from the catalog' : 'Izbor iz kataloga'}</span></div></div>
         </div>
       </section>
+
+      {forYou.length ? (
+        <section className="section tl-home-foryou">
+          <div className="sectionhead">
+            <div>
+              <div className="eyebrow">{l === 'ru' ? 'ПЕРСОНАЛЬНО' : l === 'en' ? 'FOR YOU' : 'ZA VAS'}</div>
+              <h2>{l === 'ru' ? 'Для вас' : l === 'en' ? 'For you' : 'Za vas'}</h2>
+            </div>
+            <span className="muted">{l === 'ru' ? 'По вашей истории чтения' : l === 'en' ? 'Based on your reading history' : 'Na osnovu vaše istorije čitanja'}</span>
+          </div>
+          <Grid items={forYou as Card[]} lang={l} x={x} />
+        </section>
+      ) : null}
 
       <div className="tl-home-quicklinks" aria-label={x.directions}>
         {sections.map((s) => (

@@ -36,6 +36,11 @@ export default async function CatalogPage({
   const source = str(sp.source);
   const tag = str(sp.tag);
   const fandom = str(sp.fandom);
+  const comicFormat = str(sp.gfmt);
+  const colorMode = str(sp.gcolor);
+  const readingDirection = str(sp.gdir);
+  const demographic = str(sp.gdemo);
+  const free = str(sp.free) === '1';
   const listOf = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? v.split(',') : []).map((x) => x.trim()).filter(Boolean);
   const includeTags = listOf(sp.include);
   const excludeTags = listOf(sp.exclude);
@@ -79,6 +84,11 @@ export default async function CatalogPage({
   if (tag) opts.tag = tag;
   if (fandom) opts.fandom = fandom;
   if (aiUsages.length) opts.aiUsages = aiUsages;
+  if (comicFormat) opts.comicFormat = comicFormat;
+  if (colorMode) opts.colorMode = colorMode;
+  if (readingDirection) opts.readingDirection = readingDirection;
+  if (demographic) opts.demographic = demographic;
+  if (free) opts.free = true;
   if (filter === 'completed') opts.completion = 'completed';
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
@@ -176,6 +186,11 @@ export default async function CatalogPage({
       includeTags={includeTags}
       excludeTags={excludeTags}
       includeMode={includeMode}
+      comicFormat={comicFormat}
+      colorMode={colorMode}
+      readingDirection={readingDirection}
+      demographic={demographic}
+      free={free}
       genres={genres}
       tags={tags}
       tops={tops}

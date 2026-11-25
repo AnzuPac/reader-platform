@@ -5,7 +5,7 @@ import AppearanceSwitcher from '@/components/AppearanceSwitcher';
 import type { Lang } from '@/lib/i18n';
 import type { Session } from '@/lib/auth';
 import DirectionTabs from '@/components/DirectionTabs';
-import GlobalSearchForm from '@/components/GlobalSearchForm';
+import SearchOverlay from '@/components/SearchOverlay';
 
 const COPY: Record<Lang, {
   home: string; publisher: string; selfpub: string; fanfic: string; graphic: string; top: string;
@@ -50,12 +50,7 @@ export default function SiteHeader({
 <Suspense fallback={<nav className="tlp-direction-tabs" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} libraryHref={session ? `/${lang}/u/${session.uid}?tab=library` : `/${lang}/login?next=${encodeURIComponent(`/${lang}/account`)}`} /></Suspense>
 
         <div className="right tlp-header-tools">
-          <Suspense fallback={<span className="tlp-search-placeholder" />}>
-            <GlobalSearchForm lang={lang} placeholder={c.searchPlaceholder} label={c.search} />
-          </Suspense>
-          <Link href={`/${lang}/catalog`} className="tlp-tool-button tlp-mobile-search" aria-label={c.search} title={c.search}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
-          </Link>
+          <SearchOverlay lang={lang} />
           <Suspense fallback={<span className="tlp-header-language-placeholder" />}><LanguageSwitcher lang={lang} className="tlp-header-language" /></Suspense>
           <AppearanceSwitcher lang={lang} />
           <Link href={`/${lang}/notifications`} className="tlp-tool-button tlp-notification-link" aria-label={notificationCount ? `${c.notifications}: ${notificationCount}` : c.notifications} title={c.notifications}>

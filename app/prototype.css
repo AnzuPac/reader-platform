@@ -1094,3 +1094,14 @@
 .tl-ai-badge--no{background:#18844b}
 .tl-ai-badge--yes{background:#bd4d37}
 .tl-ai-badge--unknown{background:#6b7280}
+
+/* Поиск: полноэкранный оверлей из шапки. */
+.tl-search-overlay{position:fixed;inset:0;z-index:80;background:rgba(15,20,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 14px 24px;overflow:auto}
+.tl-search-panel{width:min(680px,100%);background:var(--tlp-panel);border:1px solid var(--tlp-line);border-radius:16px;box-shadow:0 24px 60px #0003;padding:16px;display:flex;flex-direction:column;gap:12px}
+.tl-search-row{display:flex;gap:8px;align-items:center}
+.tl-search-row input{flex:1;min-width:0;border:1px solid var(--tlp-line);background:var(--tlp-bg);color:var(--tlp-text);border-radius:10px;padding:12px 13px;font-size:15px;outline:0}
+.tl-search-row input:focus{border-color:var(--tlp-a);box-shadow:0 0 0 3px color-mix(in srgb,var(--tlp-a) 18%,transparent)}
+.tl-search-catalog{justify-content:center;padding:12px;font-weight:800}
+.tl-search-history{display:flex;flex-direction:column;gap:8px}
+.tl-search-hint{font-size:12px;margin:2px 0 0}
+@media(max-width:600px){.tl-search-panel{border-radius:14px;padding:13px}.tl-search-row{flex-wrap:wrap}.tl-search-row input{flex-basis:100%}}

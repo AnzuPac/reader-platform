@@ -92,6 +92,8 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN pairing TEXT',
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
     'ALTER TABLE works ADD COLUMN comic_format TEXT',
+    'ALTER TABLE works ADD COLUMN color_mode TEXT',
+    'ALTER TABLE works ADD COLUMN demographic TEXT',
     "ALTER TABLE works ADD COLUMN reading_direction TEXT NOT NULL DEFAULT 'ltr'",
     // День рождения: подарок выдаётся один раз в год, поэтому нужен журнал.
     `CREATE TABLE IF NOT EXISTS birthday_gifts (
@@ -351,6 +353,8 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS comic_format TEXT',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS color_mode TEXT',
+    'ALTER TABLE works ADD COLUMN IF NOT EXISTS demographic TEXT',
     "ALTER TABLE works ADD COLUMN IF NOT EXISTS reading_direction TEXT NOT NULL DEFAULT 'ltr'",
     // День рождения: подарок выдаётся один раз в год, поэтому нужен журнал.
     `CREATE TABLE IF NOT EXISTS birthday_gifts (
