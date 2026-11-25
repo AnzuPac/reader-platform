@@ -6,6 +6,7 @@ import { query } from '@/lib/db';
 import { resolveStoredFile } from '@/lib/user-files';
 import { normalizeText, splitParagraphs } from '@/lib/personal-reader';
 import { parseEpub, listComicPages } from '@/lib/epub';
+import { parseFb2 } from '@/lib/fb2';
 import { isLang, type Lang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -103,6 +104,40 @@ export default async function ReadFilePage({ params, searchParams }: { params: P
           <p className="muted" style={{ fontSize: 12, marginBottom: 18 }}>
             EPUB · {parsed.chapters.length} {lang === 'ru' ? 'глав' : lang === 'en' ? 'chapters' : 'glava'}
             {parsed.warnings.length ? ` · ${parsed.warnings.length} ${lang === 'ru' ? 'предупреждений' : 'warnings'}` : ''}
+          </p>
+          {parsed.chapters.map((chapter, index) => (
+            <section key={index} style={{ marginBottom: 28 }}>
+              <h2 style={{ marginBottom: 10 }}>{chapter.title}</h2>
+              <div dangerouslySetInnerHTML={{ __html: chapter.html }} />
+            </section>
+          ))}
+        </article>
+      </main>
+    );
+  }
+
+  if (file.format === 'fb2') {
+    let parsed: ReturnType<typeof parseFb2> | null = null;
+    try {
+      parsed = parseFb2(await fs.readFile(resolveStoredFile(file.path)));
+    } catch {
+      parsed = null;
+    }
+    if (!parsed) {
+      return (
+        <main id="main" className="shell">
+          {bar}
+          <div className="card p-6"><h1>{file.title}</h1><p className="muted">{t.unsupported}</p></div>
+        </main>
+      );
+    }
+    return (
+      <main id="main" className="shell">
+        {bar}
+        <article className="reader" aria-label={t.reading}>
+          <h1 style={{ marginBottom: 6 }}>{parsed.title || file.title}</h1>
+          <p className="muted" style={{ fontSize: 12, marginBottom: 18 }}>
+            FB2{parsed.author ? ` · ${parsed.author}` : ''} · {parsed.chapters.length} {lang === 'ru' ? 'глав' : lang === 'en' ? 'chapters' : 'glava'}
           </p>
           {parsed.chapters.map((chapter, index) => (
             <section key={index} style={{ marginBottom: 28 }}>
