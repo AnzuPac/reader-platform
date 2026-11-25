@@ -117,6 +117,13 @@ export default function MyFiles({ lang }: { lang: 'sr' | 'ru' | 'en' }) {
         <div className="h-2 w-full overflow-hidden rounded bg-black/10">
           <div className="h-full rounded bg-[var(--tlp-a)]" style={{ width: `${percent}%` }} />
         </div>
+        {usage > quota ? (
+          <p className="mt-2 text-sm" role="status" style={{ color: '#9a6700' }}>
+            {lang === 'ru' ? 'Квота тарифа уменьшилась: файлы сохранены, скачивание и чтение работают, новые загрузки заблокированы до освобождения места или смены тарифа.'
+              : lang === 'en' ? 'Your plan quota decreased: files are kept and remain readable, new uploads are blocked until you free space or change the plan.'
+              : 'Kvota tarife je smanjena: fajlovi su sačuvani i čitljivi, nove otpreme su blokirane dok ne oslobodite prostor ili promenite tarifu.'}
+          </p>
+        ) : null}
         {error ? <p className="mt-2 text-sm" role="alert" style={{ color: '#b3261e' }}>{error}</p> : null}
       </div>
 

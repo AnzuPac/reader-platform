@@ -130,9 +130,20 @@ export async function usageFor(userId: number): Promise<number> {
   return Number(row?.bytes || 0);
 }
 
-/** Пока тарифная квота не подключена (этап квот), действует общий лимит. */
-export async function quotaFor(_userId: number): Promise<number> {
-  return DEFAULT_QUOTA_BYTES;
+/** Квота личных файлов берётся из активной подписки (plans.storage_bytes).
+ *  При даунгрейде действует меньшая квота, но файлы не удаляются: чтение и
+ *  скачивание остаются, блокируются только новые загрузки сверх лимита. */
+export async function quotaFor(userId: number): Promise<number> {
+  const row = await one<{ storage_bytes: number | string }>(
+    `SELECT p.storage_bytes
+       FROM subscriptions s JOIN plans p ON p.code = s.plan_code
+      WHERE s.user_id = $1 AND s.status = 'active' AND s.current_period_end > $2
+      ORDER BY p.storage_bytes DESC
+      LIMIT 1`,
+    [userId, new Date().toISOString()],
+  ).catch(() => null);
+  const value = Number(row?.storage_bytes || 0);
+  return value > 0 ? value : DEFAULT_QUOTA_BYTES;
 }
 
 export async function addUsage(userId: number, delta: number): Promise<void> {
