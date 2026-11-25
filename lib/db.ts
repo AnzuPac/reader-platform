@@ -140,6 +140,14 @@ async function migrateSqlite(db: any) {
        client_ts TEXT,
        applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
      )`,
+    `CREATE TABLE IF NOT EXISTS watermark_records (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT,
+       work_id BIGINT,
+       kind TEXT NOT NULL,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
     `CREATE TABLE IF NOT EXISTS user_books (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        user_id BIGINT NOT NULL,
@@ -483,6 +491,14 @@ async function migratePg(db: any) {
        op TEXT NOT NULL DEFAULT 'push',
        client_ts TEXT,
        applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS watermark_records (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT,
+       work_id BIGINT,
+       kind TEXT NOT NULL,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
     `CREATE TABLE IF NOT EXISTS user_books (
        id BIGSERIAL PRIMARY KEY,

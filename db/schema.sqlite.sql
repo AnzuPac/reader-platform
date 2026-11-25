@@ -781,3 +781,13 @@ CREATE TABLE IF NOT EXISTS sync_operations (
   client_ts  TEXT,
   applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Журнал водяных знаков
+CREATE TABLE IF NOT EXISTS watermark_records (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    BIGINT NOT NULL,
+  chapter_id BIGINT,
+  work_id    BIGINT,
+  kind       TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

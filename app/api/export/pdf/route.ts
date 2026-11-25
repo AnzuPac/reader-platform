@@ -75,6 +75,10 @@ export async function GET(req: Request) {
   );
 
   const pdf = await renderPdf(html);
+  if (pdf.ok && session) {
+    await query('INSERT INTO watermark_records (user_id, chapter_id, work_id, kind) VALUES ($1,NULL,$2,$3)',
+      [session.uid, work.id, 'export']).catch(() => {});
+  }
   if (!pdf.ok) {
     const status = pdf.error === 'engine_missing' ? 501 : 500;
     return NextResponse.json({ error: pdf.error }, { status });

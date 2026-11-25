@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { initSchema, one } from '@/lib/db';
+import { initSchema, one, query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import { chapterGate } from '@/lib/purchases';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
+import { verifyChapterToken } from '@/lib/content-token';
 import { encodeWatermark } from '@/lib/watermark';
 import { registerContentDevice } from '@/lib/devices';
 import { TRANSLIT_ALLOWED_SQL, flag } from '@/lib/search';
@@ -39,7 +40,18 @@ export async function GET(req: Request) {
   );
   if (!ch) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE });
 
-  const session = await readSession();
+  let session = await readSession();
+  const tokenParam = new URL(req.url).searchParams.get('token');
+  if (!session && tokenParam) {
+    const verified = verifyChapterToken(tokenParam);
+    // Токен привязан к главе: чужой токен на другую главу не подходит.
+    if (verified && verified.chapterId === ch.id) {
+      const user = await one<{ id: number; email: string; role: string; display_name: string }>(
+        'SELECT id, email, role, display_name FROM users WHERE id = $1', [verified.uid],
+      );
+      if (user) session = { uid: user.id, email: user.email, role: user.role, name: user.display_name };
+    }
+  }
   const gate = await chapterGate({ id: ch.id, work_id: ch.work_id, access: ch.access }, session);
   if (!gate.allowed) {
     return NextResponse.json({ error: 'locked', reason: gate.reason }, { status: 403, headers: NO_STORE });
@@ -84,6 +96,8 @@ export async function GET(req: Request) {
       );
     }
     content = encodeWatermark(content, session.uid);
+    await query('INSERT INTO watermark_records (user_id, chapter_id, work_id, kind) VALUES ($1,$2,$3,$4)',
+      [session.uid, ch.id, ch.work_id, 'chapter']).catch(() => {});
   }
 
   return NextResponse.json(
