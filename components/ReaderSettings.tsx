@@ -33,6 +33,8 @@ export default function ReaderSettings() {
   }
 
   useEffect(() => {
+    // Сначала локальные настройки (мгновенно), затем серверные — они
+    // синхронизируются между устройствами.
     try {
       const raw = localStorage.getItem('reader_prefs');
       if (raw) {
@@ -43,6 +45,22 @@ export default function ReaderSettings() {
         apply({ size: 18, lh: 1.9, theme: 'dark', font: FONTS[0].value });
       }
     } catch {}
+
+    fetch('/api/reader/settings').then(async (r) => {
+      if (!r.ok) return;
+      const j = await r.json().catch(() => ({}));
+      const p = j?.prefs;
+      if (!p) return;
+      const loaded: Prefs = {
+        size: Number(p.font_size) || 18,
+        lh: Number(p.line_height) || 1.9,
+        theme: ['light', 'dark', 'sepia'].includes(p.theme) ? p.theme : 'dark',
+        font: p.font_family || FONTS[0].value,
+      };
+      setPrefs(loaded);
+      apply(loaded);
+      try { localStorage.setItem('reader_prefs', JSON.stringify(loaded)); } catch {}
+    }).catch(() => {});
   }, []);
 
   function update(part: Partial<Prefs>) {
@@ -50,6 +68,10 @@ export default function ReaderSettings() {
     setPrefs(p);
     apply(p);
     try { localStorage.setItem('reader_prefs', JSON.stringify(p)); } catch {}
+    fetch('/api/reader/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ font_size: p.size, line_height: p.lh, theme: p.theme, font_family: p.font }),
+    }).catch(() => {});
   }
 
   return (
