@@ -1,13 +1,13 @@
-# TeroLibrary Author preparation pack
+# Документы Author Studio
 
-This package contains the current project archive plus an author-only product/technical preparation set under `docs/author/`.
+Актуальная спецификация находится в:
+- `../PRODUCT-SCOPE-v2.md`
+- `00-PRODUCT-SCOPE.md`
+- `01-INFORMATION-ARCHITECTURE.md`
+- `02-EDITOR-AND-SYNC.md`
+- `03-FILE-IMPORT-EXPORT.md`
+- `04-API-DATA-MIGRATIONS.md`
+- `05-QA-ACCEPTANCE.md`
 
-Read in this order:
-1. `00-PRODUCT-SCOPE.md`
-2. `01-INFORMATION-ARCHITECTURE.md`
-3. `02-EDITOR-AND-SYNC.md`
-4. `03-FILE-IMPORT-EXPORT.md`
-5. `04-API-DATA-MIGRATIONS.md`
-6. `05-QA-ACCEPTANCE.md`
-
-The specifications distinguish existing code from proposed work. They intentionally defer publisher workflows.
+Визуальный стандарт: `../DESIGN-SYSTEM-AUTHOR-PUBLISHER.md`.
+При расхождениях старых заметок с `PRODUCT-SCOPE-v2.md` и дизайн-системой приоритет у актуальной согласованной редакции.
