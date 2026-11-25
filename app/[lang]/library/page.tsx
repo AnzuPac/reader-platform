@@ -6,6 +6,7 @@ import {
   libraryCounts, isLibraryStatus, LIBRARY_STATUSES, type LibraryStatus,
 } from '@/lib/repo';
 import LibraryStatusPicker from '@/components/LibraryStatusPicker';
+import MyFiles from '@/components/MyFiles';
 import { listPurchasedWorks } from '@/lib/purchases';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ type LibItem = {
   completion: string; author_name: string; added_at: string; ai_usage?: 'not_declared'|'no_ai'|'assisted'|'generated';
 };
 
-type Tab = 'saved' | 'history' | 'bookmarks' | 'purchased';
+type Tab = 'saved' | 'history' | 'bookmarks' | 'purchased' | 'files';
 
 const STATUS_LABELS: Record<Lang, Record<LibraryStatus, string>> = {
   sr: { reading: 'Čitam', want: 'U planu', done: 'Pročitano', favorite: 'Omiljeno', postponed: 'Odloženo', dropped: 'Napušteno' },
@@ -25,9 +26,9 @@ const STATUS_LABELS: Record<Lang, Record<LibraryStatus, string>> = {
 };
 
 const TAB_LABELS: Record<Lang, Record<Tab, string>> = {
-  sr: { saved: 'Sačuvano', history: 'Istorija', bookmarks: 'Obeleživači', purchased: 'Kupljeno' },
-  ru: { saved: 'Сохранённое', history: 'История', bookmarks: 'Закладки', purchased: 'Куплено' },
-  en: { saved: 'Saved', history: 'History', bookmarks: 'Bookmarks', purchased: 'Purchased' },
+  sr: { saved: 'Sačuvano', history: 'Istorija', bookmarks: 'Obeleživači', purchased: 'Kupljeno', files: 'Moji fajlovi' },
+  ru: { saved: 'Сохранённое', history: 'История', bookmarks: 'Закладки', purchased: 'Куплено', files: 'Мои файлы' },
+  en: { saved: 'Saved', history: 'History', bookmarks: 'Bookmarks', purchased: 'Purchased', files: 'My files' },
 };
 
 export default async function LibraryPage({
@@ -42,7 +43,7 @@ export default async function LibraryPage({
   const session = await readSession();
 
   const rawTab = typeof sp.tab === 'string' ? sp.tab : 'saved';
-  const tab: Tab = rawTab === 'history' || rawTab === 'bookmarks' || rawTab === 'purchased' ? rawTab : 'saved';
+  const tab: Tab = rawTab === 'history' || rawTab === 'bookmarks' || rawTab === 'purchased' || rawTab === 'files' ? rawTab : 'saved';
   const rawStatus = typeof sp.status === 'string' ? sp.status : '';
   const category = sp.category === 'book' || sp.category === 'fanfic' || sp.category === 'manga' ? sp.category : 'all';
   const search = typeof sp.q === 'string' ? sp.q.trim() : '';
@@ -85,7 +86,7 @@ export default async function LibraryPage({
 
       {/* Вкладки — каждая со своим содержимым, а не три ссылки в одну страницу (аудит, п.21). */}
       <nav className="mb-6 flex flex-wrap gap-2">
-        {(['saved', 'history', 'bookmarks', 'purchased'] as Tab[]).map((key) => (
+        {(['saved', 'history', 'bookmarks', 'purchased', 'files'] as Tab[]).map((key) => (
           <Link
             key={key}
             href={`/${l}/library?tab=${key}`}
@@ -128,6 +129,8 @@ export default async function LibraryPage({
           <span className="btn btn-primary">{l === 'ru' ? 'Дальше' : l === 'en' ? 'Continue' : 'Nastavi'}</span>
         </Link>
       ) : null}
+
+      {tab === 'files' ? <MyFiles lang={l as 'sr' | 'ru' | 'en'} /> : null}
 
       {tab === 'history' ? (
         history.length === 0 ? (

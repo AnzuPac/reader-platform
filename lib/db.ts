@@ -91,6 +91,32 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN fandom TEXT',
     'ALTER TABLE works ADD COLUMN pairing TEXT',
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS user_books (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL,
+       title TEXT NOT NULL,
+       author TEXT,
+       format TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'ready',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_book_files (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_book_id INTEGER NOT NULL REFERENCES user_books(id) ON DELETE CASCADE,
+       storage TEXT NOT NULL DEFAULT 'cloud',
+       path TEXT NOT NULL,
+       size_bytes BIGINT NOT NULL DEFAULT 0,
+       mime TEXT,
+       sha256 TEXT,
+       status TEXT NOT NULL DEFAULT 'ready',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_storage_usage (
+       user_id BIGINT PRIMARY KEY,
+       bytes BIGINT NOT NULL DEFAULT 0,
+       updated_at TEXT
+     )`,
     `CREATE TABLE IF NOT EXISTS password_reset_tokens (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        user_id BIGINT NOT NULL,
@@ -360,6 +386,32 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS fandom TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS user_books (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       title TEXT NOT NULL,
+       author TEXT,
+       format TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'ready',
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_book_files (
+       id BIGSERIAL PRIMARY KEY,
+       user_book_id BIGINT NOT NULL REFERENCES user_books(id) ON DELETE CASCADE,
+       storage TEXT NOT NULL DEFAULT 'cloud',
+       path TEXT NOT NULL,
+       size_bytes BIGINT NOT NULL DEFAULT 0,
+       mime TEXT,
+       sha256 TEXT,
+       status TEXT NOT NULL DEFAULT 'ready',
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_storage_usage (
+       user_id BIGINT PRIMARY KEY,
+       bytes BIGINT NOT NULL DEFAULT 0,
+       updated_at TIMESTAMPTZ
+     )`,
     `CREATE TABLE IF NOT EXISTS password_reset_tokens (
        id BIGSERIAL PRIMARY KEY,
        user_id BIGINT NOT NULL,

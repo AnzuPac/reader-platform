@@ -700,3 +700,31 @@ CREATE TABLE IF NOT EXISTS translation_requests (
   reviewed_at  TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS translation_requests_status_idx ON translation_requests(status, created_at);
+
+-- Личная библиотека пользователя
+CREATE TABLE IF NOT EXISTS user_books (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL,
+  title         TEXT NOT NULL,
+  author        TEXT,
+  format        TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'ready',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS user_book_files (
+  id            BIGSERIAL PRIMARY KEY,
+  user_book_id  BIGINT NOT NULL REFERENCES user_books(id) ON DELETE CASCADE,
+  storage       TEXT NOT NULL DEFAULT 'cloud',
+  path          TEXT NOT NULL,
+  size_bytes    BIGINT NOT NULL DEFAULT 0,
+  mime          TEXT,
+  sha256        TEXT,
+  status        TEXT NOT NULL DEFAULT 'ready',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS user_storage_usage (
+  user_id       BIGINT PRIMARY KEY,
+  bytes         BIGINT NOT NULL DEFAULT 0,
+  updated_at    TIMESTAMPTZ
+);
