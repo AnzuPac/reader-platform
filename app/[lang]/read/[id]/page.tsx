@@ -9,6 +9,7 @@ import { flag } from '@/lib/search';
 import { one } from '@/lib/db';
 import { recordReadingEvent, evaluateAchievements } from '@/lib/reader-profile';
 import ReaderClient from '@/components/ReaderClient';
+import ChapterAnnotations from '@/components/ChapterAnnotations';
 import ReaderTTS from '@/components/ReaderTTS';
 import AdSlot from '@/components/AdSlot';
 import ReaderSettings from '@/components/ReaderSettings';
@@ -191,6 +192,7 @@ export default async function ReadPage({
 
       <AdSlot slot="chapter_end" />
 
+      {!locked && ch.work_type !== 'comic' ? <ChapterAnnotations chapterId={ch.id} /> : null}
       <ReaderClient chapterId={ch.id} workId={ch.work_id} />
       <Comments workId={ch.work_id} chapterId={ch.id} />
       <ReaderSettings />

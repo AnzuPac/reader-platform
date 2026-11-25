@@ -385,7 +385,7 @@ export default function ChapterBody({
         onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
         onDragStart={isProtected ? (e) => e.preventDefault() : undefined}
       >
-        <article className="prose-reader whitespace-pre-line">
+        <article className="prose-reader whitespace-pre-line" data-chapter-body>
           {blocks.map((block, i) => {
             if (block.kind === 'raw' || block.index === null) {
               return <div key={`raw-${i}`} dangerouslySetInnerHTML={{ __html: block.html }} />;
