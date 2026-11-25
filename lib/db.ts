@@ -91,6 +91,55 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN fandom TEXT',
     'ALTER TABLE works ADD COLUMN pairing TEXT',
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS reading_settings (
+       user_id BIGINT PRIMARY KEY,
+       font_size INTEGER NOT NULL DEFAULT 18,
+       line_height REAL NOT NULL DEFAULT 1.8,
+       theme TEXT NOT NULL DEFAULT 'light',
+       font_family TEXT,
+       content_width INTEGER NOT NULL DEFAULT 720,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
+    `CREATE TABLE IF NOT EXISTS reading_annotations (
+       client_id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT NOT NULL,
+       position INTEGER NOT NULL DEFAULT 0,
+       length INTEGER NOT NULL DEFAULT 0,
+       note TEXT,
+       color TEXT,
+       deleted INTEGER NOT NULL DEFAULT 0,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
+    `CREATE TABLE IF NOT EXISTS sync_bookmarks (
+       client_id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT NOT NULL,
+       position INTEGER NOT NULL DEFAULT 0,
+       note TEXT,
+       deleted INTEGER NOT NULL DEFAULT 0,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_devices (
+       id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       platform TEXT,
+       name TEXT,
+       last_seen_at TEXT
+     )`,
+    `CREATE TABLE IF NOT EXISTS sync_operations (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id BIGINT NOT NULL,
+       device_id TEXT,
+       entity TEXT NOT NULL,
+       entity_id TEXT,
+       op TEXT NOT NULL DEFAULT 'push',
+       client_ts TEXT,
+       applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`,
     `CREATE TABLE IF NOT EXISTS user_books (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        user_id BIGINT NOT NULL,
@@ -386,6 +435,55 @@ async function migratePg(db: any) {
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS fandom TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS pairing TEXT',
     'ALTER TABLE works ADD COLUMN IF NOT EXISTS content_warnings TEXT',
+    `CREATE TABLE IF NOT EXISTS reading_settings (
+       user_id BIGINT PRIMARY KEY,
+       font_size INTEGER NOT NULL DEFAULT 18,
+       line_height REAL NOT NULL DEFAULT 1.8,
+       theme TEXT NOT NULL DEFAULT 'light',
+       font_family TEXT,
+       content_width INTEGER NOT NULL DEFAULT 720,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS reading_annotations (
+       client_id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT NOT NULL,
+       position INTEGER NOT NULL DEFAULT 0,
+       length INTEGER NOT NULL DEFAULT 0,
+       note TEXT,
+       color TEXT,
+       deleted INTEGER NOT NULL DEFAULT 0,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS sync_bookmarks (
+       client_id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       chapter_id BIGINT NOT NULL,
+       position INTEGER NOT NULL DEFAULT 0,
+       note TEXT,
+       deleted INTEGER NOT NULL DEFAULT 0,
+       version INTEGER NOT NULL DEFAULT 1,
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_devices (
+       id TEXT PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       platform TEXT,
+       name TEXT,
+       last_seen_at TEXT
+     )`,
+    `CREATE TABLE IF NOT EXISTS sync_operations (
+       id BIGSERIAL PRIMARY KEY,
+       user_id BIGINT NOT NULL,
+       device_id TEXT,
+       entity TEXT NOT NULL,
+       entity_id TEXT,
+       op TEXT NOT NULL DEFAULT 'push',
+       client_ts TEXT,
+       applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
     `CREATE TABLE IF NOT EXISTS user_books (
        id BIGSERIAL PRIMARY KEY,
        user_id BIGINT NOT NULL,
