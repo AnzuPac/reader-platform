@@ -33,6 +33,11 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   const [versions, setVersions] = useState<Array<{ id: number; title: string; word_count: number; source: string; created_at: string }>>([]);
   const suspendRef = useRef(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [preview, setPreview] = useState<null | {
+    title: string; totalWords: number; warnings: string[];
+    chapters: Array<{ title: string; html: string; words: number }>;
+  }>(null);
+  const [selected, setSelected] = useState<boolean[]>([]);
   const importRef = useRef<HTMLInputElement>(null);
   const fontRef = useRef<HTMLInputElement>(null);
   const [fontName, setFontName] = useState('');
@@ -111,16 +116,36 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true); setMsg('Импортирую…');
+    setBusy(true); setMsg('Разбираю файл…');
     const fd = new FormData();
     fd.append('file', file);
-    const r = await fetch('/api/author/import', { method: 'POST', body: fd });
+    const r = await fetch('/api/author/import/preview', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) { setMsg('Greška импорта: ' + (j.error || r.status)); return; }
-    editor?.commands.setContent(j.html || '');
-    setMsg(`Импортировано: ${j.words} слов`);
     e.target.value = '';
+    if (!r.ok) { setMsg('Ошибка импорта: ' + (j.error || r.status)); return; }
+    const chapters = Array.isArray(j.chapters) ? j.chapters : [];
+    setPreview({ title: j.title || file.name, totalWords: j.totalWords || 0, warnings: j.warnings || [], chapters });
+    setSelected(chapters.map(() => true));
+    setMsg('Проверьте структуру и подтвердите импорт.');
+  }
+
+  async function confirmImport() {
+    if (!preview) return;
+    const chapters = preview.chapters.filter((_, i) => selected[i]);
+    if (!chapters.length) { setMsg('Выберите хотя бы одну главу.'); return; }
+    setBusy(true);
+    const r = await fetch('/api/author/import/commit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workSlug, chapters }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setMsg('Ошибка импорта: ' + (j.error || r.status)); return; }
+    setMsg(`Импортировано глав: ${j.created}`);
+    setPreview(null);
+    setSelected([]);
+    await loadChapters();
   }
 
   async function onImage(e: React.ChangeEvent<HTMLInputElement>) {
@@ -323,6 +348,40 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         </div>
         {msg ? <p className="mt-2 text-sm text-hot">{msg}</p> : null}
       </div>
+
+      {preview ? (
+        <div className="card p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <strong>Предпросмотр импорта · {preview.chapters.length} глав · {preview.totalWords} слов</strong>
+            <button className="btn btn-ghost" onClick={() => { setPreview(null); setSelected([]); }}>Отмена</button>
+          </div>
+          {preview.warnings.length ? (
+            <ul className="mb-2 text-xs muted">
+              {preview.warnings.map((w, i) => <li key={i}>⚠ {w}</li>)}
+            </ul>
+          ) : null}
+          <ul className="divide-y divide-line">
+            {preview.chapters.map((c, i) => (
+              <li key={i} className="flex items-center gap-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selected[i] ?? true}
+                  onChange={(e) => setSelected((prev) => {
+                    const next = [...prev];
+                    next[i] = e.target.checked;
+                    return next;
+                  })}
+                />
+                <span className="flex-1">{c.title}</span>
+                <span className="text-xs muted">{c.words} слов</span>
+              </li>
+            ))}
+          </ul>
+          <button className="btn btn-primary mt-3" onClick={confirmImport} disabled={busy}>
+            Импортировать выбранные
+          </button>
+        </div>
+      ) : null}
 
       {historyOpen ? (
         <div className="card overflow-hidden">
