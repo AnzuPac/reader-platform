@@ -6,6 +6,7 @@ import ProfileSettings from '@/components/ProfileSettings';
 import WalletPanel from '@/components/WalletPanel';
 import AccountDangerZone from '@/components/AccountDangerZone';
 import AuthorActivation from '@/components/AuthorActivation';
+import VerifyEmailBanner from '@/components/VerifyEmailBanner';
 import { ensureWallet, listCoinPackages, listWalletHistory, getEconomySettings } from '@/lib/coins';
 import { one } from '@/lib/db';
 
@@ -21,8 +22,8 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
   const s = await readSession();
   if (!s) redirect(`/${lang}/login`);
   const localeRow = await one<{ locale: string }>('SELECT locale FROM users WHERE id = $1', [s.uid]);
-  const profileRow = await one<{ bio: string | null; profile_public: number | boolean | null }>(
-    'SELECT bio, profile_public FROM users WHERE id = $1', [s.uid],
+  const profileRow = await one<{ bio: string | null; profile_public: number | boolean | null; email_verified: number | boolean }>(
+    'SELECT bio, profile_public, email_verified FROM users WHERE id = $1', [s.uid],
   );
   await ensureWallet(s.uid);
   const [balance, packages, history, settings] = await Promise.all([
@@ -34,6 +35,9 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
   return (
     <main id="main" className="tl-screen tl-screen--account mx-auto max-w-xl px-5 py-10">
       <h1 className="mb-6 text-2xl font-bold">Nalog</h1>
+      {profileRow && !(profileRow.email_verified === 1 || profileRow.email_verified === true) ? (
+        <VerifyEmailBanner lang={(localeRow?.locale === 'ru' || localeRow?.locale === 'en' ? localeRow.locale : 'sr') as 'sr' | 'ru' | 'en'} />
+      ) : null}
       <AccountForm initialName={s.name} email={s.email} role={s.role} />
       <AuthorActivation role={s.role} lang={localeRow?.locale || 'sr'} />
       <ProfileSettings
