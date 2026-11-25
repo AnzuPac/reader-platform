@@ -4,6 +4,7 @@ import { initSchema, query, one } from '@/lib/db';
 import { requireAuthor } from '@/lib/author';
 import { setChapterPrice } from '@/lib/purchases';
 import { isCommerciallyEligible } from '@/lib/monetization-policy';
+import { publishDueIfAny } from '@/lib/publish';
 
 function plainText(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   const words = plainText(clean).split(/\s+/).filter(Boolean).length;
 
   await initSchema();
+  await publishDueIfAny().catch(() => 0);
   const work = await one<{ id: number; author_id: number; kind: string; is_classic: boolean | number; rights_confirmed: boolean | number; publisher_id: number | null }>('SELECT id, author_id, kind, is_classic, rights_confirmed, publisher_id FROM works WHERE slug = $1', [workSlug]);
   if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
@@ -58,7 +60,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ content: one[0]?.content || '', title: one[0]?.title || '', access: one[0]?.access || 'free' });
   }
   const rows = await query(
-    `SELECT id, number, title, access, status, word_count, substr(content,1,120) AS preview
+    `SELECT id, number, title, access, status, word_count, publish_at, substr(content,1,120) AS preview
        FROM chapters WHERE work_id = $1 ORDER BY number`, [work.id]
   );
   return NextResponse.json({ chapters: rows });

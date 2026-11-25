@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initSchema, one, query } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import { chapterGate } from '@/lib/purchases';
+import { publishDueIfAny } from '@/lib/publish';
 import { rateLimit, clientKey } from '@/lib/ratelimit';
 import { verifyChapterToken } from '@/lib/content-token';
 import { encodeWatermark } from '@/lib/watermark';
@@ -34,6 +35,7 @@ export async function GET(req: Request) {
   }
 
   await initSchema();
+  await publishDueIfAny().catch(() => 0);
   const ch = await one<{ id: number; work_id: number; content: string; access: string; title: string }>(
     'SELECT id, work_id, content, access, title FROM chapters WHERE id = $1 AND status = $2',
     [chapterId, 'published']

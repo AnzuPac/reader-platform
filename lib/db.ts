@@ -148,6 +148,7 @@ async function migrateSqlite(db: any) {
        kind TEXT NOT NULL,
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
      )`,
+    'ALTER TABLE chapters ADD COLUMN publish_at TEXT',
     `CREATE TABLE IF NOT EXISTS chapter_versions (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        chapter_id BIGINT NOT NULL,
@@ -513,6 +514,7 @@ async function migratePg(db: any) {
        kind TEXT NOT NULL,
        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
+    'ALTER TABLE chapters ADD COLUMN IF NOT EXISTS publish_at TIMESTAMPTZ',
     `CREATE TABLE IF NOT EXISTS chapter_versions (
        id BIGSERIAL PRIMARY KEY,
        chapter_id BIGINT NOT NULL,

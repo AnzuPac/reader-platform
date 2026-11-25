@@ -7,7 +7,7 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 
-type Chapter = { id: number; number: number; title: string; access: string; status: string; word_count: number };
+type Chapter = { id: number; number: number; title: string; access: string; status: string; word_count: number; publish_at?: string | null };
 
 const FONTS = [
   { label: 'Georgia (книжный)', value: 'Georgia, serif' },
@@ -38,6 +38,9 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     chapters: Array<{ title: string; html: string; words: number }>;
   }>(null);
   const [selected, setSelected] = useState<boolean[]>([]);
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [diff, setDiff] = useState<null | { ops: Array<{ type: string; text: string }>; added: number; removed: number }>(null);
+  const [pendingEdit, setPendingEdit] = useState<null | { content: string }>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const fontRef = useRef<HTMLInputElement>(null);
   const [fontName, setFontName] = useState('');
@@ -191,6 +194,38 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     e.target.value = '';
   }
 
+  async function schedule() {
+    if (!scheduleAt) { setMsg('Укажите дату и время публикации.'); return; }
+    const when = new Date(scheduleAt);
+    if (!Number.isFinite(when.getTime())) { setMsg('Дата указана неверно.'); return; }
+    setBusy(true);
+    const r = await fetch('/api/author/publish', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workSlug, number, publishAt: when.toISOString() }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setMsg('Не удалось запланировать: ' + (j.error || r.status)); return; }
+    setMsg(`Публикация запланирована на ${when.toLocaleString()}`);
+    await loadChapters();
+  }
+
+  async function submitEdit() {
+    if (!pendingEdit) return;
+    setBusy(true);
+    const r = await fetch('/api/author/chapter-edit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workSlug, number, title, content: pendingEdit.content, access }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setMsg('Ошибка отправки правки: ' + (j.error || r.status)); return; }
+    setMsg(`Правка отправлена на модерацию (заявка ${j.requestId}). Публикация не меняется до одобрения.`);
+    setDiff(null);
+    setPendingEdit(null);
+    await loadEdits();
+  }
+
   async function save() {
     if (!editor) return;
     setBusy(true); setMsg('');
@@ -198,7 +233,19 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
     const wrapped = `<div style="font-family:${font}">${body}</div>`;
     const meta = chapters.find((c) => c.number === number);
     const published = meta?.status === 'published';
-    const r = await fetch(published ? '/api/author/chapter-edit' : '/api/author/chapter', {
+    if (published) {
+      const current = await fetch(`/api/author/chapter?work=${encodeURIComponent(workSlug)}&full=${number}`);
+      const cj = current.ok ? await current.json().catch(() => ({})) : {};
+      const { diffLines, diffStats } = await import('@/lib/diff');
+      const ops = diffLines(String(cj.content || ''), wrapped);
+      const stats = diffStats(ops);
+      setDiff({ ops: ops.slice(0, 200), added: stats.added, removed: stats.removed });
+      setPendingEdit({ content: wrapped });
+      setBusy(false);
+      setMsg('Проверьте различия и отправьте правку на модерацию.');
+      return;
+    }
+    const r = await fetch('/api/author/chapter', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workSlug, number, title, content: wrapped, access }),
     });
@@ -337,6 +384,14 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
             {saveState === 'saving' ? 'Автосохранение…' : saveState === 'saved' ? `Сохранено ${savedAt}` : saveState === 'error' ? 'Ошибка автосохранения' : ''}
           </span>
           <button className="btn btn-ghost" onClick={publishChapter} disabled={busy}>Опубликовать</button>
+          <input
+            className="input max-w-[220px]"
+            type="datetime-local"
+            value={scheduleAt}
+            onChange={(e) => setScheduleAt(e.target.value)}
+            aria-label="Дата и время публикации"
+          />
+          <button className="btn btn-ghost" onClick={schedule} disabled={busy}>Запланировать</button>
           <input ref={importRef} type="file" accept=".docx,.pdf,.md,.markdown,.txt" className="hidden" onChange={onImport} />
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImage} />
           <input ref={fontRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={uploadFont} />
@@ -348,6 +403,28 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
         </div>
         {msg ? <p className="mt-2 text-sm text-hot">{msg}</p> : null}
       </div>
+
+      {diff ? (
+        <div className="card p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <strong>Различия с опубликованной версией · +{diff.added} / −{diff.removed}</strong>
+            <button className="btn btn-ghost" onClick={() => { setDiff(null); setPendingEdit(null); }}>Отмена</button>
+          </div>
+          <pre className="max-h-[320px] overflow-auto rounded-lg border border-line p-3 text-xs" style={{ whiteSpace: 'pre-wrap' }}>
+            {diff.ops.map((op, i) => (
+              <div key={i} style={{
+                background: op.type === 'add' ? 'rgba(46,160,67,.15)' : op.type === 'del' ? 'rgba(200,60,60,.15)' : 'transparent',
+                color: op.type === 'same' ? 'inherit' : undefined,
+              }}>
+                {op.type === 'add' ? '+ ' : op.type === 'del' ? '− ' : '  '}{op.text}
+              </div>
+            ))}
+          </pre>
+          <button className="btn btn-primary mt-3" onClick={submitEdit} disabled={busy}>
+            Отправить правку на модерацию
+          </button>
+        </div>
+      ) : null}
 
       {preview ? (
         <div className="card p-4">
@@ -407,7 +484,9 @@ export default function ChapterEditor({ workSlug }: { workSlug: string }) {
               <button className="flex-1 text-left text-sm hover:text-brand" onClick={() => openChapter(c.number)}>
                 {c.title || `Glava ${c.number}`}
               </button>
-              <span className="text-xs muted">{c.word_count} слов · {c.status}{c.access !== 'free' ? ' 🔒' : ''}</span>
+              <span className="text-xs muted">
+                {c.word_count} слов · {c.status}{c.publish_at && c.status !== 'published' ? ` · до ${new Date(c.publish_at).toLocaleString()}` : ''}{c.access !== 'free' ? ' 🔒' : ''}
+              </span>
               <select className="input max-w-[64px] text-xs" defaultValue="en"
                 onChange={(e) => requestTranslation(c.id, e.target.value)} title="Заявка на перевод">
                 <option value="en">EN</option>
