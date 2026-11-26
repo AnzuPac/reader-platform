@@ -168,7 +168,7 @@ export default async function CatalogPage({
     : undefined;
 
   const genresRaw = await listGenres().catch(() => []);
-  const tags = (await listTags().catch(() => [])).map((t) => ({ slug: t.slug, name: t.name, count: t.count }));
+  const tags = (await listTags().catch(() => [])).map((t) => ({ slug: t.slug, name: t.name, count: t.count, kind: t.kind, group: t.group }));
   const genres = genresRaw.map((g) => ({ slug: g.slug, name: l === 'ru' ? g.name_ru : l === 'en' ? g.name_en : g.name_sr }));
 
   return (

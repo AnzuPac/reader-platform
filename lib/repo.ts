@@ -532,15 +532,15 @@ export async function listTopWorks(opts: {
 
 
 /** Теги из БД с числом произведений — для панели фильтров. */
-export async function listTags(limit = 300): Promise<Array<{ slug: string; name: string; count: number }>> {
+export async function listTags(limit = 300): Promise<Array<{ slug: string; name: string; count: number; kind: string | null; group: string | null }>> {
   await ensure();
-  const rows = await query<{ slug: string; name: string; count: number | string }>(
-    `SELECT t.slug, t.name, COUNT(wt.work_id) AS count
+  const rows = await query<{ slug: string; name: string; count: number | string; kind: string | null; tag_group: string | null }>(
+    `SELECT t.slug, t.name, t.kind, t.tag_group, COUNT(wt.work_id) AS count
        FROM tags t LEFT JOIN work_tags wt ON wt.tag_id = t.id
-      GROUP BY t.id, t.slug, t.name
+      GROUP BY t.id, t.slug, t.name, t.kind, t.tag_group
       ORDER BY count DESC, t.slug ASC
       LIMIT $1`,
     [limit],
   );
-  return rows.map((r) => ({ slug: r.slug, name: r.name, count: Number(r.count) || 0 }));
+  return rows.map((r) => ({ slug: r.slug, name: r.name, count: Number(r.count) || 0, kind: r.kind, group: r.tag_group }));
 }

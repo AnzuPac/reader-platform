@@ -91,6 +91,8 @@ async function migrateSqlite(db: any) {
     'ALTER TABLE works ADD COLUMN fandom TEXT',
     'ALTER TABLE works ADD COLUMN pairing TEXT',
     'ALTER TABLE works ADD COLUMN content_warnings TEXT',
+    'ALTER TABLE tags ADD COLUMN kind TEXT',
+    'ALTER TABLE tags ADD COLUMN tag_group TEXT',
     `CREATE TABLE IF NOT EXISTS reading_settings (
        user_id BIGINT PRIMARY KEY,
        font_size INTEGER NOT NULL DEFAULT 18,
@@ -441,6 +443,8 @@ async function migratePg(db: any) {
     'ALTER TABLE paragraph_comments ADD COLUMN IF NOT EXISTS body TEXT',
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'",
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ',
+    'ALTER TABLE tags ADD COLUMN IF NOT EXISTS kind TEXT',
+    'ALTER TABLE tags ADD COLUMN IF NOT EXISTS tag_group TEXT',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS region TEXT',

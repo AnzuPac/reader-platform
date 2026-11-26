@@ -144,7 +144,7 @@ export default function BookverseCatalog({
   includeTags?: string[];
   excludeTags?: string[];
   includeMode?: 'all' | 'any';
-  tags?: Array<{ slug: string; name: string; count: number }>;
+  tags?: Array<{ slug: string; name: string; count: number; kind?: string | null; group?: string | null }>;
   comicFormat?: string;
   colorMode?: string;
   readingDirection?: string;
@@ -174,6 +174,7 @@ export default function BookverseCatalog({
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [tagSort, setTagSort] = useState<'popular' | 'az'>('popular');
   const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [tagKind, setTagKind] = useState<'book' | 'fanfic'>(initialSection === 'fanfics' ? 'fanfic' : 'book');
 
   function toggleTag(slug: string) {
     if (tagTab === 'include') {
@@ -250,10 +251,20 @@ export default function BookverseCatalog({
   if (draftDemographic) active.push({ label: draftDemographic, clear: () => { setDraftDemographic(''); go({ gdemo: '', page: 1 }); } });
   if (draftFree) active.push({ label: lang === 'ru' ? 'Бесплатные' : 'Free', clear: () => { setDraftFree(false); go({ free: false, page: 1 }); } });
 
-  const sortedTags = [...tags].sort((a, b) => (
+  const kindTags = tags.filter((tag) => (tag.kind || 'book') === tagKind);
+  const sortedTags = [...kindTags].sort((a, b) => (
     tagSort === 'az' ? a.name.localeCompare(b.name) : (Number(b.count) || 0) - (Number(a.count) || 0)
   ));
-  const visibleTags = tagsExpanded ? sortedTags : sortedTags.slice(0, 12);
+  const groupName = (value: string | null | undefined) => value || (lang === 'ru' ? 'Прочее' : lang === 'en' ? 'Other' : 'Ostalo');
+  const tagGroups = Array.from(
+    sortedTags.reduce((map, tag) => {
+      const key = groupName(tag.group);
+      const list = map.get(key) || [];
+      list.push(tag);
+      map.set(key, list);
+      return map;
+    }, new Map<string, typeof sortedTags>()),
+  ).sort((a, b) => a[0].localeCompare(b[0]));
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
@@ -408,6 +419,14 @@ export default function BookverseCatalog({
             <div className="filterrow">
               <h3>{t.tags}</h3>
               <div className="chips" style={{ marginBottom: 8 }}>
+                <button className={`chip ${tagKind === 'book' ? 'selected' : ''}`} onClick={() => setTagKind('book')}>
+                  {lang === 'ru' ? 'Книги' : lang === 'en' ? 'Books' : 'Knjige'}
+                </button>
+                <button className={`chip ${tagKind === 'fanfic' ? 'selected' : ''}`} onClick={() => setTagKind('fanfic')}>
+                  {lang === 'ru' ? 'Фанфики' : lang === 'en' ? 'Fanfic' : 'Fanfikcija'}
+                </button>
+              </div>
+              <div className="chips" style={{ marginBottom: 8 }}>
                 <button className={`chip ${tagTab === 'include' ? 'selected' : ''}`} onClick={() => setTagTab('include')}>
                   {lang === 'ru' ? 'Включить' : lang === 'en' ? 'Include' : 'Uključi'}
                 </button>
@@ -415,11 +434,11 @@ export default function BookverseCatalog({
                   {lang === 'ru' ? 'Исключить' : lang === 'en' ? 'Exclude' : 'Isključi'}
                 </button>
               </div>
-              {tags.length === 0 ? (
+              {kindTags.length === 0 ? (
                 <p className="muted" style={{ fontSize: 11 }}>
-                  {lang === 'ru' ? 'Теги пока не заведены в базе — фильтр появится, когда авторы их добавят.'
-                    : lang === 'en' ? 'No tags in the database yet — the filter appears once authors add them.'
-                    : 'Tagovi još nisu uneseni u bazu — filter se pojavljuje kada ih autori dodaju.'}
+                  {lang === 'ru' ? 'Тегов этой таксономии пока нет — появятся, когда авторы их добавят.'
+                    : lang === 'en' ? 'No tags in this taxonomy yet — they appear once authors add them.'
+                    : 'Tagova ove taksonomije još nema — pojaviće se kada ih autori dodaju.'}
                 </p>
               ) : (
                 <>
@@ -431,33 +450,29 @@ export default function BookverseCatalog({
                       {lang === 'ru' ? 'А–Я' : lang === 'en' ? 'A–Z' : 'A–Š'}
                     </button>
                   </div>
-                  <div className="chips">
-                    {visibleTags.map((tag) => {
-                      const list = tagTab === 'include' ? draftInclude : draftExclude;
-                      return (
-                        <button key={tag.slug} className={`chip ${list.includes(tag.slug) ? 'selected' : ''}`}
-                          onClick={() => toggleTag(tag.slug)}>#{tag.name} <span className="muted">{Number(tag.count) || 0}</span></button>
-                      );
-                    })}
-                  </div>
-                  {sortedTags.length > 12 ? (
-                    <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setTagsExpanded((v) => !v)}>
-                      {tagsExpanded ? (lang === 'ru' ? 'Свернуть' : lang === 'en' ? 'Show less' : 'Prikaži manje')
+                  {tagGroups.map(([group, list]) => (
+                    <div key={group} style={{ marginBottom: 10 }}>
+                      <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>{group} · {list.length}</div>
+                      <div className="chips">
+                        {(tagsExpanded ? list : list.slice(0, 6)).map((tag) => {
+                          const selectedList = tagTab === 'include' ? draftInclude : draftExclude;
+                          return (
+                            <button key={tag.slug} className={`chip ${selectedList.includes(tag.slug) ? 'selected' : ''}`}
+                              onClick={() => toggleTag(tag.slug)}>#{tag.name} <span className="muted">{Number(tag.count) || 0}</span></button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {sortedTags.length > 6 ? (
+                    <button className="btn btn-ghost" onClick={() => setTagsExpanded((v) => !v)}>
+                      {tagsExpanded
+                        ? (lang === 'ru' ? 'Свернуть' : lang === 'en' ? 'Show less' : 'Prikaži manje')
                         : `${lang === 'ru' ? 'Показать все' : lang === 'en' ? 'Show all' : 'Prikaži sve'} (${sortedTags.length})`}
                     </button>
                   ) : null}
                 </>
               )}
-              {draftInclude.length > 1 ? (
-                <div style={{ marginTop: 8 }}>
-                  {([['all', lang === 'ru' ? 'Все выбранные' : lang === 'en' ? 'Match all' : 'Svi izabrani'],
-                     ['any', lang === 'ru' ? 'Любой выбранный' : lang === 'en' ? 'Match any' : 'Bilo koji']] as ['all' | 'any', string][]).map(([v, label]) => (
-                    <label key={v} className="checkbox">
-                      <input type="radio" name="includeMode" checked={draftIncludeMode === v} onChange={() => setDraftIncludeMode(v)} /> {label}
-                    </label>
-                  ))}
-                </div>
-              ) : null}
               <h3 style={{ marginTop: 12 }}>{t.fandom}</h3>
               <input className="taginput" value={draftFandom} placeholder={t.fandomPlaceholder} onChange={(e) => setDraftFandom(e.target.value)} />
             </div>
