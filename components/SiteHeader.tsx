@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import MobileHeaderMenu from '@/components/MobileHeaderMenu';
 import AppearanceSwitcher from '@/components/AppearanceSwitcher';
 import type { Lang } from '@/lib/i18n';
 import type { Session } from '@/lib/auth';
@@ -53,6 +54,7 @@ export default function SiteHeader({
 
         <div className="right tlp-header-tools">
           <SearchOverlay lang={lang} />
+          <Suspense fallback={null}><MobileHeaderMenu lang={lang} /></Suspense>
           <Suspense fallback={<span className="tlp-header-language-placeholder" />}><LanguageSwitcher lang={lang} className="tlp-header-language" /></Suspense>
           <AppearanceSwitcher lang={lang} />
           <Link href={`/${lang}/notifications`} className="tlp-tool-button tlp-notification-link" aria-label={notificationCount ? `${c.notifications}: ${notificationCount}` : c.notifications} title={c.notifications}>
