@@ -8,10 +8,10 @@ import type { Lang } from '@/lib/i18n';
 type ThemeMode = 'system' | 'light' | 'dark';
 const THEME_KEY = 'tlp-theme';
 
-const TEXT: Record<Lang, { menu: string; language: string; theme: string; system: string; light: string; dark: string }> = {
-  sr: { menu: 'Meni', language: 'Jezik interfejsa', theme: 'Tema', system: 'Sistem', light: 'Svetla', dark: 'Tamna' },
-  ru: { menu: 'Меню', language: 'Язык интерфейса', theme: 'Тема', system: 'Системная', light: 'Светлая', dark: 'Тёмная' },
-  en: { menu: 'Menu', language: 'Interface language', theme: 'Theme', system: 'System', light: 'Light', dark: 'Dark' },
+const TEXT: Record<Lang, { menu: string; language: string; theme: string; system: string; light: string; dark: string; close: string; autoLang: string }> = {
+  sr: { menu: 'Meni', language: 'Jezik interfejsa', theme: 'Tema', system: 'Sistem', light: 'Svetla', dark: 'Tamna', close: 'Zatvori', autoLang: 'Kao u sistemu' },
+  ru: { menu: 'Меню', language: 'Язык интерфейса', theme: 'Тема', system: 'Системная', light: 'Светлая', dark: 'Тёмная', close: 'Готово', autoLang: 'Как в системе' },
+  en: { menu: 'Menu', language: 'Interface language', theme: 'Theme', system: 'System', light: 'Light', dark: 'Dark', close: 'Done', autoLang: 'Follow system' },
 };
 
 export default function MobileHeaderMenu({ lang }: { lang: Lang }) {
@@ -53,6 +53,11 @@ export default function MobileHeaderMenu({ lang }: { lang: Lang }) {
     }
   }
 
+  function systemLang(): Lang {
+    const code = (typeof navigator !== 'undefined' ? navigator.language : 'sr').slice(0, 2).toLowerCase();
+    return code === 'ru' ? 'ru' : code === 'en' ? 'en' : 'sr';
+  }
+
   const routeFor = (code: Lang) => {
     const parts = pathname.split('/');
     parts[1] = code;
@@ -85,11 +90,18 @@ export default function MobileHeaderMenu({ lang }: { lang: Lang }) {
           <div className="tlp-mobile-sheet__panel">
             <div className="tlp-mobile-sheet__head">
               <strong>{t.menu}</strong>
-              <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)} aria-label="Close">✕</button>
+              <button type="button" className="tlp-mobile-sheet__close" onClick={() => setOpen(false)} aria-label={t.close}>✕</button>
             </div>
 
             <div className="tlp-mobile-sheet__label">{t.language}</div>
             <div className="chips">
+              <Link
+                href={`${routeFor(systemLang())}${query ? `?${query}` : ''}`}
+                className="chip"
+                onClick={() => setOpen(false)}
+              >
+                {t.autoLang}
+              </Link>
               {(['sr', 'ru', 'en'] as Lang[]).map((code) => (
                 <Link
                   key={code}
@@ -115,6 +127,10 @@ export default function MobileHeaderMenu({ lang }: { lang: Lang }) {
                 </button>
               ))}
             </div>
+
+            <button type="button" className="btn btn-primary tlp-mobile-sheet__done" onClick={() => setOpen(false)}>
+              {t.close}
+            </button>
           </div>
         </div>
       ) : null}

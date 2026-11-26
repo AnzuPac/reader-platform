@@ -252,3 +252,25 @@
     --tlp-brand-icon: #b4c3dc; --tlp-shadow: 0 12px 32px rgba(0,0,0,.22);
   }
 }
+
+/* Мобильное меню: гарантированно видимая кнопка и закрытие (2.1.1) */
+@media (max-width: 767px) {
+  .tlp .tlp-header-tools { overflow: visible !important; }
+  .tlp .tlp-mobile-menu-button {
+    display: inline-flex !important; flex: 0 0 34px !important;
+    width: 34px !important; min-width: 34px !important; height: 34px !important;
+  }
+  .tlp-mobile-sheet { z-index: 300 !important; }
+  .tlp-mobile-sheet__panel { max-height: 90vh; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .tlp-mobile-sheet__head {
+    position: sticky; top: 0; z-index: 2; padding: 6px 0 12px;
+    background: var(--tlp-panel); border-bottom: 1px solid var(--tlp-line);
+  }
+  .tlp-mobile-sheet__close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; min-width: 44px; border-radius: 50%;
+    border: 1px solid var(--tlp-line); background: var(--tlp-panel);
+    color: var(--tlp-text); font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  .tlp-mobile-sheet__done { width: 100%; margin-top: 18px; min-height: 46px; }
+}
