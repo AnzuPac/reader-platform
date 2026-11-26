@@ -68,17 +68,17 @@ export default async function ReadPage({
       <div className="mb-6 flex items-center gap-3 text-sm muted">
         <Link href={`/${l}/work/${ch.work_slug}`} className="hover:text-violet">← {ch.work_title}</Link>
         <span>·</span>
-        <span>Glava {ch.number}</span>
+        <span>{l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {ch.number}</span>
       </div>
       <details className="card mb-6 px-4 py-3">
-        <summary className="cursor-pointer text-sm font-semibold">Sadržaj · {chapters.length} glava</summary>
+        <summary className="cursor-pointer text-sm font-semibold">{l === 'ru' ? 'Содержание' : l === 'en' ? 'Contents' : 'Sadržaj'} · {chapters.length} {l === 'ru' ? 'глав' : l === 'en' ? 'chapters' : 'glava'}</summary>
         <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto text-sm">
           {chapters.map((c) => (
             <li key={c.id}>
               <Link href={`/${l}/read/${c.id}`}
                 className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-[#221a35] ${c.id === ch.id ? 'text-brand' : 'text-mist'}`}>
                 <span className="w-8">{c.number}.</span>
-                <span className="flex-1">{c.title || `Glava ${c.number}`}</span>
+                <span className="flex-1">{c.title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${c.number}`}</span>
                 {c.access !== 'free' ? <span className="text-xs">🔒</span> : null}
               </Link>
             </li>
@@ -86,7 +86,7 @@ export default async function ReadPage({
         </ul>
       </details>
 
-      <div className="tl-reader-heading"><span className="tl-page-eyebrow">TEROLIBRARY READER · {ch.work_title}</span><h1 className="mb-3 text-2xl font-bold">{ch.title || `Glava ${ch.number}`}</h1><p>{l === 'ru' ? `Глава ${ch.number}` : l === 'en' ? `Chapter ${ch.number}` : `Glava ${ch.number}`}</p></div>
+      <div className="tl-reader-heading"><span className="tl-page-eyebrow">TEROLIBRARY READER · {ch.work_title}</span><h1 className="mb-3 text-2xl font-bold">{ch.title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${ch.number}`}</h1><p>{l === 'ru' ? `Глава ${ch.number}` : l === 'en' ? `Chapter ${ch.number}` : `Glava ${ch.number}`}</p></div>
       {ch.translit_allowed ? (
         <div className="mb-6 flex items-center gap-2 text-sm">
           <Link href={`/${l}/read/${ch.id}?script=cir`}
@@ -134,7 +134,7 @@ export default async function ReadPage({
                   />
                 ) : null}
                 {session ? null : (
-                  <Link href={`/${l}/login`} className="btn btn-ghost">Prijava</Link>
+                  <Link href={`/${l}/login`} className="btn btn-ghost">{l === 'ru' ? 'Вход' : l === 'en' ? 'Sign in' : 'Prijava'}</Link>
                 )}
               </div>
             </>
@@ -142,7 +142,7 @@ export default async function ReadPage({
             <>
               <h2 className="mb-2 text-lg font-semibold">🔒 Prijavi se da nastaviš</h2>
               <p className="muted mb-4">Ova glava je dostupna prijavljenim čitaocima.</p>
-              <Link href={`/${l}/login`} className="btn btn-primary inline-flex">Prijava</Link>
+              <Link href={`/${l}/login`} className="btn btn-primary inline-flex">{l === 'ru' ? 'Вход' : l === 'en' ? 'Sign in' : 'Prijava'}</Link>
             </>
           ) : (
             <>
@@ -198,8 +198,8 @@ export default async function ReadPage({
       <ReaderSettings />
 
       <nav className="mt-12 flex items-center justify-between text-sm">
-        {prev ? <Link className="btn btn-ghost" href={`/${l}/read/${prev.id}`}>← Glava {prev.number}</Link> : <span />}
-        {next ? <Link className="btn btn-ghost" href={`/${l}/read/${next.id}`}>Glava {next.number} →</Link> : <span />}
+        {prev ? <Link className="btn btn-ghost" href={`/${l}/read/${prev.id}`}>← {l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {prev.number}</Link> : <span />}
+        {next ? <Link className="btn btn-ghost" href={`/${l}/read/${next.id}`}>{l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {next.number} →</Link> : <span />}
       </nav>
     </main>
   );

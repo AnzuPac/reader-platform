@@ -143,7 +143,7 @@ export default async function LibraryPage({
               <li key={`${h.work_id}-${h.chapter_id}`} className="card flex items-center gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <Link href={`/${l}/work/${h.slug}`} className="font-semibold hover:text-brand">{h.title}</Link>
-                  <div className="text-xs muted">{h.author_name} · {h.chapter_title || `Glava ${h.number}`} · {h.percent}%</div>
+                  <div className="text-xs muted">{h.author_name} · {h.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${h.number}`} · {h.percent}%</div>
                 </div>
                 <Link href={`/${l}/read/${h.chapter_id}`} className="btn btn-ghost">{l === 'ru' ? 'Читать' : l === 'en' ? 'Read' : 'Čitaj'}</Link>
               </li>
@@ -163,7 +163,7 @@ export default async function LibraryPage({
               <li key={b.id} className="card flex items-center gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <Link href={`/${l}/work/${b.slug}`} className="font-semibold hover:text-brand">{b.title}</Link>
-                  <div className="text-xs muted">{b.chapter_title || `Glava ${b.number}`}{b.note ? ` · ${b.note}` : ''}</div>
+                  <div className="text-xs muted">{b.chapter_title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${b.number}`}{b.note ? ` · ${b.note}` : ''}</div>
                 </div>
                 <Link href={`/${l}/read/${b.chapter_id}`} className="btn btn-ghost">{l === 'ru' ? 'Открыть' : l === 'en' ? 'Open' : 'Otvori'}</Link>
               </li>
