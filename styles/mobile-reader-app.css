@@ -172,3 +172,63 @@
   .tlp .tlp-bottom-nav__icon svg { width:23px;height:23px;display:block;fill:currentColor; }
   .tlp .tlp-bottom-nav__item.is-active .tlp-bottom-nav__icon { color:#53647e; }
 }
+
+/* Header brand mark: use a bounded SVG instead of a font glyph that can be
+   cropped by Android WebView font metrics or fallback-font substitution. */
+@media (max-width: 767px) {
+  .tlp .tlp-site-header .brand { flex:0 0 auto; min-width:0; overflow:visible; }
+  .tlp .tlp-site-header .logo {
+    box-sizing:border-box; flex:0 0 36px; width:36px; min-width:36px; height:36px;
+    padding:7px; overflow:visible; line-height:0; font-size:0;
+    display:grid; place-items:center; border-radius:12px;
+  }
+  .tlp .tlp-site-header .logo svg {
+    display:block; width:100%; height:100%; overflow:visible;
+    fill:currentColor; stroke:none; flex:none;
+  }
+}
+@media (max-width: 390px) {
+  .tlp .tlp-site-header .brand { gap:7px; font-size:15px; letter-spacing:-.45px; }
+  .tlp .tlp-site-header .logo { flex-basis:34px; width:34px; min-width:34px; height:34px; padding:6px; }
+}
+
+
+/* v1.3 — Android WebView viewport hardening and compact phone header. */
+@media (max-width: 767px) {
+  html, body { width:100%; max-width:100%; overflow-x:hidden; }
+  .tlp { width:100%; max-width:100vw; overflow-x:clip; }
+  .tlp .tlp-site-header {
+    box-sizing:border-box; width:100%; max-width:100%; min-width:0;
+    height:58px; min-height:58px; padding:0 10px; gap:5px;
+    overflow:hidden; flex-wrap:nowrap;
+  }
+  .tlp .tlp-site-header .brand {
+    flex:0 1 auto; min-width:0; max-width:42%; gap:6px;
+    font-size:clamp(13px, 4vw, 16px); letter-spacing:-.45px;
+    white-space:nowrap;
+  }
+  .tlp .tlp-site-header .logo {
+    flex:0 0 32px; width:32px; min-width:32px; height:32px;
+    padding:6px; border-radius:10px;
+  }
+  .tlp .tlp-direction-tabs { display:none!important; }
+  .tlp .tlp-header-tools { flex:1 1 auto; min-width:0; justify-content:flex-end; gap:5px; }
+  .tlp .tlp-tool-button,.tlp .tlp-mobile-search,.tlp .tlp-theme-button {
+    flex:0 0 32px!important; width:32px!important; min-width:32px!important;
+    height:32px!important; padding:0!important; border-radius:10px!important;
+  }
+  .tlp .tlp-sign-in { flex:0 0 auto; min-width:0; min-height:32px; padding:6px 8px!important; font-size:10px!important; }
+  .tlp main.shell,.tlp .tl-screen { box-sizing:border-box; max-width:100vw!important; padding-left:12px!important; padding-right:12px!important; }
+  .tlp .tl-screen--reader { padding-bottom:calc(142px + env(safe-area-inset-bottom))!important; }
+  .tlp .tl-screen--reader .reader-surface { max-width:100%; min-width:0; overflow-wrap:anywhere; }
+  .tlp .tlp-bottom-nav { bottom:calc(8px + env(safe-area-inset-bottom)); width:calc(100% - 28px); min-height:62px; padding:4px 6px; }
+  .tlp .tlp-bottom-nav__item { min-height:48px; }
+  .tlp .tlp-bottom-nav__icon { width:40px; height:40px; }
+}
+@media (max-width: 370px) {
+  .tlp .tlp-site-header .brand { max-width:39%; font-size:13px; }
+  .tlp .tlp-site-header .logo { flex-basis:30px; width:30px; min-width:30px; height:30px; padding:5px; }
+  .tlp .tlp-header-tools { gap:4px; }
+  .tlp .tlp-tool-button,.tlp .tlp-mobile-search,.tlp .tlp-theme-button { flex-basis:29px!important; width:29px!important; min-width:29px!important; height:29px!important; }
+  .tlp .tlp-sign-in { padding:5px 6px!important; font-size:9px!important; }
+}
