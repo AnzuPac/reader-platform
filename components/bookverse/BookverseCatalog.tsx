@@ -172,6 +172,8 @@ export default function BookverseCatalog({
   const [draftDemographic, setDraftDemographic] = useState(demographic);
   const [draftFree, setDraftFree] = useState(Boolean(free));
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [tagSort, setTagSort] = useState<'popular' | 'az'>('popular');
+  const [tagsExpanded, setTagsExpanded] = useState(false);
 
   function toggleTag(slug: string) {
     if (tagTab === 'include') {
@@ -247,6 +249,11 @@ export default function BookverseCatalog({
   if (draftDirection) active.push({ label: draftDirection.toUpperCase(), clear: () => { setDraftDirection(''); go({ gdir: '', page: 1 }); } });
   if (draftDemographic) active.push({ label: draftDemographic, clear: () => { setDraftDemographic(''); go({ gdemo: '', page: 1 }); } });
   if (draftFree) active.push({ label: lang === 'ru' ? 'Бесплатные' : 'Free', clear: () => { setDraftFree(false); go({ free: false, page: 1 }); } });
+
+  const sortedTags = [...tags].sort((a, b) => (
+    tagSort === 'az' ? a.name.localeCompare(b.name) : (Number(b.count) || 0) - (Number(a.count) || 0)
+  ));
+  const visibleTags = tagsExpanded ? sortedTags : sortedTags.slice(0, 12);
 
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
@@ -415,15 +422,31 @@ export default function BookverseCatalog({
                     : 'Tagovi još nisu uneseni u bazu — filter se pojavljuje kada ih autori dodaju.'}
                 </p>
               ) : (
-                <div className="chips">
-                  {tags.slice(0, 60).map((tag) => {
-                    const list = tagTab === 'include' ? draftInclude : draftExclude;
-                    return (
-                      <button key={tag.slug} className={`chip ${list.includes(tag.slug) ? 'selected' : ''}`}
-                        onClick={() => toggleTag(tag.slug)}>#{tag.name}</button>
-                    );
-                  })}
-                </div>
+                <>
+                  <div className="chips" style={{ marginBottom: 8 }}>
+                    <button className={`chip ${tagSort === 'popular' ? 'selected' : ''}`} onClick={() => setTagSort('popular')}>
+                      {lang === 'ru' ? 'Популярные' : lang === 'en' ? 'Popular' : 'Popularno'}
+                    </button>
+                    <button className={`chip ${tagSort === 'az' ? 'selected' : ''}`} onClick={() => setTagSort('az')}>
+                      {lang === 'ru' ? 'А–Я' : lang === 'en' ? 'A–Z' : 'A–Š'}
+                    </button>
+                  </div>
+                  <div className="chips">
+                    {visibleTags.map((tag) => {
+                      const list = tagTab === 'include' ? draftInclude : draftExclude;
+                      return (
+                        <button key={tag.slug} className={`chip ${list.includes(tag.slug) ? 'selected' : ''}`}
+                          onClick={() => toggleTag(tag.slug)}>#{tag.name} <span className="muted">{Number(tag.count) || 0}</span></button>
+                      );
+                    })}
+                  </div>
+                  {sortedTags.length > 12 ? (
+                    <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setTagsExpanded((v) => !v)}>
+                      {tagsExpanded ? (lang === 'ru' ? 'Свернуть' : lang === 'en' ? 'Show less' : 'Prikaži manje')
+                        : `${lang === 'ru' ? 'Показать все' : lang === 'en' ? 'Show all' : 'Prikaži sve'} (${sortedTags.length})`}
+                    </button>
+                  ) : null}
+                </>
               )}
               {draftInclude.length > 1 ? (
                 <div style={{ marginTop: 8 }}>
@@ -502,7 +525,10 @@ export default function BookverseCatalog({
               ))}
             </div>
 
-            <div className="row" style={{ marginTop: 20 }}>
+            <div className="row" style={{
+              position: 'sticky', bottom: 0, marginTop: 20, paddingTop: 12, paddingBottom: 4,
+              background: 'var(--tlp-panel)', borderTop: '1px solid var(--tlp-line)',
+            }}>
               <button className="btn" onClick={() => {
                 setDraftGenre(''); setDraftTag(''); setDraftFandom(''); setDraftSource(''); setDraftAi('');
                 setDraftAiList([]); setDraftInclude([]); setDraftExclude([]); setDraftIncludeMode('all');
