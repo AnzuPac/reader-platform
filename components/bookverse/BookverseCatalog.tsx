@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
+import BookCoverCard from '@/components/bookverse/BookCoverCard';
 
 export type SectionId = 'books' | 'selfpub' | 'fanfics' | 'comics' | 'top';
 export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
@@ -92,32 +93,16 @@ const TXT: Record<Lang, {
 
 function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang] }) {
   const tone = w.tone || (w.category === 'manga' ? 'orange' : w.category === 'fanfic' ? 'purple' : 'blue');
-  return (
-    <Link
-      href={`/${lang}/work/${w.slug}`}
-      className="book"
-      style={{ display: 'block' }}
-      aria-label={`${w.title} — ${w.author}`}
-    >
-      <div
-        className={`cover ${tone}`}
-        style={w.cover ? { backgroundImage: `url(${w.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-      >
-        <span className={`ai-badge ${w.aiUsage === 'no_ai' ? 'ai-badge--no' : !w.aiUsage || w.aiUsage === 'not_declared' ? 'ai-badge--unknown' : 'ai-badge--yes'}`}>
-          {w.aiUsage === 'no_ai' ? t.noAiShort : !w.aiUsage || w.aiUsage === 'not_declared' ? t.aiUnknown : t.aiYes}
-        </span>
-        <div className="book-hover">
-          <div className="book-hover-meta">
-            <span>{w.category === 'manga' ? t.manga : w.category === 'fanfic' ? t.fanfics : t.books}</span>
-            <span className="rating">★ {w.rating.toFixed(1)}</span>
-          </div>
-          <h3>{w.title}</h3>
-          <div className="book-hover-author">{w.author}</div>
-          {w.description ? <div className="book-hover-desc">{w.description}</div> : null}
-        </div>
-      </div>
-    </Link>
-  );
+  const categoryLabel = w.category === 'fanfic' ? t.fanfics : w.category === 'manga' ? t.manga : t.books;
+  const aiLabel = w.aiUsage === 'no_ai' ? t.noAiShort : !w.aiUsage || w.aiUsage === 'not_declared' ? t.aiUnknown : t.aiYes;
+  return <BookCoverCard
+    href={`/${lang}/work/${w.slug}`} title={w.title} author={w.author}
+    description={w.description} cover={w.cover} tone={tone} categoryLabel={categoryLabel}
+    aiLabel={aiLabel} rating={w.rating.toFixed(1)} status={w.completed ? t.completed : ''}
+    openLabel={lang === 'ru' ? 'Открыть произведение' : lang === 'en' ? 'Open work' : 'Otvori delo'}
+    infoLabel={lang === 'ru' ? 'Показать информацию' : lang === 'en' ? 'Show details' : 'Prikaži detalje'}
+    closeLabel={lang === 'ru' ? 'Скрыть информацию' : lang === 'en' ? 'Hide details' : 'Sakrij detalje'}
+  />;
 }
 
 export default function BookverseCatalog({
@@ -352,7 +337,7 @@ export default function BookverseCatalog({
             <h1>{t.titles[initialSection]}</h1>
             <p className="muted">{t.descs[initialSection]}</p>
           </div>
-          <button className="btn" onClick={() => setFiltersOpen(true)}>☷ {t.filters}{active.length ? ` ${active.length}` : ''}</button>
+          <button className="btn tlp-filter-button" onClick={() => setFiltersOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v4M15 10v4M11 16v4"/></svg><span>{t.filters}{active.length ? ` ${active.length}` : ''}</span></button>
         </div>
 
         <div className="catalog-controls">

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
-import { listWorks, getContinueReading, listReadingHistory } from '@/lib/repo';
+import { listWorks, getContinueReading, listReadingHistory, listTags } from '@/lib/repo';
+import BookCoverCard from '@/components/bookverse/BookCoverCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,24 +85,17 @@ function aiLabel(ai: Card['ai_usage'], l: Lang): { cls: string; text: string } |
 }
 
 function ProtoCard({ w, lang, x }: { w: Card; lang: Lang; x: (typeof TXT)[Lang] }) {
-  return (
-    <Link href={`/${lang}/work/${w.slug}`} className="book" style={{ display: 'block' }} aria-label={`${w.title} — ${w.author_name}`}>
-      <div className={`cover ${tone(w)}`}>
-        <span className={`ai-badge ${w.ai_usage === 'no_ai' ? 'ai-badge--no' : !w.ai_usage || w.ai_usage === 'not_declared' ? 'ai-badge--unknown' : 'ai-badge--yes'}`}>
-          {w.ai_usage === 'no_ai' ? (lang === 'ru' ? 'Без ИИ' : lang === 'en' ? 'No AI' : 'Bez AI') : !w.ai_usage || w.ai_usage === 'not_declared' ? (lang === 'ru' ? 'ИИ: не заявлено' : lang === 'en' ? 'AI: not declared' : 'AI: nije navedeno') : (lang === 'ru' ? 'С ИИ' : lang === 'en' ? 'With AI' : 'Sa AI')}
-        </span>
-        <div className="book-hover">
-          <div className="book-hover-meta">
-            <span>{w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Графика' : lang === 'en' ? 'Graphic' : 'Grafika') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga')}</span>
-            <span className="rating">★ {Number(w.rating_avg || 0).toFixed(1)}</span>
-          </div>
-          <h3>{w.title}</h3>
-          <div className="book-hover-author">{w.author_name}</div>
-          {w.description ? <div className="book-hover-desc">{w.description}</div> : null}
-        </div>
-      </div>
-    </Link>
-  );
+  const categoryLabel = w.kind === 'fanfic' ? (lang === 'ru' ? 'Фанфик' : lang === 'en' ? 'Fanfic' : 'Fanfikcija') : w.type === 'comic' ? (lang === 'ru' ? 'Графика' : lang === 'en' ? 'Graphic' : 'Grafika') : (lang === 'ru' ? 'Книга' : lang === 'en' ? 'Book' : 'Knjiga');
+  const aiText = w.ai_usage === 'no_ai' ? (lang === 'ru' ? 'Без ИИ' : lang === 'en' ? 'No AI' : 'Bez AI') : !w.ai_usage || w.ai_usage === 'not_declared' ? (lang === 'ru' ? 'ИИ: не заявлено' : lang === 'en' ? 'AI: not declared' : 'AI: nije navedeno') : (lang === 'ru' ? 'С ИИ' : lang === 'en' ? 'With AI' : 'Sa AI');
+  return <BookCoverCard
+    href={`/${lang}/work/${w.slug}`} title={w.title} author={w.author_name}
+    description={w.description} cover={w.cover_path} tone={tone(w)} categoryLabel={categoryLabel}
+    aiLabel={aiText} rating={Number(w.rating_avg || 0).toFixed(1)}
+    status={w.completion === 'completed' ? x.completed : x.ongoing}
+    openLabel={lang === 'ru' ? 'Открыть произведение' : lang === 'en' ? 'Open work' : 'Otvori delo'}
+    infoLabel={lang === 'ru' ? 'Показать информацию' : lang === 'en' ? 'Show details' : 'Prikaži detalje'}
+    closeLabel={lang === 'ru' ? 'Скрыть информацию' : lang === 'en' ? 'Hide details' : 'Sakrij detalje'}
+  />;
 }
 
 function Grid({ items, lang, x }: { items: Card[]; lang: Lang; x: (typeof TXT)[Lang] }) {
@@ -148,6 +142,8 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   ]);
 
   const heroItems = [pubRec[0], selfRec[0], fanRec[0]].filter(Boolean) as Card[];
+  const recommendedItems = (forYou.length ? forYou : [...pubTop.slice(0, 2), ...selfTop.slice(0, 2), ...fanTop.slice(0, 2), ...graphicTop.slice(0, 2)]) as Card[];
+  const popularTags = await listTags(12).catch(() => []);
 
   const sections = [
     { key: 'publisher', title: x.pubTitle, rec: pubRec as Card[], top: pubTop as Card[], href: `/${l}/catalog?kind=publisher`, color: COLORS.publisher, topTitle: x.topPub },
@@ -158,6 +154,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <main id="main" className="shell">
+      <nav className="tl-home-mobile-categories" aria-label={l === 'ru' ? 'Категории' : l === 'en' ? 'Categories' : 'Kategorije'}>
+        <Link href={`/${l}/catalog`} className="is-active">{l === 'ru' ? 'Книги' : l === 'en' ? 'Books' : 'Knjige'}</Link>
+        <Link href={`/${l}/catalog?kind=selfpub`}>{x.selfTitle}</Link>
+        <Link href={`/${l}/catalog?kind=fanfic`}>{x.fanTitle}</Link>
+        <Link href={`/${l}/catalog?kind=comic`}>{x.graphicTitle}</Link>
+      </nav>
+
       <section className="tl-home-hero">
         <div className="tl-home-hero-copy">
           <span className="tl-home-kicker">{x.heroTag}</span>
@@ -176,7 +179,9 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <div className="tl-home-hero-books">
             {heroItems.map((w, i) => (
               <Link key={w.id} href={`/${l}/work/${w.slug}`} className={`tl-home-feature-cover tl-home-feature-cover-${i}`} aria-label={`${w.title} — ${w.author_name}`} title={`${w.title} — ${w.author_name}`}>
-                <div className={`cover ${tone(w)}`} />
+                <div className={`cover ${tone(w)}`}>
+            {w.cover_path ? <img className="book-cover-image" src={w.cover_path} alt="" loading="lazy" /> : null}
+          </div>
               </Link>
             ))}
           </div>
@@ -184,16 +189,28 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </section>
 
-      {forYou.length ? (
-        <section className="section tl-home-foryou">
-          <div className="sectionhead">
-            <div>
-              <div className="eyebrow">{l === 'ru' ? 'ПЕРСОНАЛЬНО' : l === 'en' ? 'FOR YOU' : 'ZA VAS'}</div>
-              <h2>{l === 'ru' ? 'Для вас' : l === 'en' ? 'For you' : 'Za vas'}</h2>
-            </div>
-            <span className="muted">{l === 'ru' ? 'По вашей истории чтения' : l === 'en' ? 'Based on your reading history' : 'Na osnovu vaše istorije čitanja'}</span>
+      <section className="section tl-home-foryou">
+        <div className="sectionhead">
+          <div>
+            <div className="eyebrow">{forYou.length ? (l === 'ru' ? 'ПЕРСОНАЛЬНО' : l === 'en' ? 'FOR YOU' : 'ZA VAS') : (l === 'ru' ? 'ВЫБОР TEROLIBRARY' : l === 'en' ? 'TEROLIBRARY PICKS' : 'IZBOR TEROLIBRARY')}</div>
+            <h2>{forYou.length ? (l === 'ru' ? 'Для вас' : l === 'en' ? 'For you' : 'Za vas') : (l === 'ru' ? 'Популярные произведения' : l === 'en' ? 'Popular stories' : 'Popularna dela')}</h2>
           </div>
-          <Grid items={forYou as Card[]} lang={l} x={x} />
+          <span className="muted">{forYou.length ? (l === 'ru' ? 'По вашей истории чтения' : l === 'en' ? 'Based on your reading history' : 'Na osnovu vaše istorije čitanja') : (l === 'ru' ? 'Подборка по популярности' : l === 'en' ? 'Selected by popularity' : 'Izbor po popularnosti')}</span>
+        </div>
+        <div className="tl-home-mobile-rail"><Grid items={recommendedItems} lang={l} x={x} /></div>
+      </section>
+
+      {popularTags.length ? (
+        <section className="section tl-home-popular-tags">
+          <div className="sectionhead">
+            <h2>{l === 'ru' ? 'Популярные теги' : l === 'en' ? 'Popular tags' : 'Popularne oznake'}</h2>
+            <Link className="btn" href={`/${l}/catalog`}>{l === 'ru' ? 'Все теги' : l === 'en' ? 'All tags' : 'Sve oznake'} →</Link>
+          </div>
+          <div className="tl-home-tag-cloud">
+            {popularTags.filter((tag) => tag.count > 0).slice(0, 12).map((tag) => (
+              <Link key={tag.slug} href={`/${l}/catalog?tag=${encodeURIComponent(tag.slug)}`} className="tl-home-tag-chip">#{tag.name}</Link>
+            ))}
+          </div>
         </section>
       ) : null}
 

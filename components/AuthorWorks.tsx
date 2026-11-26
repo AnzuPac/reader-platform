@@ -37,7 +37,7 @@ export default function AuthorWorks({ lang }: { lang: string }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={create} className="card space-y-3 p-5">
+      <form id="author-new-work" onSubmit={create} className="card space-y-3 p-5">
         <h2 className="font-semibold">Новое произведение</h2>
         <input className="input" placeholder="Naslov" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="input" rows={3} placeholder="Opis" value={desc} onChange={(e) => setDesc(e.target.value)} />

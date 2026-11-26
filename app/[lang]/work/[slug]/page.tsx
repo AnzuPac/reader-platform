@@ -89,7 +89,7 @@ export default async function WorkPage({
   const bookRsd = price ? formatRsd(price.amount_cents) : null;
 
   return (
-    <main id="main" className={`tl-screen tlp-work tl-screen--work tl-work-category--${work.kind === 'fanfic' ? 'fanfic' : work.type === 'comic' ? 'manga' : 'books'} mx-auto max-w-5xl px-5 py-8`}>
+    <main id="main" className={`tl-screen tlp-work tl-screen--work tl-work-category--${work.kind === 'fanfic' ? 'fanfic' : work.type === 'comic' ? 'manga' : 'books'} mx-auto max-w-5xl px-5 py-8`} data-category={work.kind === 'fanfic' ? 'fanfic' : work.type === 'comic' ? 'graphic' : 'books'}>
       <div className="tl-work-hero card mb-8 p-5 sm:p-7">
         <div className="tl-work-context">{work.kind === 'fanfic' ? (l === 'ru' ? 'ФАНФИК' : l === 'en' ? 'FAN FICTION' : 'FANFIKCIJA') : work.type === 'comic' ? (l === 'ru' ? 'МАНГА И КОМИКСЫ' : l === 'en' ? 'MANGA & COMICS' : 'MANGA I STRIPOVI') : (l === 'ru' ? 'КНИГА' : l === 'en' ? 'BOOK' : 'KNJIGA')} · TEROLIBRARY</div>
         <div className="flex flex-col gap-6 sm:flex-row">

@@ -104,12 +104,29 @@ export default async function PublisherPage({
   const payableCurrency = report.payable[0]?.currency || '';
 
   return (
-    <main className="tl-screen tl-screen--publisher mx-auto max-w-6xl px-5 py-8">
+    <main id="main" className="tl-screen tl-screen--publisher tlp-publisher-dashboard">
+      <div className="tlp-publisher-layout">
+        <aside className="tlp-publisher-sidebar" aria-label="Навигация кабинета издателя">
+          <Link href={`/${l}/publisher`} className="tlp-author-sidebar-brand">
+            <span className="tlp-author-sidebar-mark">T</span>
+            <span><strong>TeroLibrary</strong><small>PUBLISHER STUDIO</small></span>
+          </Link>
+          <div className="tlp-author-sidebar-label">ИЗДАТЕЛЬСТВО</div>
+          <nav>
+            <a className="is-active" href="#overview"><span>⌂</span>Обзор</a>
+            <a href="#report"><span>▥</span>Отчёты</a>
+            <a href="#works"><span>▤</span>Произведения</a>
+            <a href="#licenses"><span>▧</span>Лицензии и права</a>
+            <a href="#members"><span>♙</span>Команда</a>
+            <a href="#payouts"><span>◷</span>Выплаты</a>
+          </nav>
+          <div className="tlp-author-sidebar-bottom"><Link href={`/${l}/`}>← TeroLibrary</Link></div>
+        </aside>
+        <div className="tlp-publisher-main">
+      <div className="tlp-publisher-topbar"><div><span className="muted">TeroLibrary</span><span className="tlp-author-breadcrumb-sep">/</span><strong>Кабинет издателя</strong></div><span className="tlp-author-avatar">{publisher.name.trim().slice(0, 1).toLocaleUpperCase()}</span></div>
       <section className="tlp-stage8-publisher-hero mb-6"><div><p className="tlp-stage8-kicker">TeroLibrary Publisher</p><h1 className="text-2xl font-bold">{publisher.name}</h1><p className="text-sm muted">Prodaja, prava, tim i finansije na jednom mestu.</p></div><Link href={`/${l}/publishers`} className="btn btn-ghost">Informacije za izdavače</Link></section>
-      <nav className="tlp-stage8-studio-nav" aria-label="Publisher dashboard sections"><a href="#overview">Pregled</a><a href="#report">Izveštaji</a><a href="#works">Dela</a><a href="#licenses">Licence</a><a href="#members">Tim</a><a href="#payouts">Isplate</a></nav>
-      <div id="overview" className="mb-6 flex flex-wrap items-center gap-3">
+      <div id="overview" className="tlp-publisher-overview mb-6 flex flex-wrap items-center gap-3">
         <div className="mr-auto">
-          <h1 className="text-2xl font-bold">{publisher.name}</h1>
           <p className="text-sm muted">
             Provizija platforme: {publisher.commission_pct}% (podrazumevano 50%) · tvoj deo: {100 - publisher.commission_pct}% · kontakt: {publisher.contact_email || '—'}
           </p>
@@ -125,7 +142,7 @@ export default async function PublisherPage({
         <Link href={`/${l}`} className="btn btn-ghost">Nazad</Link>
       </div>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="tlp-publisher-kpis mb-6 grid gap-3 sm:grid-cols-3">
         <div className="card p-4">
           <div className="text-xs muted">Knjige u katalogu</div>
           <div className="text-2xl font-bold">{works.length}</div>
@@ -216,7 +233,7 @@ export default async function PublisherPage({
                 </tr>
               ))}
               {works.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-6 text-center muted">Nema dela povezanih sa izdavaštvom.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center muted">Nema dela povezanih sa izdavaštvom.</td></tr>
               ) : null}
             </tbody>
           </table>
@@ -245,6 +262,8 @@ export default async function PublisherPage({
           {payouts.length === 0 ? <li className="py-3 muted">Isplata još nema.</li> : null}
         </ul>
       </section>
+        </div>
+      </div>
     </main>
   );
 }

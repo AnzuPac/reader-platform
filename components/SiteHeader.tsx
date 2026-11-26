@@ -43,16 +43,13 @@ export default function SiteHeader({
     <>
       <header className="top tlp-site-header" role="banner">
         <Link href={`/${lang}`} className="brand" aria-label="TeroLibrary — home">
-          <span className="logo" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M12 2.7 14.5 9.5 21.3 12l-6.8 2.5L12 21.3l-2.5-6.8L2.7 12l6.8-2.5L12 2.7Z" />
-              <circle cx="18.7" cy="5.3" r="1.15" />
-            </svg>
+          <span className="logo tlp-brand-mark" aria-hidden="true">
+            <span className="tlp-brand-mark__art" />
           </span>
           <span>terolibrary</span>
         </Link>
 
-<Suspense fallback={<nav className="tlp-direction-tabs" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} libraryHref={session ? `/${lang}/u/${session.uid}?tab=library` : `/${lang}/login?next=${encodeURIComponent(`/${lang}/account`)}`} /></Suspense>
+<Suspense fallback={<nav className="tlp-main-navigation" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} /></Suspense>
 
         <div className="right tlp-header-tools">
           <SearchOverlay lang={lang} />

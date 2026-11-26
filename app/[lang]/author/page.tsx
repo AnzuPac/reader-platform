@@ -21,59 +21,92 @@ export default async function AuthorPage({ params }: { params: Promise<{ lang: s
   const income = await authorIncome(s.uid);
   const dash = await authorDashboard(s.uid);
 
+  const recentWorks = dash.works.slice(0, 4);
+  const formatDate = (value: string | null) => value
+    ? new Intl.DateTimeFormat(l === 'ru' ? 'ru-RU' : l === 'en' ? 'en-GB' : 'sr-Latn-RS', { day: '2-digit', month: 'short' }).format(new Date(value))
+    : (l === 'ru' ? 'Нет изменений' : l === 'en' ? 'No edits yet' : 'Bez izmena');
+
   return (
-    <main id="main" className="tl-screen tl-screen--author mx-auto max-w-4xl px-5 py-10">
-      <section className="tlp-stage8-author-hero mb-6">
-      <div>
-        <p className="tlp-stage8-kicker">TeroLibrary Studio</p>
-        <h1 className="mb-2 text-2xl font-bold">Кабинет автора</h1>
-        <p className="muted">Управляйте произведениями, публикациями и доходом в одном месте.</p>
-      </div>
-      <Link href={`/${l}/catalog`} className="btn btn-ghost">Открыть каталог →</Link>
-    </section>
-    <nav className="tlp-stage8-studio-nav" aria-label="Навигация кабинета автора">
-      <a href="#works">Произведения</a><a href="#stats">Статистика</a><a href="#income">Доход</a><a href="#donations">Донаты</a>
-    </nav>
-      <section className="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-label="Сводка автора">
-        {([
-          ['Произведений', dash.totals.works],
-          ['Глав', dash.totals.chapters],
-          ['Опубликовано', dash.totals.published],
-          ['Запланировано', dash.totals.scheduled],
-          ['Слов', dash.totals.words],
-          ['На модерации', dash.totals.pendingEdits],
-        ] as Array<[string, number]>).map(([label, value]) => (
-          <div key={label} className="card p-4">
-            <div className="text-xs muted">{label}</div>
-            <div className="text-2xl font-bold">{Number(value).toLocaleString('ru-RU')}</div>
+    <main id="main" className="tl-screen tl-screen--author tlp-author-dashboard">
+      <div className="tlp-author-layout">
+        <aside className="tlp-author-sidebar" aria-label="Навигация авторской мастерской">
+          <Link href={`/${l}/author`} className="tlp-author-sidebar-brand">
+            <span className="tlp-author-sidebar-mark">T</span>
+            <span><strong>TeroLibrary</strong><small>AUTHOR STUDIO</small></span>
+          </Link>
+          <div className="tlp-author-sidebar-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+          <nav>
+            <a className="is-active" href="#overview"><span>⌂</span>Обзор</a>
+            <a href="#works"><span>▤</span>Произведения</a>
+            <a href="#author-new-work"><span>✎</span>Редактор</a>
+            <a href="#publications"><span>◷</span>Публикации</a>
+            <a href="#files"><span>↕</span>Файлы и перенос</a>
+            <a href="#stats"><span>▥</span>Статистика</a>
+            <a href="#income"><span>◉</span>Доход и выплаты</a>
+          </nav>
+          <div className="tlp-author-sidebar-bottom"><Link href={`/${l}/`}>← TeroLibrary</Link></div>
+        </aside>
+
+        <div className="tlp-author-main">
+          <div className="tlp-author-topbar">
+            <div><span className="muted">TeroLibrary</span><span className="tlp-author-breadcrumb-sep">/</span><strong>Обзор</strong></div>
+            <div className="tlp-author-topbar-actions"><span className="tlp-author-period">Текущая статистика</span><span className="tlp-author-avatar">{s.name.trim().slice(0, 1).toLocaleUpperCase() || 'A'}</span></div>
           </div>
-        ))}
-      </section>
 
-      {dash.works.some((w) => Number(w.scheduled) > 0) ? (
-        <div className="card mb-6 p-4">
-          <strong>Запланированные публикации</strong>
-          <ul className="mt-2 space-y-1 text-sm">
-            {dash.works.filter((w) => Number(w.scheduled) > 0).map((w) => (
-              <li key={w.id}>
-                <Link className="hover:text-brand" href={`/${l}/author/${w.slug}`}>{w.title}</Link>
-                {' — '}{Number(w.scheduled)} глав(ы) ждут своего времени
-              </li>
+          <section id="overview" className="tlp-author-heading">
+            <div><p className="tlp-stage8-kicker">АВТОРСКАЯ МАСТЕРСКАЯ</p><h1>Добро пожаловать, {s.name}</h1><p>Ваше пространство для историй, публикаций и общения с читателями.</p></div>
+            <a href="#author-new-work" className="btn primary">＋ Новое произведение</a>
+          </section>
+
+          <section className="tlp-author-kpis" aria-label="Сводка автора">
+            {([
+              ['Произведения', dash.totals.works, 'Всего в мастерской'],
+              ['Главы', dash.totals.chapters, 'Во всех произведениях'],
+              ['Опубликовано', dash.totals.published, 'Доступны читателям'],
+              ['Запланировано', dash.totals.scheduled, 'Ожидают публикации'],
+              ['Слов', dash.totals.words.toLocaleString('ru-RU'), 'Общий объём текстов'],
+              ['Правки на проверке', dash.totals.pendingEdits, 'Ожидают решения'],
+            ] as Array<[string, number | string, string]>).map(([label, value, note]) => (
+              <article className="tlp-author-kpi" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></article>
             ))}
-          </ul>
-        </div>
-      ) : null}
+          </section>
 
-      <EpubImportForm />
-      <section id="works" className="tlp-stage8-section"><AuthorWorks lang={l} /></section>
-      <div id="stats" className="mt-8 tlp-stage8-section">
-        <AuthorStats />
-      </div>
-      <div id="income" className="mt-8 tlp-stage8-section">
-        <AuthorIncome initial={income} />
-      </div>
-      <div id="donations" className="mt-8 tlp-stage8-section">
-        <AuthorDonations />
+          <div className="tlp-author-overview-grid">
+            <section id="stats" className="tlp-author-panel tlp-author-stats-panel">
+              <div className="tlp-author-panel-heading"><div><h2>Активность читателей</h2><p>Сводка по вашим опубликованным произведениям</p></div><span className="tlp-author-panel-meta">Реальные данные</span></div>
+              <AuthorStats />
+            </section>
+            <aside className="tlp-author-panel tlp-author-recent-panel">
+              <div className="tlp-author-panel-heading"><div><h2>Продолжить работу</h2><p>Последние изменённые произведения</p></div><a href="#works">Все →</a></div>
+              <div className="tlp-author-recent-list">
+                {recentWorks.map((w) => (
+                  <Link href={`/${l}/author/${w.slug}`} key={w.id} className="tlp-author-recent-item">
+                    <span className="tlp-author-recent-cover">✧</span>
+                    <span className="tlp-author-recent-copy"><strong>{w.title}</strong><small>{Number(w.chapters)} глав · изменено {formatDate(w.updated_at)}</small></span>
+                    <span className="tlp-author-recent-action">Открыть</span>
+                  </Link>
+                ))}
+                {recentWorks.length === 0 ? <p className="muted text-sm">Пока нет произведений. Создайте первое в разделе ниже.</p> : null}
+              </div>
+            </aside>
+          </div>
+
+          <section id="works" className="tlp-author-section tlp-stage8-section">
+            <div className="tlp-author-section-heading"><div><h2>Мои произведения</h2><p>Черновики, публикации и работа над главами</p></div><a className="btn" href="#author-new-work">＋ Добавить</a></div>
+            <div id="publications"><AuthorWorks lang={l} /></div>
+          </section>
+
+          <section id="files" className="tlp-author-section tlp-stage8-section">
+            <div className="tlp-author-section-heading"><div><h2>Файлы и перенос</h2><p>Импорт книги в рабочее пространство</p></div></div>
+            <EpubImportForm />
+          </section>
+
+          <section id="income" className="tlp-author-section tlp-stage8-section">
+            <div className="tlp-author-section-heading"><div><h2>Доход и выплаты</h2><p>Финансовые показатели и настройки выплат</p></div></div>
+            <AuthorIncome initial={income} />
+            <div className="mt-5"><AuthorDonations /></div>
+          </section>
+        </div>
       </div>
     </main>
   );

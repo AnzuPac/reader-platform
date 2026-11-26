@@ -379,11 +379,12 @@ export default function ChapterBody({
       </div>
 
       <div
-        className={`reader-surface px-1 py-2 sm:px-6 sm:py-5 ${isProtected ? 'paid-text' : ''}`}
-        onCopy={isProtected ? (e) => e.preventDefault() : undefined}
-        onCut={isProtected ? (e) => e.preventDefault() : undefined}
-        onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
-        onDragStart={isProtected ? (e) => e.preventDefault() : undefined}
+        className={`reader-surface reader-no-copy px-1 py-2 sm:px-6 sm:py-5 ${isProtected ? 'paid-text' : ''}`}
+        onCopy={(e) => e.preventDefault()}
+        onCut={(e) => e.preventDefault()}
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
+        onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && ['c', 'x'].includes(e.key.toLowerCase())) e.preventDefault(); }}
       >
         <article className="prose-reader whitespace-pre-line" data-chapter-body>
           {blocks.map((block, i) => {

@@ -134,7 +134,7 @@ export default async function CatalogPage({
       aiUsage: w.ai_usage || 'not_declared',
       completed: w.completion === 'completed',
       cover: w.cover_path || null,
-      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
+      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'purple' : 'blue',
     };
   });
 
@@ -154,7 +154,7 @@ export default async function CatalogPage({
       aiUsage: w.ai_usage || 'not_declared',
       completed: w.completion === 'completed',
       cover: w.cover_path || null,
-      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'violet' : 'blue',
+      tone: category === 'manga' ? 'orange' : category === 'fanfic' ? 'purple' : 'blue',
     };
   });
 

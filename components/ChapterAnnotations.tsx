@@ -112,12 +112,12 @@ export default function ChapterAnnotations({ chapterId }: { chapterId: number })
     };
   }, []);
 
-  async function save(note: string | null) {
+  async function save(note: string) {
     if (!toolbar) return;
     setBusy(true); setError('');
     const res = await fetch('/api/annotations', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chapterId, position: toolbar.start, length: toolbar.end - toolbar.start, note, color: note ? 'blue' : 'yellow' }),
+      body: JSON.stringify({ chapterId, position: toolbar.start, length: toolbar.end - toolbar.start, note, color: 'blue' }),
     }).catch(() => null);
     setBusy(false);
     if (!res || !res.ok) { setError('Не удалось сохранить заметку.'); return; }
@@ -149,9 +149,8 @@ export default function ChapterAnnotations({ chapterId }: { chapterId: number })
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <button className="btn btn-ghost" disabled={busy} onClick={() => void save(null)}>Выделить</button>
-              <button className="btn btn-ghost" disabled={busy} onClick={() => setNoteOpen(true)}>Заметка</button>
-              <button className="btn btn-ghost" onClick={() => setToolbar(null)}>✕</button>
+              <button className="btn btn-primary" disabled={busy} onClick={() => setNoteOpen(true)}>Добавить заметку</button>
+              <button className="btn btn-ghost" onClick={() => setToolbar(null)} aria-label="Закрыть">✕</button>
             </div>
           )}
         </div>
@@ -169,7 +168,7 @@ export default function ChapterAnnotations({ chapterId }: { chapterId: number })
             {items.map((a) => (
               <li key={a.client_id} className="flex items-start gap-3 text-sm">
                 <span aria-hidden="true" style={{ color: '#d4a017' }}>▍</span>
-                <span className="flex-1">{a.note || 'Выделение'}</span>
+                <span className="flex-1">{a.note || 'Старая заметка без текста'}</span>
                 <span className="text-xs muted">симв. {a.position}–{a.position + a.length}</span>
                 <button className="btn btn-ghost" onClick={() => void remove(a.client_id)}>Удалить</button>
               </li>

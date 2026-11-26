@@ -62,8 +62,8 @@ a { color: inherit; text-decoration: none; }
 .reader-surface { background: var(--reader-bg, transparent); border-radius: 12px; }
 .reader-surface .prose-reader p { margin-bottom: var(--reader-gap, 1em); }
 
-/* Платный текст: выделение и копирование отключены, доступность сохранена
-   (текст остаётся в DOM и читается скринридерами). */
+/* Дополнительное визуальное ограничение для платного контента. Общий reader-no-copy ниже
+   сохраняет выделение для заметок, но блокирует стандартные действия копирования. */
 .paid-text, .paid-text * {
   -webkit-user-select: none; user-select: none;
   -webkit-touch-callout: none;
@@ -205,3 +205,12 @@ main:not(.tl-home):not(.bv-app) .hover\:border-brand:hover{border-color:#b9c4d3!
 @media(max-width:900px){}
 @media(max-width:767px){main:not(.tl-home):not(.bv-app){padding:20px 14px 60px!important}.site-auth .btn-ghost{display:none}.site-header form .input{height:36px}.reader-surface{padding:20px!important}.prose-reader{font-size:17px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Reader anti-copy: keep text selection for the in-reader Notes tool, but block copy/cut/context actions.
+   This is a UI deterrent, not DRM; server-side content protection is documented separately. */
+.reader-no-copy, .reader-no-copy * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: none;
+}
+.reader-no-copy ::selection, .reader-no-copy::selection { background: rgba(101, 117, 143, .28); }

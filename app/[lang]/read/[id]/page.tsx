@@ -64,7 +64,7 @@ export default async function ReadPage({
   const next = idx >= 0 && idx < chapters.length - 1 ? chapters[idx + 1] : null;
 
   return (
-    <main id="main" className="tl-screen tl-screen--reader mx-auto max-w-3xl px-5 py-10">
+    <main id="main" className="tl-screen tl-screen--reader mx-auto max-w-3xl px-5 py-10" data-category={ch.work_kind === 'fanfic' ? 'fanfic' : ch.work_type === 'comic' ? 'graphic' : 'books'}>
       <div className="mb-6 flex items-center gap-3 text-sm muted">
         <Link href={`/${l}/work/${ch.work_slug}`} className="hover:text-violet">← {ch.work_title}</Link>
         <span>·</span>
