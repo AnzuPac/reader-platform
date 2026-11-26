@@ -2,159 +2,215 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TeroLibrary foundation — the single global source for neutral surfaces and controls. */
+/* ------------------------------------------------------------------
+   Палитра. Раньше в файле лежали два набора правил подряд: сначала
+   тёмный, ниже — светлый, который его перекрывал. Половина объявлений
+   была мёртвой, а правки «не срабатывали». Теперь один набор токенов.
+   ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
-  --rd-bg: #f5f7fb;
-  --rd-fg: #263143;
-  --rd-muted: #78859a;
-  --rd-mist: #586a84;
-  --rd-line: #e3e9f1;
+  --rd-bg: #ffffff;
+  --rd-fg: #1f2937;
+  --rd-muted: #6b7280;
+  --rd-mist: #4b5563;
+  --rd-line: #e5e7eb;
   --rd-surface: #ffffff;
-  --rd-surface-soft: #f0f3f8;
-  --rd-field-line: #d8e0eb;
-  --rd-field-fg: #29364a;
-  --rd-accent: #65758f;
-  --rd-accent-strong: #4f627f;
-  --rd-focus: #7c91b0;
-  --tl-books: #65758f;
-  --tl-books-soft: #e8edf4;
-  --tl-fanfic: #9061c4;
-  --tl-fanfic-soft: #f0e6fb;
-  --tl-manga: #df843b;
-  --tl-manga-soft: #fff0e2;
-  --tl-radius: 18px;
-  --tl-shadow: 0 10px 30px rgba(39, 53, 76, .065);
+  --rd-surface-soft: #f9fafb;
+  --rd-field-line: #d1d5db;
+  --rd-field-fg: #111827;
+  --rd-accent: #111827;
+  --rd-focus: #2563eb;
 }
 
-html, body { min-height: 100%; background: var(--rd-bg); color: var(--rd-fg); }
-body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html, body { background: var(--rd-bg); color: var(--rd-fg); }
 a { color: inherit; text-decoration: none; }
-button, input, select, textarea { font: inherit; }
-button { cursor: pointer; }
 
-/* Shared surfaces and text helpers. */
-.card { background: var(--rd-surface); border: 1px solid var(--rd-line); border-radius: 18px; box-shadow: 0 2px 10px rgba(39, 53, 76, .035); }
+/* ----- Базовые элементы ----- */
+.card { background: var(--rd-surface); border: 1px solid var(--rd-line); border-radius: 12px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
 .muted { color: var(--rd-muted); }
 .text-mist { color: var(--rd-mist) !important; }
 .border-line { border-color: var(--rd-line) !important; }
-.section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 20px; font-weight: 750; letter-spacing: -.35px; }
+.section-title { font-size: 20px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 
-/* Shared action controls. The v3 layer applies the same geometry inside .tlp. */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 10px 18px; border: 1px solid transparent; border-radius: 999px; font-size: 14px; font-weight: 700; line-height: 1.1; transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease; }
-.btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--rd-accent); border-color: var(--rd-accent); color: #fff; box-shadow: 0 5px 14px rgba(101, 117, 143, .18); }
-.btn-primary:hover { background: var(--rd-accent-strong); border-color: var(--rd-accent-strong); }
-.btn-ghost { background: var(--rd-surface); border-color: var(--rd-field-line); color: var(--rd-field-fg); }
-.btn-ghost:hover { border-color: #aebbd0; background: #f9fbfe; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+.btn-primary { background: var(--rd-accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-ghost { background: var(--rd-surface); border: 1px solid var(--rd-field-line); color: var(--rd-field-fg); }
+.btn-ghost:hover { border-color: var(--rd-muted); }
 
-.input { width: 100%; min-height: 42px; padding: 10px 15px; border: 1px solid var(--rd-field-line); border-radius: 15px; background: var(--rd-surface); color: var(--rd-field-fg); font-size: 14px; }
-.input::placeholder { color: #929bad; }
-.input:focus { outline: none; border-color: var(--rd-focus); box-shadow: 0 0 0 3px rgba(101, 117, 143, .12); }
-input[type="search"] { border-radius: 999px; }
+.input { width: 100%; padding: 9px 12px; border-radius: 10px; background: var(--rd-surface); border: 1px solid var(--rd-field-line); color: var(--rd-field-fg); font-size: 14px; }
+.input::placeholder { color: var(--rd-muted); }
+.input:focus { outline: none; border-color: var(--rd-muted); }
 
-/* Book artwork and category markers. */
-.cover { position: relative; display: flex; align-items: flex-end; overflow: hidden; padding: 10px; border-radius: 15px; background: linear-gradient(150deg, #71819a, #3b4b65); color: #fff; font-size: 13px; font-weight: 700; line-height: 1.25; }
-.cover::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 75% 15%, rgba(235, 241, 250, .22), transparent 55%); pointer-events: none; }
+/* ----- Обложки ----- */
+.cover {
+  position: relative; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(150deg, #2b1a4d, #3c1f5e 55%, #6d2a63);
+  color: #fff; display: flex; align-items: flex-end; padding: 10px;
+  font-weight: 700; font-size: 13px; line-height: 1.25;
+}
+.cover::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 75% 15%, rgba(244, 114, 182, .35), transparent 55%); }
 .cover-lg { height: 260px; }
 .cover-sm { height: 170px; }
-.tab-manga.active { background: #df843b; color: #fff; }
-.tab-book.active { background: #65758f; color: #fff; }
-.tab-fanfic.active { background: #9061c4; color: #fff; }
-.badge-hot { padding: 3px 9px; border-radius: 999px; background: #e8edf4; color: #53647e; font-size: 11px; font-weight: 750; }
 
-/* Reading surface remains independent from the platform chrome. */
-.prose-reader { color: var(--reader-fg, #303b4e); font-family: var(--reader-font, Georgia, "Times New Roman", serif); font-size: var(--reader-size, 18px); line-height: var(--reader-lh, 1.9); }
-.reader-surface { border-radius: 20px; background: var(--reader-bg, transparent); }
+.tab-manga.active   { background: #2563eb; color: #fff; }
+.tab-book.active    { background: #6b7280; color: #fff; }
+.tab-fanfic.active  { background: #7c3aed; color: #fff; }
+.badge-hot { background: #f3f4f6; color: #374151; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; }
+/* ----- Читалка ----- */
+.prose-reader { font-family: var(--reader-font, Georgia, 'Times New Roman', serif); font-size: var(--reader-size, 18px); line-height: var(--reader-lh, 1.9); color: var(--reader-fg, #1f2937); }
+.reader-surface { background: var(--reader-bg, transparent); border-radius: 12px; }
 .reader-surface .prose-reader p { margin-bottom: var(--reader-gap, 1em); }
-.paid-text, .paid-text * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Дополнительное визуальное ограничение для платного контента. Общий reader-no-copy ниже
+   сохраняет выделение для заметок, но блокирует стандартные действия копирования. */
+.paid-text, .paid-text * {
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
 .paid-text ::selection, .paid-text::selection { background: transparent; }
 .paid-text img { pointer-events: none; }
-.reader-no-copy, .reader-no-copy * { -webkit-user-select: text; user-select: text; -webkit-touch-callout: none; }
-.reader-no-copy ::selection, .reader-no-copy::selection { background: rgba(101, 117, 143, .28); }
 
-/* Focus, selection and keyboard accessibility. */
-::selection { background: rgba(101, 117, 143, .22); }
+/* ----- Фокус и доступность ----- */
+::selection { background: rgba(139, 92, 246, .35); }
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
 textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   outline: 3px solid var(--rd-focus);
   outline-offset: 2px;
+  border-radius: 6px;
 }
-.skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; padding: 10px 16px; border-radius: 0 0 14px 0; background: var(--rd-accent); color: #fff; font-weight: 750; }
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--rd-accent); color: #fff; padding: 10px 16px; border-radius: 0 0 10px 0; font-weight: 700;
+}
 .skip-link:focus { left: 0; }
 
-/* Paragraph comments remain unobtrusive until focused or populated. */
-.pc-icon { float: right; margin: 2px 0 0 10px; padding: 0 4px; border: 0; background: transparent; font-size: 12px; line-height: 1.4; cursor: pointer; opacity: .32; transition: opacity .15s; }
+/* ----- Комментарии к абзацам ----- */
+.pc-icon {
+  float: right; margin: 2px 0 0 10px; padding: 0 4px; border: 0; background: transparent;
+  font-size: 12px; line-height: 1.4; cursor: pointer; opacity: .28; transition: opacity .15s;
+}
 .pc-icon:hover, .pc-icon:focus-visible { opacity: 1; }
 .pc-icon.has-comments { opacity: .9; }
-.pc-icon.active { opacity: 1; filter: drop-shadow(0 0 6px rgba(101, 117, 143, .55)); }
-.pc-panel { scroll-margin-top: 16px; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.5; text-align: left; white-space: normal; }
+.pc-icon.active { opacity: 1; filter: drop-shadow(0 0 6px rgba(139, 92, 246, .8)); }
+.pc-panel {
+  scroll-margin-top: 16px;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+}
 .pc-panel textarea { font-family: inherit; font-size: 14px; }
 
-/* Legacy Tailwind colour utilities are mapped to the current neutral surface palette. */
+/* ----- Тёмные утилиты Tailwind, унаследованные от старой темы ----- */
 .border-white\/20, .border-white\/15, .border-white\/10 { border-color: var(--rd-line) !important; }
 [class*="bg-[#14121c]"] { background: var(--rd-surface) !important; border-color: var(--rd-line) !important; }
-.bg-brand, .bg-hot { background: var(--rd-accent) !important; }
-.text-brand { color: var(--rd-accent) !important; }
-
-/* Shared library toolbar. */
-.library-toolbar .library-search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 180px; }
-.library-toolbar .library-search input { flex: 1; min-width: 0; min-height: 42px; padding: 9px 15px; border: 1px solid var(--rd-field-line); border-radius: 999px; background: var(--rd-surface); }
-.library-sort { display: flex; align-items: center; gap: 8px; color: var(--rd-muted); font-size: 13px; }
-.library-sort select { padding: 9px 13px; border: 1px solid var(--rd-field-line); border-radius: 14px; background: var(--rd-surface); color: var(--rd-field-fg); }
-
-/* Cross-route presentation; feature markup, routes and actions are intentionally untouched. */
-main:not(.tl-home):not(.bv-app) { max-width: 1320px !important; margin-inline: auto !important; padding: 28px 24px 68px !important; }
-main:not(.tl-home):not(.bv-app) h1 { margin-bottom: 10px !important; color: #263143 !important; font-size: clamp(25px, 3vw, 34px) !important; font-weight: 850 !important; letter-spacing: -.9px !important; line-height: 1.15 !important; }
-main:not(.tl-home):not(.bv-app) h2 { color: #2b3547 !important; font-size: 20px !important; font-weight: 800 !important; letter-spacing: -.35px !important; }
-main:not(.tl-home):not(.bv-app) h3 { color: #344055 !important; font-size: 15px !important; font-weight: 750 !important; }
-main:not(.tl-home):not(.bv-app) p { line-height: 1.65; }
-main:not(.tl-home):not(.bv-app) .muted { color: var(--rd-muted) !important; }
-main:not(.tl-home):not(.bv-app) .section-title { font-size: 20px !important; font-weight: 800 !important; }
-main:not(.tl-home):not(.bv-app) table { width: 100%; border: 1px solid var(--rd-line); border-radius: 16px; border-collapse: separate; border-spacing: 0; overflow: hidden; background: var(--rd-surface); }
-main:not(.tl-home):not(.bv-app) th { background: #f1f4f8; color: #758197; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
-main:not(.tl-home):not(.bv-app) td, main:not(.tl-home):not(.bv-app) th { padding: 12px 14px !important; border-bottom: 1px solid #edf0f4 !important; }
-main:not(.tl-home):not(.bv-app) tr:last-child td { border-bottom: 0 !important; }
-main:not(.tl-home):not(.bv-app) nav[aria-label] a, main:not(.tl-home):not(.bv-app) nav.mb-6 a, main:not(.tl-home):not(.bv-app) nav.mb-5 a { border-radius: 999px !important; }
-main:not(.tl-home):not(.bv-app) .library-toolbar { border: 1px solid var(--rd-line) !important; border-radius: 18px !important; background: var(--rd-surface) !important; box-shadow: none !important; }
-main:not(.tl-home):not(.bv-app) .reader-surface { max-width: 900px; margin-inline: auto; padding: clamp(20px, 5vw, 58px) !important; border: 1px solid #e4e9f1 !important; border-radius: 22px !important; background: #fff !important; box-shadow: 0 8px 32px rgba(39, 53, 76, .045) !important; }
-main:not(.tl-home):not(.bv-app) .prose-reader { max-width: 720px; margin: 0 auto; color: #344055 !important; font-size: 19px !important; line-height: 1.9 !important; }
-main:not(.tl-home):not(.bv-app) .reader-surface .prose-reader p { margin-bottom: 1.2em; }
-main:not(.tl-home):not(.bv-app) details.card { background: #fff !important; }
-main:not(.tl-home):not(.bv-app) details summary { padding: 5px 0; cursor: pointer; }
-main:not(.tl-home):not(.bv-app) .cover { border-radius: 15px !important; box-shadow: 0 12px 26px rgba(20, 31, 48, .12); }
-main:not(.tl-home):not(.bv-app) .cat-book { border-color: #d8e0eb !important; background: #e8edf4 !important; color: #53647e !important; }
-main:not(.tl-home):not(.bv-app) .cat-fanfic { border-color: #e2d2f4 !important; background: #f0e6fb !important; color: #8251b4 !important; }
-main:not(.tl-home):not(.bv-app) .cat-manga { border-color: #f3d8c1 !important; background: #fff0e2 !important; color: #c26d2c !important; }
-main:not(.tl-home):not(.bv-app) .tab-book.active { background: #65758f !important; }
-main:not(.tl-home):not(.bv-app) .tab-fanfic.active { background: #9061c4 !important; }
-main:not(.tl-home):not(.bv-app) .tab-manga.active { background: #df843b !important; }
-main:not(.tl-home):not(.bv-app) .card-book { border-left-color: #65758f !important; }
-main:not(.tl-home):not(.bv-app) .card-fanfic { border-left-color: #9061c4 !important; }
-main:not(.tl-home):not(.bv-app) .card-manga { border-left-color: #df843b !important; }
-.bv-app { --bv-accent: #65758f !important; --bv-brand-soft: #e8edf4 !important; --bv-bg: #f5f7fb !important; --bv-surface: #fff !important; --bv-line: #e3e9f1 !important; --bv-text: #263143 !important; --bv-muted: #78859a !important; }
-.bv-app.bv-theme-fanfics { --bv-accent: #9061c4 !important; --bv-brand-soft: #f0e6fb !important; }
-.bv-app.bv-theme-comics { --bv-accent: #df843b !important; --bv-brand-soft: #fff0e2 !important; }
-main:not(.tl-home):not(.bv-app) .max-w-md .card, main:not(.tl-home):not(.bv-app) .max-w-xl .card { max-width: 100%; padding: clamp(22px, 4vw, 34px) !important; border-radius: 22px !important; box-shadow: 0 12px 36px rgba(39, 53, 76, .055) !important; }
-main:not(.tl-home):not(.bv-app) .max-w-md, main:not(.tl-home):not(.bv-app) .max-w-xl { max-width: 520px !important; }
-main:not(.tl-home):not(.bv-app) .max-w-3xl, main:not(.tl-home):not(.bv-app) .max-w-4xl { max-width: 980px !important; }
-main:not(.tl-home):not(.bv-app) .max-w-5xl, main:not(.tl-home):not(.bv-app) .max-w-6xl { max-width: 1320px !important; }
-main:not(.tl-home):not(.bv-app) .grid { align-items: stretch; }
-main:not(.tl-home):not(.bv-app) .grid .card { height: 100%; }
-main:not(.tl-home):not(.bv-app) .flex.items-center.gap-4.card { transition: background .15s, border .15s; }
-main:not(.tl-home):not(.bv-app) .prose, main:not(.tl-home):not(.bv-app) article { color: #344055; }
-main:not(.tl-home):not(.bv-app) .prose h2, main:not(.tl-home):not(.bv-app) .prose h3 { margin-top: 1.6em; }
-main:not(.tl-home):not(.bv-app) .bg-brand\/10 { background: #e8edf4 !important; }
-main:not(.tl-home):not(.bv-app) .text-brand { color: #65758f !important; }
-main:not(.tl-home):not(.bv-app) .hover\:border-brand:hover { border-color: #b9c4d3 !important; }
-
-@media (max-width: 767px) {
-  main:not(.tl-home):not(.bv-app) { padding: 20px 14px 60px !important; }
-  .site-auth .btn-ghost { display: none; }
-  .site-header form .input { height: 38px; }
-  .reader-surface { padding: 20px !important; }
-  .prose-reader { font-size: 17px !important; }
+.bg-brand, .bg-hot { background: var(--rd-muted) !important; }
+.text-brand { color: #374151 !important; }
+/* TeroLibrary global redesign: neutral reading surfaces, category accents. */
+:root {
+  --rd-bg: #f7f7fb;
+  --rd-fg: #202333;
+  --rd-muted: #73778a;
+  --rd-mist: #62677a;
+  --rd-line: #e5e7ef;
+  --rd-surface: #ffffff;
+  --rd-surface-soft: #f2f3f8;
+  --rd-field-line: #d9dce7;
+  --rd-field-fg: #242638;
+  --rd-accent: #6d28d9;
+  --rd-focus: #7c3aed;
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+body { background: var(--rd-bg); color: var(--rd-fg); }
+.language-switcher { display:flex; align-items:center; gap:3px; padding:3px; border:1px solid var(--rd-line); border-radius:999px; background:#f5f5fa; }
+.language-switcher__item { display:inline-flex; align-items:center; justify-content:center; min-width:30px; padding:5px 7px; border-radius:999px; font-size:11px; font-weight:800; color:#666b7d; }
+.language-switcher__item:hover { background:#e9e8f2; color:#28243a; }
+.language-switcher__item.is-active { color:white; background:#6d28d9; }
+.btn { transition:transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.btn:active { transform:translateY(1px); }
+.btn-primary { background:var(--rd-accent); box-shadow:0 2px 8px rgba(109,40,217,.16); }
+.card { transition:border-color .15s ease, box-shadow .15s ease; }
+.card:hover { border-color:#d4c8f5; box-shadow:0 5px 18px rgba(30,35,60,.06); }
+input,select,textarea { color:var(--rd-field-fg); }
+@media (max-width:640px) {
+  .language-switcher__item { min-width:27px; padding:4px 5px; }
+  .btn { padding:8px 12px; }
 }
+@media(max-width:767px) {
+ }
+.library-toolbar .library-search { display:flex; align-items:center; gap:8px; flex:1 1 260px; min-width:180px; }
+.library-toolbar .library-search input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--rd-field-line); border-radius:9px; background:white; }
+.library-sort { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--rd-muted); }
+.library-sort select { border:1px solid var(--rd-field-line); background:white; color:var(--rd-field-fg); border-radius:9px; padding:9px; }
+
+/* ───────────────────────────────────────────────────────────────
+   TeroLibrary complete application skin — all route families
+   ─────────────────────────────────────────────────────────────── */
+:root{--tl-books:#71809a;--tl-books-soft:#e8edf4;--tl-fanfic:#9061c4;--tl-fanfic-soft:#f0e6fb;--tl-manga:#df843b;--tl-manga-soft:#fff0e2;--tl-radius:16px;--tl-shadow:0 8px 28px rgba(32,40,56,.055)}
+body{background:#f6f7fa!important;color:#252832!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main:not(.tl-home):not(.bv-app){max-width:1320px!important;margin-left:auto!important;margin-right:auto!important;padding:28px 24px 68px!important}
+.site-header form .input{height:40px;background:#f5f6f9;border-color:#e5e7ed;border-radius:11px;padding-left:14px}
+.site-auth .btn{border-radius:10px!important;font-size:13px!important;padding:9px 14px!important}
+.btn-primary{background:#65758f!important;border-color:#65758f!important;color:#fff!important}.btn-primary:hover{background:#52627a!important}
+.btn-ghost{background:#fff!important;border:1px solid #dfe3eb!important;color:#384154!important}
+.card{border:1px solid #e5e7ed!important;border-radius:15px!important;background:#fff!important;box-shadow:0 2px 8px rgba(28,36,54,.025)!important}
+.card:hover{border-color:#cdd4e0!important;box-shadow:var(--tl-shadow)!important}
+main:not(.tl-home):not(.bv-app) h1{font-size:clamp(25px,3vw,34px)!important;font-weight:850!important;letter-spacing:-.9px!important;line-height:1.15!important;color:#252832!important;margin-bottom:10px!important}
+main:not(.tl-home):not(.bv-app) h2{font-size:20px!important;font-weight:800!important;letter-spacing:-.35px!important;color:#292d39!important}
+main:not(.tl-home):not(.bv-app) h3{font-size:15px!important;font-weight:750!important;color:#303443!important}
+main:not(.tl-home):not(.bv-app) p{line-height:1.65}
+main:not(.tl-home):not(.bv-app) .muted{color:#7d8392!important}
+main:not(.tl-home):not(.bv-app) .section-title{font-size:20px!important;font-weight:800!important}
+main:not(.tl-home):not(.bv-app) .btn{border-radius:10px!important;font-weight:700!important;min-height:38px}
+main:not(.tl-home):not(.bv-app) input:not([type=checkbox]):not([type=radio]),main:not(.tl-home):not(.bv-app) select,main:not(.tl-home):not(.bv-app) textarea{border-radius:10px!important;border:1px solid #dce0e8!important;background:#fff!important;padding:10px 12px!important}
+main:not(.tl-home):not(.bv-app) input:focus,main:not(.tl-home):not(.bv-app) select:focus,main:not(.tl-home):not(.bv-app) textarea:focus{border-color:#8b9bb3!important;box-shadow:0 0 0 3px rgba(113,128,154,.13)!important}
+main:not(.tl-home):not(.bv-app) table{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden;border-radius:12px;border:1px solid #e5e7ed;background:white}
+main:not(.tl-home):not(.bv-app) th{background:#f7f8fa;color:#747b8b;font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:800}
+main:not(.tl-home):not(.bv-app) td,main:not(.tl-home):not(.bv-app) th{padding:12px 14px!important;border-bottom:1px solid #edf0f4!important}
+main:not(.tl-home):not(.bv-app) tr:last-child td{border-bottom:0!important}
+main:not(.tl-home):not(.bv-app) nav[aria-label] a,main:not(.tl-home):not(.bv-app) nav.mb-6 a,main:not(.tl-home):not(.bv-app) nav.mb-5 a{border-radius:999px!important}
+main:not(.tl-home):not(.bv-app) .library-toolbar{box-shadow:none!important;background:#fff!important;border:1px solid #e5e7ed!important;border-radius:13px!important}
+main:not(.tl-home):not(.bv-app) .library-search input{background:#f8f9fb!important}
+main:not(.tl-home):not(.bv-app) .reader-surface{background:#fff!important;border:1px solid #e6e8ee!important;border-radius:18px!important;padding:clamp(20px,5vw,58px)!important;box-shadow:0 8px 32px rgba(24,30,45,.04)!important}
+main:not(.tl-home):not(.bv-app) .prose-reader{max-width:720px;margin:0 auto;color:#333746!important;font-size:19px!important;line-height:1.9!important}
+main:not(.tl-home):not(.bv-app) .reader-surface .prose-reader p{margin-bottom:1.2em}
+main:not(.tl-home):not(.bv-app) details.card{background:#fff!important}
+main:not(.tl-home):not(.bv-app) details summary{padding:5px 0;cursor:pointer}
+main:not(.tl-home):not(.bv-app) .cover{border-radius:12px!important;box-shadow:0 12px 26px rgba(20,25,40,.12)}
+main:not(.tl-home):not(.bv-app) .cat-book{background:#edf0f5!important;color:#58667c!important;border-color:#d8dee8!important}
+main:not(.tl-home):not(.bv-app) .cat-fanfic{background:#f0e6fb!important;color:#8251b4!important;border-color:#e2d2f4!important}
+main:not(.tl-home):not(.bv-app) .cat-manga{background:#fff0e2!important;color:#c26d2c!important;border-color:#f3d8c1!important}
+main:not(.tl-home):not(.bv-app) .tab-book.active{background:#71809a!important}.tab-fanfic.active{background:#9061c4!important}.tab-manga.active{background:#df843b!important}
+main:not(.tl-home):not(.bv-app) .card-book{border-left-color:#71809a!important}main:not(.tl-home):not(.bv-app) .card-fanfic{border-left-color:#9061c4!important}main:not(.tl-home):not(.bv-app) .card-manga{border-left-color:#df843b!important}
+/* Catalog's dedicated Bookverse experience is preserved and harmonized. */
+.bv-app{--bv-accent:#71809a!important;--bv-brand-soft:#e8edf4!important;--bv-bg:#f6f7fa!important;--bv-surface:#fff!important;--bv-line:#e5e7ed!important;--bv-text:#252832!important;--bv-muted:#7b8290!important}
+.bv-app.bv-theme-fanfics{--bv-accent:#9061c4!important;--bv-brand-soft:#f0e6fb!important}
+.bv-app.bv-theme-comics{--bv-accent:#df843b!important;--bv-brand-soft:#fff0e2!important}
+/* forms / sign in / subscription pages */
+main:not(.tl-home):not(.bv-app) .max-w-md .card,main:not(.tl-home):not(.bv-app) .max-w-xl .card{padding:clamp(22px,4vw,34px)!important;border-radius:18px!important;box-shadow:0 12px 36px rgba(25,32,48,.05)!important}
+main:not(.tl-home):not(.bv-app) .max-w-md,main:not(.tl-home):not(.bv-app) .max-w-xl{max-width:520px!important}
+main:not(.tl-home):not(.bv-app) .max-w-3xl,main:not(.tl-home):not(.bv-app) .max-w-4xl{max-width:980px!important}
+main:not(.tl-home):not(.bv-app) .max-w-5xl,main:not(.tl-home):not(.bv-app) .max-w-6xl{max-width:1320px!important}
+/* profile and creator dashboards */
+main:not(.tl-home):not(.bv-app) .grid{align-items:stretch}
+main:not(.tl-home):not(.bv-app) .grid .card{height:100%}
+main:not(.tl-home):not(.bv-app) .flex.items-center.gap-4.card{transition:background .15s,border .15s}
+/* editorial surfaces */
+main:not(.tl-home):not(.bv-app) .prose,main:not(.tl-home):not(.bv-app) article{color:#343847}
+main:not(.tl-home):not(.bv-app) .prose h2,main:not(.tl-home):not(.bv-app) .prose h3{margin-top:1.6em}
+main:not(.tl-home):not(.bv-app) .bg-brand\/10{background:#edf0f5!important}
+main:not(.tl-home):not(.bv-app) .text-brand{color:#65758f!important}
+main:not(.tl-home):not(.bv-app) .hover\:border-brand:hover{border-color:#b9c4d3!important}
+@media(max-width:900px){}
+@media(max-width:767px){main:not(.tl-home):not(.bv-app){padding:20px 14px 60px!important}.site-auth .btn-ghost{display:none}.site-header form .input{height:36px}.reader-surface{padding:20px!important}.prose-reader{font-size:17px!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Reader anti-copy: keep text selection for the in-reader Notes tool, but block copy/cut/context actions.
+   This is a UI deterrent, not DRM; server-side content protection is documented separately. */
+.reader-no-copy, .reader-no-copy * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: none;
+}
+.reader-no-copy ::selection, .reader-no-copy::selection { background: rgba(101, 117, 143, .28); }

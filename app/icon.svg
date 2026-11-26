@@ -1,15 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7185a3"/><stop offset="1" stop-color="#344862"/></linearGradient>
-    <linearGradient id="silver" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cbd6e5"/></linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <path d="M285 72C173 55 84 145 79 252c-6 115 79 206 190 207 73 1 132-38 164-101-32 34-75 54-124 54-94 0-169-76-169-170 0-84 62-154 145-170Z" fill="url(#silver)"/>
-  <path d="M211 330c-26-14-61-12-94 3l-22 70c38-18 78-19 119 5 17 10 31 23 42 39V352c-11-9-25-16-45-22Z" fill="url(#silver)"/>
-  <path d="M301 330c26-14 61-12 94 3l22 70c-38-18-78-19-119 5-17 10-31 23-42 39V352c11-9 25-16 45-22Z" fill="url(#silver)"/>
-  <path d="M95 403c54-18 104-11 161 30 57-41 107-48 161-30" fill="none" stroke="#65758f" stroke-width="15" stroke-linecap="round"/>
-  <path d="M260 351c20-65 72-111 125-142 14-8 29-15 45-20-4 33-21 64-50 85 22 0 37-6 53-16-21 48-68 77-133 92-18 4-31 11-40 21Z" fill="url(#silver)"/>
-  <path d="M279 369c31-63 82-112 132-151" fill="none" stroke="#526780" stroke-width="8" stroke-linecap="round"/>
-  <path d="M365 105l17 34 34 17-34 17-17 34-17-34-34-17 34-17 17-34Z" fill="#fff"/>
-  <path d="M296 173l10 20 20 10-20 10-10 20-10-20-20-10 20-10 10-20Z" fill="#f5f8fc"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="1" y="1" width="62" height="62" rx="16" fill="#65758f"/>
+  <path d="M34.8 8.5A25.1 25.1 0 1 0 56 44.9 20.4 20.4 0 1 1 34.8 8.5Z" fill="#e7ebf0"/>
+  <path d="M22 40.8 26.1 29l9.4 1.3 6.8-7.8-2.1 10.1-8.5 2.1-9.7 6.1Z" fill="#e7ebf0"/>
+  <path d="M18 43.6 25 35.2l7 1.8 8-1.8 7 8.4-14.4-2.4L18 43.6Z" fill="#d7dce4"/>
+  <path d="m22 43 10.6 6.5L44 43" fill="none" stroke="#65758f" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M39.2 17.2c4-4.6 8.2-4.7 12.5-3.2-1.7 5.1-5.7 8.5-11.8 8.9l-3.4 6.2-2.1-1.1 4.8-10.8Z" fill="#f5f6f8"/>
+  <path d="M48.7 9.4 51 14l4.6 2.3-4.6 2.3-2.3 4.6-2.3-4.6-4.6-2.3 4.6-2.3 2.3-4.6Z" fill="#f5f6f8"/>
+  <path d="m40 23 1.2 2.3 2.3 1.2-2.3 1.2L40 30l-1.2-2.3-2.3-1.2 2.3-1.2L40 23Z" fill="#f5f6f8"/>
 </svg>
