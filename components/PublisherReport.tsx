@@ -47,10 +47,10 @@ export default function PublisherReport({
 
   const csvHref = `/api/publisher/report?publisher=${publisherId}&from=${from}&to=${to}&format=csv`;
 
-  const totalRoyalty = report.byCurrency.reduce((s, l) => s + l.royalty_cents, 0);
-  const totalGross = report.byCurrency.reduce((s, l) => s + l.gross_cents, 0);
   const totalSales = report.byCurrency.reduce((s, l) => s + l.sales, 0);
   const singleCurrency = report.byCurrency.length === 1 ? report.byCurrency[0].currency : '';
+  const grossByCurrency = report.byCurrency.map((l) => money(l.gross_cents, l.currency)).join(' · ');
+  const royaltyByCurrency = report.byCurrency.map((l) => money(l.royalty_cents, l.currency)).join(' · ');
 
   return (
     <section className="card p-5">
@@ -80,13 +80,13 @@ export default function PublisherReport({
         <div className="rounded-lg border border-line p-3">
           <div className="text-xs muted">Prihod</div>
           <div className="text-xl font-bold">
-            {singleCurrency ? money(totalGross, singleCurrency) : `${totalGross} (centi)`}
+            {singleCurrency ? money(report.byCurrency[0].gross_cents, singleCurrency) : grossByCurrency}
           </div>
         </div>
         <div className="rounded-lg border border-line p-3">
           <div className="text-xs muted">Rojalit</div>
           <div className="text-xl font-bold">
-            {singleCurrency ? money(totalRoyalty, singleCurrency) : `${totalRoyalty} (centi)`}
+            {singleCurrency ? money(report.byCurrency[0].royalty_cents, singleCurrency) : royaltyByCurrency}
           </div>
         </div>
       </div>

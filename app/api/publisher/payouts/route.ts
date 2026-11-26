@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initSchema } from '@/lib/db';
 import { resolvePublisherScope } from '@/lib/publisher-guard';
-import { createPayout, listPayouts, markPayoutPaid } from '@/lib/publisher';
+import { can, createPayout, listPayouts, markPayoutPaid, memberRoleFor } from '@/lib/publisher';
+import { readSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const scope = await resolvePublisherScope(req);
   if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+  const role = scope.isAdmin ? 'owner' : await memberRoleFor(session.uid, scope.publisherId);
+  if (!can(role, 'finances')) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   await initSchema();
   const payouts = await listPayouts(scope.publisherId);
@@ -19,6 +25,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const scope = await resolvePublisherScope(req);
   if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+  const role = scope.isAdmin ? 'owner' : await memberRoleFor(session.uid, scope.publisherId);
+  if (!can(role, 'finances')) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const b = await req.json().catch(() => null);
   await initSchema();

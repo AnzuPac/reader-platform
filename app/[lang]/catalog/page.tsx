@@ -34,6 +34,7 @@ export default async function CatalogPage({
   const typeParam = str(sp.type);
   const genre = str(sp.genre);
   const source = str(sp.source);
+  const workLang = str(sp.language);
   const tag = str(sp.tag);
   const fandom = str(sp.fandom);
   const comicFormat = str(sp.gfmt);
@@ -95,6 +96,7 @@ export default async function CatalogPage({
   if (section === 'comics') opts.type = 'comic';
   if (section === 'fanfics') opts.fanfic = true;
   if (section === 'books') opts.type = 'novel';
+  if (workLang === 'sr' || workLang === 'ru' || workLang === 'en') opts.language = workLang;
 
   let rows: Row[] = [];
   if (section !== 'top') {
@@ -182,6 +184,7 @@ export default async function CatalogPage({
       hasMore={hasMore}
       genre={genre}
       source={bookSource}
+      language={workLang}
       tag={tag}
       fandom={fandom}
       aiUsages={aiUsages}

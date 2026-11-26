@@ -107,7 +107,7 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
-  page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [],
+  page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [], language = '',
   aiUsages = [], includeTags = [], excludeTags = [], includeMode = 'all', tags = [],
   comicFormat = '', colorMode = '', readingDirection = '', demographic = '', free = false,
 }: {
@@ -122,6 +122,7 @@ export default function BookverseCatalog({
   period?: string;
   genre?: string;
   source?: string;
+  language?: string;
   tag?: string;
   fandom?: string;
   aiUsage?: string;
@@ -176,6 +177,7 @@ export default function BookverseCatalog({
     genre?: string; tag?: string; fandom?: string; source?: string; ai?: string; period?: string;
     aiList?: string[]; include?: string[]; exclude?: string[]; includeMode?: 'all' | 'any';
     gfmt?: string; gcolor?: string; gdir?: string; gdemo?: string; free?: boolean;
+    language?: string;
   }) {
     const params = new URLSearchParams();
     const q = next.q !== undefined ? next.q : query;
@@ -213,6 +215,8 @@ export default function BookverseCatalog({
     if (gcolor) params.set('gcolor', gcolor);
     if (gdir) params.set('gdir', gdir);
     if (gdemo) params.set('gdemo', gdemo);
+    const lng = next.language !== undefined ? next.language : language;
+    if (lng === 'sr' || lng === 'ru' || lng === 'en') params.set('language', lng);
     if (isFree) params.set('free', '1');
     if (per && per !== 'all') params.set('period', per);
     if (p > 1) params.set('page', String(p));
@@ -338,6 +342,14 @@ export default function BookverseCatalog({
             <p className="muted">{t.descs[initialSection]}</p>
           </div>
           <button className="btn tlp-filter-button" onClick={() => setFiltersOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v4M15 10v4M11 16v4"/></svg><span>{t.filters}{active.length ? ` ${active.length}` : ''}</span></button>
+        </div>
+
+        <div className="chips" style={{ marginBottom: 10 }}>
+          {([['', lang === 'ru' ? 'Все языки' : lang === 'en' ? 'All languages' : 'Svi jezici'],
+             ['sr', 'SR'], ['ru', 'RU'], ['en', 'EN']] as [string, string][]).map(([v, label]) => (
+            <button key={v || 'all'} className={`chip ${language === v ? 'selected' : ''}`}
+              onClick={() => go({ language: v, page: 1 })} aria-pressed={language === v}>{label}</button>
+          ))}
         </div>
 
         <div className="catalog-controls">

@@ -17,9 +17,9 @@ import PublisherLicenses from '@/components/PublisherLicenses';
 export const dynamic = 'force-dynamic';
 
 function money(cents: number, currency: string): string {
-  void currency; // отчёт всегда в RSD
   const n = Math.trunc(cents || 0);
-  return n % 100 === 0 ? `${n / 100} RSD` : `${(n / 100).toFixed(2).replace('.', ',')} RSD`;
+  const value = n % 100 === 0 ? `${n / 100}` : (n / 100).toFixed(2).replace('.', ',');
+  return `${value} ${currency || 'RSD'}`;
 }
 
 export default async function PublisherPage({

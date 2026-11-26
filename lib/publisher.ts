@@ -257,14 +257,28 @@ export function isMemberRole(v: unknown): v is MemberRole {
   return typeof v === 'string' && (MEMBER_ROLES as string[]).includes(v);
 }
 
+/** Матрица прав Publisher Studio: что может каждая роль. */
+export type PublisherCapability = 'staff' | 'finances' | 'catalog' | 'licenses';
+const CAPABILITIES: Record<MemberRole, PublisherCapability[]> = {
+  owner: ['staff', 'finances', 'catalog', 'licenses'],
+  manager: ['finances', 'catalog', 'licenses'],
+  member: ['catalog'],
+};
+
+export function can(role: string | null | undefined, capability: PublisherCapability): boolean {
+  if (role === 'admin') return true;
+  if (!isMemberRole(role)) return false;
+  return CAPABILITIES[role].includes(capability);
+}
+
 /** Кто управляет сотрудниками: только владелец издательства. */
 export function canManageStaff(role: string | null | undefined): boolean {
-  return role === 'owner';
+  return can(role, 'staff');
 }
 
 /** Кто правит лицензии, цены и права: владелец и менеджер. */
 export function canEditLicenses(role: string | null | undefined): boolean {
-  return role === 'owner' || role === 'manager';
+  return can(role, 'licenses');
 }
 
 export type PublisherMember = {

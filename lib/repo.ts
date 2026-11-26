@@ -40,6 +40,8 @@ export type ListWorksOpts = {
   aiUsages?: Array<'used' | 'no_ai' | 'not_declared' | 'assisted' | 'generated'>;
   /** Графическая литература: формат, цветность, направление, демография. */
   comicFormat?: string; colorMode?: string; readingDirection?: string; demographic?: string;
+  /** Язык произведения (оригинал): sr | ru | en. */
+  language?: string;
 };
 
 export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
@@ -87,6 +89,11 @@ export async function listWorks(opts: ListWorksOpts = {}): Promise<WorkCard[]> {
   if (wtype === 'novel' || wtype === 'comic') {
     params.push(wtype);
     where.push(`w.type = $${params.length}`);
+  }
+  const workLanguage = (opts.language || '').trim();
+  if (workLanguage === 'sr' || workLanguage === 'ru' || workLanguage === 'en') {
+    params.push(workLanguage);
+    where.push(`w.original_language = $${params.length}`);
   }
   if (source === 'publisher') where.push('w.publisher_id IS NOT NULL');
   if (source === 'selfpub') where.push("w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = FALSE");

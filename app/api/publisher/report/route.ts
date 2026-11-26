@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initSchema } from '@/lib/db';
 import { resolvePublisherScope } from '@/lib/publisher-guard';
-import { getPublisher, publisherReport } from '@/lib/publisher';
+import { can, getPublisher, memberRoleFor, publisherReport } from '@/lib/publisher';
+import { readSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,11 @@ function csvCell(v: string | number): string {
 export async function GET(req: Request) {
   const scope = await resolvePublisherScope(req);
   if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+  const role = scope.isAdmin ? 'owner' : await memberRoleFor(session.uid, scope.publisherId);
+  if (!can(role, 'finances')) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   await initSchema();
   const url = new URL(req.url);
