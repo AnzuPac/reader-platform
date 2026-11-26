@@ -42,10 +42,10 @@ const TXT: Record<Lang, {
   topTab: string; topDesc: string; periods: Record<'all'|'year'|'month'|'week', string>;
 }> = {
   sr: {
-    books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', manga: 'Grafička literatura',
-    titles: { books: 'Knjige izdavača', selfpub: 'Samizdat', fanfics: 'Fanfikcija', comics: 'Grafička literatura', top: 'Top' },
+    books: 'Knjige', selfpub: 'Samizdat', fanfics: 'Fanfikcija', manga: 'Grafička literatura',
+    titles: { books: 'Knjige', selfpub: 'Samizdat', fanfics: 'Fanfikcija', comics: 'Grafička literatura', top: 'Top' },
     eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
-    descs: { books: 'Knjige izdavačkih kuća.', selfpub: 'Dela koja autori objavljuju sami.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.', top: 'Najčitanije po periodu.' },
+    descs: { books: 'Knjige izdavača i samizdat.', selfpub: 'Dela koja autori objavljuju sami.', fanfics: 'Fandomi, AU, likovi i priče zajednice.', comics: 'Manga, manhva, vebtuni i stripovi.', top: 'Najčitanije po periodu.' },
     filters: 'Filteri', all: 'Sve', popular: 'Popularno', fresh: 'Novo', completed: 'Završeno', rated: 'Visok rejting',
     sort: 'Sortiranje', sortRecommend: 'Preporučeno', sortPopular: 'Popularno', sortNew: 'Najnovije', sortRating: 'Po rejtingu',
     apply: 'Prikaži rezultate', reset: 'Resetuj', genre: 'Žanrovi', tags: 'Tagovi', fandom: 'Fandom', source: 'Izvor', ai: 'AI sadržaj',
@@ -57,10 +57,10 @@ const TXT: Record<Lang, {
     topTab: 'Top', topDesc: 'Najčitanije po periodu — u svakoj kategoriji.', periods: { all: 'Sve vreme', year: 'Godina', month: 'Mesec', week: 'Nedelja' },
   },
   ru: {
-    books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', manga: 'Графическая литература',
-    titles: { books: 'Книги издательств', selfpub: 'Самиздат', fanfics: 'Фанфики', comics: 'Графическая литература', top: 'Топ' },
+    books: 'Книги', selfpub: 'Самиздат', fanfics: 'Фанфики', manga: 'Графическая литература',
+    titles: { books: 'Книги', selfpub: 'Самиздат', fanfics: 'Фанфики', comics: 'Графическая литература', top: 'Топ' },
     eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
-    descs: { books: 'Книги издательских домов.', selfpub: 'Произведения, которые авторы публикуют сами.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.', top: 'Самое читаемое по периоду.' },
+    descs: { books: 'Книги издательств и самиздат.', selfpub: 'Произведения, которые авторы публикуют сами.', fanfics: 'Фандомы, AU, персонажи и истории сообщества.', comics: 'Манга, манхва, вебтуны и комиксы.', top: 'Самое читаемое по периоду.' },
     filters: 'Фильтры', all: 'Все', popular: 'Популярное', fresh: 'Новинки', completed: 'Завершённые', rated: 'Высокий рейтинг',
     sort: 'Сортировка', sortRecommend: 'Рекомендованные', sortPopular: 'Популярные', sortNew: 'Сначала новые', sortRating: 'По рейтингу',
     apply: 'Показать результаты', reset: 'Сбросить', genre: 'Жанры', tags: 'Теги', fandom: 'Фандом', source: 'Источник', ai: 'AI-контент',
@@ -72,10 +72,10 @@ const TXT: Record<Lang, {
     topTab: 'Топ', topDesc: 'Самое читаемое по периоду — в каждой категории.', periods: { all: 'Всё время', year: 'Год', month: 'Месяц', week: 'Неделя' },
   },
   en: {
-    books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', manga: 'Graphic literature',
-    titles: { books: 'Publisher books', selfpub: 'Self-published', fanfics: 'Fan fiction', comics: 'Graphic literature', top: 'Top' },
+    books: 'Books', selfpub: 'Self-published', fanfics: 'Fan fiction', manga: 'Graphic literature',
+    titles: { books: 'Books', selfpub: 'Self-published', fanfics: 'Fan fiction', comics: 'Graphic literature', top: 'Top' },
     eyebrows: { books: 'TEROLIBRARY · PUBLISHERS', selfpub: 'TEROLIBRARY · SELF-PUBLISHED', fanfics: 'TEROLIBRARY · FANFICTION', comics: 'TEROLIBRARY · GRAPHIC LITERATURE', top: 'TEROLIBRARY · TOP' },
-    descs: { books: 'Books from publishing houses.', selfpub: 'Works authors publish themselves.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.', top: 'Most read by period.' },
+    descs: { books: 'Publisher books and self-published works.', selfpub: 'Works authors publish themselves.', fanfics: 'Fandoms, AUs, characters and community stories.', comics: 'Manga, manhwa, webtoons and comics.', top: 'Most read by period.' },
     filters: 'Filters', all: 'All', popular: 'Popular', fresh: 'New', completed: 'Completed', rated: 'Top rated',
     sort: 'Sort', sortRecommend: 'Recommended', sortPopular: 'Popular', sortNew: 'Newest', sortRating: 'By rating',
     apply: 'Show results', reset: 'Reset', genre: 'Genres', tags: 'Tags', fandom: 'Fandom', source: 'Source', ai: 'AI content',
@@ -252,8 +252,8 @@ export default function BookverseCatalog({
 
   if (initialSection === 'top') {
     const cats: { key: 'publisher' | 'selfpub' | 'fanfic' | 'graphic'; label: string; color: string; href: string }[] = [
-      { key: 'publisher', label: t.books, color: '#5b6779', href: `/${lang}/catalog?kind=publisher` },
-      { key: 'selfpub', label: t.selfpub, color: '#2f6fb7', href: `/${lang}/catalog?kind=selfpub` },
+      { key: 'publisher', label: t.books, color: '#5b6779', href: `/${lang}/catalog?source=publisher` },
+      { key: 'selfpub', label: t.selfpub, color: '#2f6fb7', href: `/${lang}/catalog?source=selfpub` },
       { key: 'fanfic', label: t.fanfics, color: '#9061c4', href: `/${lang}/catalog?kind=fanfic` },
       { key: 'graphic', label: t.manga, color: '#df843b', href: `/${lang}/catalog?kind=comic` },
     ];
@@ -263,7 +263,7 @@ export default function BookverseCatalog({
     return (
       <main id="main" className="shell">
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'fanfics', 'comics', 'top'] as SectionId[]).map((sec) => (
+          {(['books', 'fanfics', 'comics'] as SectionId[]).map((sec) => (
             <button
               key={sec}
               className={`subnav-btn subnav-btn--${SECTION_COLOR[sec]} ${sec === 'top' ? 'active' : ''}`}
@@ -306,7 +306,7 @@ export default function BookverseCatalog({
     <main id="main" className="shell">
       <div className={`tlp-cat-category tlp-catalog ${initialSection}`}>
         <nav className="subnav" aria-label="Categories">
-          {(['books', 'fanfics', 'comics', 'top'] as SectionId[]).map((s) => (
+          {(['books', 'fanfics', 'comics'] as SectionId[]).map((s) => (
             <button
               key={s}
               className={`subnav-btn subnav-btn--${SECTION_COLOR[s]} ${initialSection === s ? 'active' : ''}`}

@@ -58,7 +58,9 @@ export default async function CatalogPage({
       : typeParam === 'manga' || kind === 'comic' || kind === 'manga' ? 'comics'
         : typeParam === 'fanfic' || kind === 'fanfic' ? 'fanfics'
           : 'books';
-  const bookSource = kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub' : source;
+  const bookSource = kind === 'selfpub' || typeParam === 'selfpub' ? 'selfpub'
+    : kind === 'publisher' ? 'publisher'
+      : source;
 
   const periodRaw = str(sp.period);
   const period = periodRaw === 'year' || periodRaw === 'month' || periodRaw === 'week' ? periodRaw : 'all';
