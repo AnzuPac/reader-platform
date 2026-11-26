@@ -57,6 +57,17 @@ export default function SearchOverlay({ lang }: { lang: Lang }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const onGlobalKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onGlobalKey);
+    return () => window.removeEventListener('keydown', onGlobalKey);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     try {
       const raw = localStorage.getItem(HISTORY_KEY);
@@ -132,7 +143,7 @@ export default function SearchOverlay({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <button type="button" className="tlp-tool-button" aria-label={c.search} title={c.search} onClick={() => setOpen(true)}>
+      <button type="button" className="tlp-tool-button" aria-label={c.search} title={`${c.search} (Ctrl/⌘ K)`} aria-keyshortcuts="Control+K Meta+K" onClick={() => setOpen(true)}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg>
       </button>
       {open ? (

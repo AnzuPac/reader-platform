@@ -1,10 +1,26 @@
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import { isLang, t, type Lang } from '@/lib/i18n';
 import { readSession } from '@/lib/auth';
-import { listWorks, getContinueReading, listReadingHistory, listTags } from '@/lib/repo';
+import { listWorks, getContinueReading, listReadingHistory, listTags, type ListWorksOpts } from '@/lib/repo';
 import BookCoverCard from '@/components/bookverse/BookCoverCard';
 
 export const dynamic = 'force-dynamic';
+
+// Public homepage shelves are shared across visitors and change far less often
+// than per-user reading progress. A short cache reduces repeated catalog queries
+// without caching account-specific data or weakening access checks.
+const getHomepageWorks = unstable_cache(
+  async (options: ListWorksOpts) => listWorks(options).catch(() => []),
+  ['terolibrary-homepage-works-v1'],
+  { revalidate: 60, tags: ['homepage-works'] },
+);
+const getHomepageTags = unstable_cache(
+  async () => listTags(12).catch(() => []),
+  ['terolibrary-homepage-tags-v1'],
+  { revalidate: 120, tags: ['homepage-tags'] },
+);
+
 
 type Card = {
   id: number; slug: string; title: string; author_name: string;
@@ -31,9 +47,9 @@ const TXT: Record<Lang, {
   ctaTitle: string; ctaText: string; ctaBtn: string; completed: string; ongoing: string;
 }> = {
   sr: {
-    eyebrow: 'TVOJA SLEDEĆA PRIČA', heroTag: 'ČETIRI SVETA · JEDNA POLICA', featured: 'Izdvojene priče', explore: 'Istraži', heroTitle: 'Svetovi u koje se vraćaš', heroText: 'Knjige izdavača, samizdat, fanfikcija i grafička literatura. Nađi omiljeno, sakupi biblioteku i prati nove glave.',
+    eyebrow: 'TVOJA SLEDEĆA PRIČA', heroTag: 'TRI VRSTE SADRŽAJA · JEDNA POLICA', featured: 'Izdvojene priče', explore: 'Istraži', heroTitle: 'Svetovi u koje se vraćaš', heroText: 'Knjige izdavača, samizdat, fanfikcija i grafička literatura. Nađi omiljeno, sakupi biblioteku i prati nove glave.',
     discover: 'Otvori katalog', subscribe: 'Pretplata', continueReading: 'Nastavi čitanje', library: 'Moja biblioteka',
-    directions: 'Izaberi pravac', directionsSub: 'Četiri kataloga · jedna platforma',
+    directions: 'Izaberi pravac', directionsSub: 'Tri vrste sadržaja · jedna platforma',
     pubTitle: 'Knjige izdavača', pubText: 'Knjige izdavačkih kuća.',
     selfTitle: 'Samizdat', selfText: 'Dela koja autori objavljuju sami.',
     fanTitle: 'Fanfikcija', fanText: 'Fandomi, AU, likovi i priče zajednice.',
@@ -44,9 +60,9 @@ const TXT: Record<Lang, {
     completed: 'Završeno', ongoing: 'U toku',
   },
   ru: {
-    eyebrow: 'ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ', heroTag: 'ЧЕТЫРЕ МИРА · ОДНА БИБЛИОТЕКА', featured: 'Истории для тебя', explore: 'Исследовать', heroTitle: 'Миры, в которые хочется возвращаться', heroText: 'Книги издательств, самиздат, фанфики и графическая литература. Найди любимое, собери библиотеку и следи за новыми главами.',
+    eyebrow: 'ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ', heroTag: 'ТРИ ТИПА КОНТЕНТА · ОДНА БИБЛИОТЕКА', featured: 'Истории для тебя', explore: 'Исследовать', heroTitle: 'Миры, в которые хочется возвращаться', heroText: 'Книги издательств, самиздат, фанфики и графическая литература. Найди любимое, собери библиотеку и следи за новыми главами.',
     discover: 'Открыть каталог', subscribe: 'Подписка', continueReading: 'Продолжить чтение', library: 'Моя библиотека',
-    directions: 'Выбери направление', directionsSub: 'Четыре каталога · одна платформа',
+    directions: 'Выбери направление', directionsSub: 'Три типа контента · одна платформа',
     pubTitle: 'Книги издательств', pubText: 'Книги издательских домов.',
     selfTitle: 'Самиздат', selfText: 'Произведения, которые авторы публикуют сами.',
     fanTitle: 'Фанфики', fanText: 'Фандомы, AU, персонажи и новые прочтения.',
@@ -57,9 +73,9 @@ const TXT: Record<Lang, {
     completed: 'Завершено', ongoing: 'В процессе',
   },
   en: {
-    eyebrow: 'YOUR NEXT STORY', heroTag: 'FOUR WORLDS · ONE LIBRARY', featured: 'Featured stories', explore: 'Explore', heroTitle: 'Worlds worth returning to', heroText: 'Publisher books, self-published works, fan fiction and graphic literature. Find a favourite, build a library and follow new chapters.',
+    eyebrow: 'YOUR NEXT STORY', heroTag: 'THREE CONTENT TYPES · ONE LIBRARY', featured: 'Featured stories', explore: 'Explore', heroTitle: 'Worlds worth returning to', heroText: 'Publisher books, self-published works, fan fiction and graphic literature. Find a favourite, build a library and follow new chapters.',
     discover: 'Open catalog', subscribe: 'Subscription', continueReading: 'Continue reading', library: 'My library',
-    directions: 'Choose a direction', directionsSub: 'Four catalogs · one platform',
+    directions: 'Choose a direction', directionsSub: 'Three content types · one platform',
     pubTitle: 'Publisher books', pubText: 'Books from publishing houses.',
     selfTitle: 'Self-published', selfText: 'Works authors publish themselves.',
     fanTitle: 'Fan fiction', fanText: 'Fandoms, AUs, characters and fresh takes.',
@@ -109,8 +125,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   const x = TXT[l];
 
   const session = await readSession();
-  const cont = session ? await getContinueReading(session.uid).catch(() => null) : null;
-  const history = session ? await listReadingHistory(session.uid, 80).catch(() => []) : [];
+  const [cont, history] = session
+    ? await Promise.all([
+        getContinueReading(session.uid).catch(() => null),
+        // Recent history is sufficient for a homepage preference signal. Avoid loading 80 rows on every visit.
+        listReadingHistory(session.uid, 24).catch(() => []),
+      ])
+    : [null, []];
   const counts = { publisher: 0, selfpub: 0, fanfic: 0, graphic: 0 };
   for (const row of history) {
     if (row.kind === 'fanfic') counts.fanfic += 1;
@@ -122,32 +143,32 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     ? (Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as keyof typeof counts)
     : null;
   const forYou = topCategory
-    ? await listWorks(
+    ? await getHomepageWorks(
         topCategory === 'publisher' ? { type: 'novel', source: 'publisher', sort: 'rating', limit: 10 }
           : topCategory === 'selfpub' ? { type: 'novel', source: 'selfpub', sort: 'rating', limit: 10 }
             : topCategory === 'fanfic' ? { fanfic: true, sort: 'rating', limit: 10 }
               : { type: 'comic', sort: 'rating', limit: 10 },
-      ).catch(() => [])
+      )
     : [];
 
   const [pubRec, pubTop, selfRec, selfTop, fanRec, fanTop, graphicRec, graphicTop] = await Promise.all([
-    listWorks({ type: 'novel', source: 'publisher', sort: 'new', limit: 5 }).catch(() => []),
-    listWorks({ type: 'novel', source: 'publisher', sort: 'views', limit: 5 }).catch(() => []),
-    listWorks({ type: 'novel', source: 'selfpub', sort: 'new', limit: 5 }).catch(() => []),
-    listWorks({ type: 'novel', source: 'selfpub', sort: 'views', limit: 5 }).catch(() => []),
-    listWorks({ fanfic: true, sort: 'new', limit: 5 }).catch(() => []),
-    listWorks({ fanfic: true, sort: 'views', limit: 5 }).catch(() => []),
-    listWorks({ type: 'comic', sort: 'new', limit: 5 }).catch(() => []),
-    listWorks({ type: 'comic', sort: 'views', limit: 5 }).catch(() => []),
+    getHomepageWorks({ type: 'novel', source: 'publisher', sort: 'new', limit: 5 }),
+    getHomepageWorks({ type: 'novel', source: 'publisher', sort: 'views', limit: 5 }),
+    getHomepageWorks({ type: 'novel', source: 'selfpub', sort: 'new', limit: 5 }),
+    getHomepageWorks({ type: 'novel', source: 'selfpub', sort: 'views', limit: 5 }),
+    getHomepageWorks({ fanfic: true, sort: 'new', limit: 5 }),
+    getHomepageWorks({ fanfic: true, sort: 'views', limit: 5 }),
+    getHomepageWorks({ type: 'comic', sort: 'new', limit: 5 }),
+    getHomepageWorks({ type: 'comic', sort: 'views', limit: 5 }),
   ]);
 
   const heroItems = [pubRec[0], selfRec[0], fanRec[0]].filter(Boolean) as Card[];
   const recommendedItems = (forYou.length ? forYou : [...pubTop.slice(0, 2), ...selfTop.slice(0, 2), ...fanTop.slice(0, 2), ...graphicTop.slice(0, 2)]) as Card[];
-  const popularTags = await listTags(12).catch(() => []);
+  const popularTags = await getHomepageTags();
 
   const sections = [
-    { key: 'publisher', title: x.pubTitle, rec: pubRec as Card[], top: pubTop as Card[], href: `/${l}/catalog?kind=publisher`, color: COLORS.publisher, topTitle: x.topPub },
-    { key: 'selfpub', title: x.selfTitle, rec: selfRec as Card[], top: selfTop as Card[], href: `/${l}/catalog?kind=selfpub`, color: COLORS.selfpub, topTitle: x.topSelf },
+    { key: 'publisher', title: x.pubTitle, rec: pubRec as Card[], top: pubTop as Card[], href: `/${l}/catalog?kind=books&source=publisher`, color: COLORS.publisher, topTitle: x.topPub },
+    { key: 'selfpub', title: x.selfTitle, rec: selfRec as Card[], top: selfTop as Card[], href: `/${l}/catalog?kind=books&source=selfpub`, color: COLORS.selfpub, topTitle: x.topSelf },
     { key: 'fanfic', title: x.fanTitle, rec: fanRec as Card[], top: fanTop as Card[], href: `/${l}/catalog?kind=fanfic`, color: COLORS.fanfic, topTitle: x.topFan },
     { key: 'graphic', title: x.graphicTitle, rec: graphicRec as Card[], top: graphicTop as Card[], href: `/${l}/catalog?kind=comic`, color: COLORS.graphic, topTitle: x.topGraphic },
   ];
@@ -156,11 +177,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     <main id="main" className="shell">
       <nav className="tl-home-mobile-categories" aria-label={l === 'ru' ? 'Категории' : l === 'en' ? 'Categories' : 'Kategorije'}>
         <Link href={`/${l}/catalog`} className="is-active">{l === 'ru' ? 'Книги' : l === 'en' ? 'Books' : 'Knjige'}</Link>
-        <Link href={`/${l}/catalog?kind=selfpub`}>{x.selfTitle}</Link>
         <Link href={`/${l}/catalog?kind=fanfic`}>{x.fanTitle}</Link>
         <Link href={`/${l}/catalog?kind=comic`}>{x.graphicTitle}</Link>
       </nav>
 
+      <div className="tl-home-desktop-intro">
       <section className="tl-home-hero">
         <div className="tl-home-hero-copy">
           <span className="tl-home-kicker">{x.heroTag}</span>
@@ -180,7 +201,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             {heroItems.map((w, i) => (
               <Link key={w.id} href={`/${l}/work/${w.slug}`} className={`tl-home-feature-cover tl-home-feature-cover-${i}`} aria-label={`${w.title} — ${w.author_name}`} title={`${w.title} — ${w.author_name}`}>
                 <div className={`cover ${tone(w)}`}>
-            {w.cover_path ? <img className="book-cover-image" src={w.cover_path} alt="" loading="lazy" /> : null}
+            {w.cover_path ? <img className="book-cover-image" src={w.cover_path} alt="" loading="lazy" decoding="async" /> : null}
           </div>
               </Link>
             ))}
@@ -188,6 +209,26 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <div className="tl-home-feature-label"><span className="tl-home-feature-icon">✦</span><div><strong>{x.featured}</strong><span>{l === 'ru' ? 'Подборка из каталога' : l === 'en' ? 'Selected from the catalog' : 'Izbor iz kataloga'}</span></div></div>
         </div>
       </section>
+      <aside className="tl-home-desktop-rail" aria-label={l === 'ru' ? 'Быстрый доступ' : l === 'en' ? 'Quick discovery' : 'Brzo otkrivanje'}>
+        <div className="tl-home-rail-heading">
+          <span className="eyebrow">TEROLIBRARY</span>
+          <h2>{l === 'ru' ? 'Найди свою историю' : l === 'en' ? 'Find your next story' : 'Pronađi svoju priču'}</h2>
+          <p>{l === 'ru' ? 'Переходи сразу к нужному типу произведений.' : l === 'en' ? 'Jump straight into the kind of stories you enjoy.' : 'Odmah pređi na vrstu priča koju voliš.'}</p>
+        </div>
+        <div className="tl-home-rail-links">
+          <Link href={`/${l}/catalog?kind=books`}><span className="tl-home-rail-icon">▤</span><span>{l === 'ru' ? 'Книги' : l === 'en' ? 'Books' : 'Knjige'}<small>{l === 'ru' ? 'Издательства и самиздат' : l === 'en' ? 'Publishers and self-published' : 'Izdavači i samizdat'}</small></span><b>↗</b></Link>
+          <Link href={`/${l}/catalog?kind=fanfic`}><span className="tl-home-rail-icon is-fanfic">✦</span><span>{x.fanTitle}<small>{l === 'ru' ? 'Фэндомы и персонажи' : l === 'en' ? 'Fandoms and characters' : 'Fandomi i likovi'}</small></span><b>↗</b></Link>
+          <Link href={`/${l}/catalog?kind=comic`}><span className="tl-home-rail-icon is-graphic">▧</span><span>{x.graphicTitle}<small>{l === 'ru' ? 'Манга, манхва и вебтуны' : l === 'en' ? 'Manga, manhwa and webtoons' : 'Manga, manhwa i vebtuni'}</small></span><b>↗</b></Link>
+          <Link href={`/${l}/catalog?kind=top`}><span className="tl-home-rail-icon is-top">★</span><span>{l === 'ru' ? 'Топ произведений' : l === 'en' ? 'Top stories' : 'Top dela'}<small>{l === 'ru' ? 'Что читают сейчас' : l === 'en' ? 'What readers enjoy now' : 'Šta se sada čita'}</small></span><b>↗</b></Link>
+        </div>
+        {popularTags.filter((tag) => tag.count > 0).length ? (
+          <div className="tl-home-rail-tags">
+            <div className="tl-home-rail-tags-head"><strong>{l === 'ru' ? 'Популярные теги' : l === 'en' ? 'Popular tags' : 'Popularne oznake'}</strong><Link href={`/${l}/catalog`}>{l === 'ru' ? 'Все' : l === 'en' ? 'All' : 'Sve'} →</Link></div>
+            <div className="tl-home-tag-cloud">{popularTags.filter((tag) => tag.count > 0).slice(0, 8).map((tag) => <Link key={tag.slug} href={`/${l}/catalog?tag=${encodeURIComponent(tag.slug)}`} className="tl-home-tag-chip">#{tag.name}</Link>)}</div>
+          </div>
+        ) : null}
+      </aside>
+      </div>
 
       <section className="section tl-home-foryou">
         <div className="sectionhead">
@@ -215,12 +256,9 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       ) : null}
 
       <div className="tl-home-quicklinks" aria-label={x.directions}>
-        {sections.map((s) => (
-          <Link key={s.key} href={s.href} className={`tl-home-quicklink tl-home-quicklink-${s.key}`}>
-            <span className="tl-home-quicklink-mark">{s.key === 'publisher' ? '▤' : s.key === 'selfpub' ? '✎' : s.key === 'fanfic' ? '✦' : '▧'}</span>
-            <span>{s.title}</span><span className="tl-home-quicklink-arrow">↗</span>
-          </Link>
-        ))}
+        <Link href={`/${l}/catalog?kind=books`} className="tl-home-quicklink tl-home-quicklink-books"><span className="tl-home-quicklink-mark">▤</span><span>{l === 'ru' ? 'Книги' : l === 'en' ? 'Books' : 'Knjige'}</span><span className="tl-home-quicklink-arrow">↗</span></Link>
+        <Link href={`/${l}/catalog?kind=fanfic`} className="tl-home-quicklink tl-home-quicklink-fanfic"><span className="tl-home-quicklink-mark">✦</span><span>{x.fanTitle}</span><span className="tl-home-quicklink-arrow">↗</span></Link>
+        <Link href={`/${l}/catalog?kind=comic`} className="tl-home-quicklink tl-home-quicklink-graphic"><span className="tl-home-quicklink-mark">▧</span><span>{x.graphicTitle}</span><span className="tl-home-quicklink-arrow">↗</span></Link>
       </div>
 
       {cont ? (
@@ -242,14 +280,20 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <span className="muted">{x.directionsSub}</span>
         </div>
         <div className="tl-home-directions-grid">
-          {sections.map((s) => (
-            <Link key={s.key} href={s.href} className={`tl-home-direction-card tl-home-direction-${s.key}`} style={{ borderTop: `3px solid ${s.color.line}` }}>
-              <div className="eyebrow" style={{ color: s.color.fg }}>{s.key === 'publisher' ? 'PUBLISHERS' : s.key === 'selfpub' ? 'SELF-PUBLISHED' : s.key === 'fanfic' ? 'FANFICTION' : 'GRAPHIC LITERATURE'}</div>
-              <h2>{s.title}</h2>
-              <p className="muted" style={{ marginTop: 6 }}>{s.key === 'publisher' ? x.pubText : s.key === 'selfpub' ? x.selfText : s.key === 'fanfic' ? x.fanText : x.graphicText}</p>
-              <span className="tl-home-direction-action">{x.openCatalog} <span>↗</span></span>
-            </Link>
-          ))}
+          <Link href={`/${l}/catalog?kind=books`} className="tl-home-direction-card tl-home-direction-books" style={{ borderTop: `3px solid ${COLORS.publisher.line}` }}>
+            <div className="eyebrow" style={{ color: COLORS.publisher.fg }}>{l === 'ru' ? 'ИЗДАТЕЛЬСТВА И САМИЗДАТ' : l === 'en' ? 'PUBLISHERS & SELF-PUBLISHED' : 'IZDAVAČI I SAMIZDAT'}</div>
+            <h2>{l === 'ru' ? 'Книги' : l === 'en' ? 'Books' : 'Knjige'}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{l === 'ru' ? 'Издательские произведения и независимые авторы в одном каталоге.' : l === 'en' ? 'Publisher titles and independent creators in one catalog.' : 'Izdavačka dela i nezavisni autori u jednom katalogu.'}</p>
+            <span className="tl-home-direction-action">{x.openCatalog} <span>↗</span></span>
+          </Link>
+          <Link href={`/${l}/catalog?kind=fanfic`} className="tl-home-direction-card tl-home-direction-fanfic" style={{ borderTop: `3px solid ${COLORS.fanfic.line}` }}>
+            <div className="eyebrow" style={{ color: COLORS.fanfic.fg }}>FANFICTION</div><h2>{x.fanTitle}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{x.fanText}</p><span className="tl-home-direction-action">{x.openCatalog} <span>↗</span></span>
+          </Link>
+          <Link href={`/${l}/catalog?kind=comic`} className="tl-home-direction-card tl-home-direction-graphic" style={{ borderTop: `3px solid ${COLORS.graphic.line}` }}>
+            <div className="eyebrow" style={{ color: COLORS.graphic.fg }}>GRAPHIC LITERATURE</div><h2>{x.graphicTitle}</h2>
+            <p className="muted" style={{ marginTop: 6 }}>{x.graphicText}</p><span className="tl-home-direction-action">{x.openCatalog} <span>↗</span></span>
+          </Link>
         </div>
       </div>
 

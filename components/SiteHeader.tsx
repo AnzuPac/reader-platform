@@ -6,54 +6,41 @@ import AppearanceSwitcher from '@/components/AppearanceSwitcher';
 import type { Lang } from '@/lib/i18n';
 import type { Session } from '@/lib/auth';
 import DirectionTabs from '@/components/DirectionTabs';
+import DesktopPrimaryNav from '@/components/DesktopPrimaryNav';
 import SearchOverlay from '@/components/SearchOverlay';
 
 const COPY: Record<Lang, {
-  home: string; publisher: string; selfpub: string; fanfic: string; graphic: string; top: string;
-  search: string; searchPlaceholder: string; notifications: string; wallet: string; signIn: string;
-  profile: string; directions: string; literature: string; catalog: string; myLibrary: string;
+  books: string; fanfic: string; graphic: string; search: string; notifications: string; wallet: string;
+  signIn: string; profile: string; directions: string; myLibrary: string;
 }> = {
-  sr: {
-    home: 'Početna', publisher: 'Izdavači', selfpub: 'Samizdat', fanfic: 'Fanfikcija', graphic: 'Strip i manga', top: 'Top',
-    search: 'Pretraga', searchPlaceholder: 'Pretraži knjigu, autora ili fandom', notifications: 'Obaveštenja', wallet: 'Novčanik',
-    signIn: 'Prijava', profile: 'Profil', directions: 'Pravci čitanja', literature: 'Literatura', catalog: 'Katalog', myLibrary: 'Moja biblioteka',
-  },
-  ru: {
-    home: 'Главная', publisher: 'Издательства', selfpub: 'Самиздат', fanfic: 'Фанфики', graphic: 'Комиксы и манга', top: 'Топ',
-    search: 'Поиск', searchPlaceholder: 'Найти книгу, автора или фандом', notifications: 'Уведомления', wallet: 'Кошелёк',
-    signIn: 'Войти', profile: 'Профиль', directions: 'Направления чтения', literature: 'Литература', catalog: 'Каталог', myLibrary: 'Моя библиотека',
-  },
-  en: {
-    home: 'Home', publisher: 'Publishers', selfpub: 'Self-published', fanfic: 'Fan fiction', graphic: 'Comics & manga', top: 'Top',
-    search: 'Search', searchPlaceholder: 'Search books, authors or fandoms', notifications: 'Notifications', wallet: 'Wallet',
-    signIn: 'Sign in', profile: 'Profile', directions: 'Browse sections', literature: 'Literature', catalog: 'Catalog', myLibrary: 'My library',
-  },
+  sr: { books: 'Knjige', fanfic: 'Fanfikcija', graphic: 'Grafička literatura', search: 'Pretraga', notifications: 'Obaveštenja', wallet: 'Novčanik', signIn: 'Prijava', profile: 'Profil', directions: 'Vrste sadržaja', myLibrary: 'Moja biblioteka' },
+  ru: { books: 'Книги', fanfic: 'Фанфики', graphic: 'Графическая литература', search: 'Поиск', notifications: 'Уведомления', wallet: 'Кошелёк', signIn: 'Войти', profile: 'Профиль', directions: 'Типы контента', myLibrary: 'Моя библиотека' },
+  en: { books: 'Books', fanfic: 'Fan fiction', graphic: 'Graphic literature', search: 'Search', notifications: 'Notifications', wallet: 'Wallet', signIn: 'Sign in', profile: 'Profile', directions: 'Content types', myLibrary: 'My library' },
 };
 
-export default function SiteHeader({
-  lang, session, walletLabel, notificationCount,
-}: {
-  lang: Lang;
-  session: Session | null;
-  walletLabel: string | null;
-  notificationCount: number;
+export default function SiteHeader({ lang, session, walletLabel, notificationCount }: {
+  lang: Lang; session: Session | null; walletLabel: string | null; notificationCount: number;
 }) {
   const c = COPY[lang];
   const profileHref = session ? `/${lang}/u/${session.uid}` : `/${lang}/login`;
   return (
-    <>
-      <header className="top tlp-site-header" role="banner">
+    <header className="top tlp-site-header" role="banner">
+      <div className="tlp-header-main-row">
         <Link href={`/${lang}`} className="brand" aria-label="TeroLibrary — home">
-          <span className="logo tlp-brand-mark" aria-hidden="true">
-            <span className="tlp-brand-mark__art" />
-          </span>
+          <span className="logo tlp-brand-mark" aria-hidden="true"><span className="tlp-brand-mark__art" /></span>
           <span>terolibrary</span>
         </Link>
 
-<Suspense fallback={<nav className="tlp-main-navigation" aria-label={c.directions} />}><DirectionTabs lang={lang} labels={c} /></Suspense>
+        <Suspense fallback={<nav className="tlp-desktop-primary-nav" aria-hidden="true" />}>
+          <DesktopPrimaryNav lang={lang} />
+        </Suspense>
 
         <div className="right tlp-header-tools">
           <SearchOverlay lang={lang} />
+          <Link href={`/${lang}/library`} className="tlp-tool-button tlp-library-tool" aria-label={c.myLibrary} title={c.myLibrary}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 6h13M8 7v13"/></svg>
+            <span className="tlp-library-tool-label">{c.myLibrary}</span>
+          </Link>
           <Suspense fallback={null}><MobileHeaderMenu lang={lang} /></Suspense>
           <Suspense fallback={<span className="tlp-header-language-placeholder" />}><LanguageSwitcher lang={lang} className="tlp-header-language" /></Suspense>
           <AppearanceSwitcher lang={lang} />
@@ -64,19 +51,23 @@ export default function SiteHeader({
           {session ? (
             <>
               <Link href={`/${lang}/account`} className="tlp-wallet-link" title={c.wallet}>
-                <span className="tlp-wallet-symbol" aria-hidden="true">●</span>
-                <span className="tlp-wallet-value">{walletLabel || c.wallet}</span>
+                <span className="tlp-wallet-symbol" aria-hidden="true">●</span><span className="tlp-wallet-value">{walletLabel || c.wallet}</span>
               </Link>
               <Link href={profileHref} className="tlp-profile-link" title={c.profile}>
                 <span className="tlp-profile-avatar" aria-hidden="true">{session.name.trim().slice(0, 1).toLocaleUpperCase() || '☺'}</span>
                 <span className="tlp-profile-name">{session.name}</span>
               </Link>
             </>
-          ) : (
-            <Link href={`/${lang}/login`} className="btn primary tlp-sign-in">{c.signIn}</Link>
-          )}
+          ) : <Link href={`/${lang}/login`} className="btn primary tlp-sign-in">{c.signIn}</Link>}
         </div>
-      </header>
-    </>
+      </div>
+
+      <div className="tlp-header-discover-row">
+        <Suspense fallback={<nav className="tlp-main-navigation" aria-label={c.directions} />}>
+          <DirectionTabs lang={lang} labels={c} />
+        </Suspense>
+        <span className="tlp-header-discover-hint">{lang === 'ru' ? 'Истории, которые хочется дочитать' : lang === 'en' ? 'Stories worth staying for' : 'Priče kojima se vraćaš'}</span>
+      </div>
+    </header>
   );
 }

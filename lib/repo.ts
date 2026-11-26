@@ -480,9 +480,10 @@ export async function countLibraryUpdates(userId: number, days = 7): Promise<num
 /* ───────────── Топы по периодам ───────────── */
 
 export type TopPeriod = 'all' | 'year' | 'month' | 'week';
-export type TopCategory = 'publisher' | 'selfpub' | 'fanfic' | 'graphic';
+export type TopCategory = 'books' | 'publisher' | 'selfpub' | 'fanfic' | 'graphic';
 
 const TOP_CATEGORY_SQL: Record<TopCategory, string> = {
+  books: "w.kind <> 'fanfic' AND w.type <> 'comic'",
   publisher: "w.publisher_id IS NOT NULL AND w.kind <> 'fanfic'",
   selfpub: "w.publisher_id IS NULL AND w.kind <> 'fanfic' AND w.is_classic = FALSE",
   fanfic: "w.kind = 'fanfic'",
@@ -498,42 +499,66 @@ export async function recordWorkView(workId: number): Promise<void> {
   } catch { /* ignore */ }
 }
 
-/** Топ произведений категории за период.
- *  «Всё время» — по суммарному счётчику; год/месяц/неделя — по событиям work_views. */
+export type TopRank = 'views' | 'rating' | 'saved' | 'discussed' | 'fresh';
+
+/** Top lists use existing platform signals only; no synthetic popularity values. */
 export async function listTopWorks(opts: {
-  period?: TopPeriod; category?: TopCategory; limit?: number;
+  period?: TopPeriod; category?: TopCategory; rank?: TopRank; limit?: number;
 } = {}): Promise<WorkCard[]> {
   await ensure();
   const period = opts.period || 'all';
   const category = opts.category || 'publisher';
+  const rank = opts.rank || 'views';
   const limit = Math.max(1, Math.min(opts.limit ?? 10, 50));
   const cat = TOP_CATEGORY_SQL[category];
-
   const base = `SELECT w.id, w.slug, w.title, w.description, w.rating_avg, w.words_total, w.views_total,
                  w.age_rating, w.completion, w.cover_path, w.type, w.kind,
                  CASE WHEN w.kind = 'fanfic' THEN 'fanfic' WHEN w.type = 'comic' THEN 'manga' ELSE 'book' END AS category,
                  w.is_classic, w.publisher_id, w.ai_usage, u.display_name AS author_name
                  FROM works w JOIN users u ON u.id = w.author_id`;
-
-  if (period === 'all') {
-    return query<WorkCard>(
-      `${base} WHERE w.status = 'published' AND ${cat}
-        ORDER BY w.views_total DESC, w.rating_avg DESC LIMIT $1`,
-      [limit],
-    );
-  }
-
   const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
   const pg = Boolean(process.env.DATABASE_URL);
   const cutoff = pg ? `NOW() - INTERVAL '${days} days'` : `datetime('now','-${days} days')`;
+  const timed = period !== 'all';
+  const baseWhere = `w.status = 'published' AND ${cat}`;
 
+  if (rank === 'fresh') {
+    return query<WorkCard>(
+      `${base} WHERE ${baseWhere}${timed ? ` AND w.published_at >= ${cutoff}` : ''}
+       ORDER BY CASE WHEN w.published_at IS NULL THEN 1 ELSE 0 END, w.published_at DESC, w.id DESC LIMIT $1`, [limit],
+    );
+  }
+  if (rank === 'rating') {
+    if (!timed) return query<WorkCard>(
+      `${base} WHERE ${baseWhere} ORDER BY w.rating_avg DESC, w.ratings_count DESC, w.views_total DESC LIMIT $1`, [limit],
+    );
+    return query<WorkCard>(
+      `${base} JOIN ratings r ON r.work_id = w.id
+       WHERE ${baseWhere} AND r.created_at >= ${cutoff}
+       GROUP BY w.id, u.id ORDER BY AVG(r.value) DESC, COUNT(r.user_id) DESC LIMIT $1`, [limit],
+    );
+  }
+  if (rank === 'saved') {
+    return query<WorkCard>(
+      `${base} LEFT JOIN library_items li ON li.work_id = w.id${timed ? ` AND li.created_at >= ${cutoff}` : ''}
+       WHERE ${baseWhere} GROUP BY w.id, u.id
+       ORDER BY COUNT(li.user_id) DESC, w.views_total DESC LIMIT $1`, [limit],
+    );
+  }
+  if (rank === 'discussed') {
+    return query<WorkCard>(
+      `${base} LEFT JOIN comments c ON c.work_id = w.id AND c.status = 'visible'${timed ? ` AND c.created_at >= ${cutoff}` : ''}
+       WHERE ${baseWhere} GROUP BY w.id, u.id
+       ORDER BY COUNT(c.id) DESC, w.views_total DESC LIMIT $1`, [limit],
+    );
+  }
+  if (!timed) return query<WorkCard>(
+    `${base} WHERE ${baseWhere} ORDER BY w.views_total DESC, w.rating_avg DESC LIMIT $1`, [limit],
+  );
   return query<WorkCard>(
     `${base} JOIN work_views v ON v.work_id = w.id
-      WHERE w.status = 'published' AND ${cat} AND v.created_at >= ${cutoff}
-      GROUP BY w.id
-      ORDER BY COUNT(v.id) DESC, w.views_total DESC
-      LIMIT $1`,
-    [limit],
+      WHERE ${baseWhere} AND v.created_at >= ${cutoff}
+      GROUP BY w.id, u.id ORDER BY COUNT(v.id) DESC, w.views_total DESC LIMIT $1`, [limit],
   );
 }
 

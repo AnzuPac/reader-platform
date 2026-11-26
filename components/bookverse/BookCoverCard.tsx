@@ -29,7 +29,7 @@ export default function BookCoverCard({
     <article className={`book tlp-book-cover-card${revealed ? ' is-revealed' : ''}`}>
       <div className={`tlp-book-cover-frame cover ${tone}`}>
         <Link href={href} className="tlp-book-cover-link" aria-label={`${title} — ${author}`}>
-          {cover ? <img className="book-cover-image" src={cover} alt="" loading="lazy" /> : null}
+          {cover ? <img className="book-cover-image" src={cover} alt="" loading="lazy" decoding="async" /> : null}
           {aiLabel ? <span className="ai-badge ai-badge--unknown">{aiLabel}</span> : null}
           {categoryLabel ? <span className="book-cover-category">{categoryLabel}</span> : null}
         </Link>

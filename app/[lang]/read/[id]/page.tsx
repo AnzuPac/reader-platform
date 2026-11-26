@@ -70,13 +70,26 @@ export default async function ReadPage({
         <span>·</span>
         <span>{l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {ch.number}</span>
       </div>
-      <details className="card mb-6 px-4 py-3">
+      <div className="tlp-reader-desktop-layout">
+        <aside className="tlp-reader-toc" aria-label={l === 'ru' ? 'Оглавление' : l === 'en' ? 'Table of contents' : 'Sadržaj'}>
+          <div className="tlp-reader-side-heading">{l === 'ru' ? 'Содержание' : l === 'en' ? 'Contents' : 'Sadržaj'}</div>
+          <div className="tlp-reader-toc-work">{ch.work_title}</div>
+          <nav>
+            {chapters.map((c) => (
+              <Link key={c.id} href={`/${l}/read/${c.id}`} className={c.id === ch.id ? 'is-current' : ''} aria-current={c.id === ch.id ? 'page' : undefined}>
+                <span>{c.number}.</span><span>{c.title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${c.number}`}</span>{c.access !== 'free' ? <span aria-label="Locked">⌑</span> : null}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+        <div className="tlp-reader-content-column">
+      <details className="card mb-6 px-4 py-3 tlp-reader-mobile-contents">
         <summary className="cursor-pointer text-sm font-semibold">{l === 'ru' ? 'Содержание' : l === 'en' ? 'Contents' : 'Sadržaj'} · {chapters.length} {l === 'ru' ? 'глав' : l === 'en' ? 'chapters' : 'glava'}</summary>
         <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto text-sm">
           {chapters.map((c) => (
             <li key={c.id}>
               <Link href={`/${l}/read/${c.id}`}
-                className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-[#221a35] ${c.id === ch.id ? 'text-brand' : 'text-mist'}`}>
+                className={`flex items-center gap-2 rounded px-2 py-1 tlp-reader-chapter-hover ${c.id === ch.id ? 'text-brand' : 'text-mist'}`}>
                 <span className="w-8">{c.number}.</span>
                 <span className="flex-1">{c.title || `${l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} ${c.number}`}</span>
                 {c.access !== 'free' ? <span className="text-xs">🔒</span> : null}
@@ -111,17 +124,15 @@ export default async function ReadPage({
         <div className="card p-6">
           {gate.reason === 'payment_required' ? (
             <>
-              <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava se kupuje</h2>
-              <p className="muted mb-4">
-                Kupi glavu za novčiće ili celu knjigu u dinarima — pristup ostaje tvoj zauvek.
-              </p>
+              <h2 className="mb-2 text-lg font-semibold">{l === 'ru' ? '🔒 Эта глава платная' : l === 'en' ? '🔒 This chapter is paid' : '🔒 Ova glava se kupuje'}</h2>
+              <p className="muted mb-4">{l === 'ru' ? 'Купи главу за монеты или всю книгу за динары. Доступ останется у тебя.' : l === 'en' ? 'Buy this chapter with coins or the whole book in RSD. Access remains yours.' : 'Kupi glavu za novčiće ili celu knjigu u dinarima — pristup ostaje tvoj zauvek.'}</p>
               <div className="flex flex-wrap items-center gap-3">
                 {chapterCoins > 0 ? (
                   <ChapterBuyButton
                     chapterId={ch.id}
                     coins={chapterCoins}
                     priceLabel={coinsWithRsd(chapterCoins)}
-                    label="Kupi glavu"
+                    label={l === 'ru' ? 'Купить главу' : l === 'en' ? 'Buy chapter' : 'Kupi glavu'}
                   />
                 ) : null}
                 {bookPrice ? (
@@ -130,7 +141,7 @@ export default async function ReadPage({
                     priceCents={bookPrice.amount_cents}
                     currency={bookPrice.currency}
                     lang={l}
-                    label="Kupi celu knjigu"
+                    label={l === 'ru' ? 'Купить всю книгу' : l === 'en' ? 'Buy the whole book' : 'Kupi celu knjigu'}
                   />
                 ) : null}
                 {session ? null : (
@@ -140,15 +151,15 @@ export default async function ReadPage({
             </>
           ) : gate.reason === 'login_required' ? (
             <>
-              <h2 className="mb-2 text-lg font-semibold">🔒 Prijavi se da nastaviš</h2>
-              <p className="muted mb-4">Ova glava je dostupna prijavljenim čitaocima.</p>
+              <h2 className="mb-2 text-lg font-semibold">{l === 'ru' ? '🔒 Войди, чтобы продолжить' : l === 'en' ? '🔒 Sign in to continue' : '🔒 Prijavi se da nastaviš'}</h2>
+              <p className="muted mb-4">{l === 'ru' ? 'Эта глава доступна авторизованным читателям.' : l === 'en' ? 'This chapter is available to signed-in readers.' : 'Ova glava je dostupna prijavljenim čitaocima.'}</p>
               <Link href={`/${l}/login`} className="btn btn-primary inline-flex">{l === 'ru' ? 'Вход' : l === 'en' ? 'Sign in' : 'Prijava'}</Link>
             </>
           ) : (
             <>
-              <h2 className="mb-2 text-lg font-semibold">🔒 Ova glava je za pretplatnike</h2>
-              <p className="muted">Pretplati se da nastaviš čitanje. Prve glave su uvek besplatne.</p>
-              <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">Pretplata</Link>
+              <h2 className="mb-2 text-lg font-semibold">{l === 'ru' ? '🔒 Эта глава доступна по подписке' : l === 'en' ? '🔒 This chapter requires a subscription' : '🔒 Ova glava je za pretplatnike'}</h2>
+              <p className="muted">{l === 'ru' ? 'Оформи подписку, чтобы продолжить чтение. Первые главы всегда бесплатны.' : l === 'en' ? 'Subscribe to continue reading. The opening chapters are always free.' : 'Pretplati se da nastaviš čitanje. Prve glave su uvek besplatne.'}</p>
+              <Link href={`/${l}/subscribe`} className="btn btn-primary mt-4 inline-flex">{l === 'ru' ? 'Оформить подписку' : l === 'en' ? 'Subscribe' : 'Pretplata'}</Link>
             </>
           )}
         </div>
@@ -177,7 +188,7 @@ export default async function ReadPage({
       {!locked && canDonate ? (
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <DonateButton workId={ch.work_id} chapterId={ch.id} authorName={ch.work_title} lang={l} />
-          <span className="text-xs muted">Podrška ide autoru, ne platformi.</span>
+          <span className="text-xs muted">{l === 'ru' ? 'Поддержка поступает автору, а не платформе.' : l === 'en' ? 'Your support goes to the author, not the platform.' : 'Podrška ide autoru, ne platformi.'}</span>
         </div>
       ) : null}
 
@@ -195,12 +206,27 @@ export default async function ReadPage({
       {!locked && ch.work_type !== 'comic' ? <ChapterAnnotations chapterId={ch.id} /> : null}
       <ReaderClient chapterId={ch.id} workId={ch.work_id} />
       <Comments workId={ch.work_id} chapterId={ch.id} />
-      <ReaderSettings />
 
       <nav className="mt-12 flex items-center justify-between text-sm">
         {prev ? <Link className="btn btn-ghost" href={`/${l}/read/${prev.id}`}>← {l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {prev.number}</Link> : <span />}
         {next ? <Link className="btn btn-ghost" href={`/${l}/read/${next.id}`}>{l === 'ru' ? 'Глава' : l === 'en' ? 'Chapter' : 'Glava'} {next.number} →</Link> : <span />}
       </nav>
+        </div>
+        <aside className="tlp-reader-context-rail">
+          <section className="tlp-reader-context-card">
+            <span className="eyebrow">TEROLIBRARY</span>
+            <strong>{ch.work_title}</strong>
+            <span className="muted">{l === 'ru' ? `Глава ${ch.number} из ${chapters.length}` : l === 'en' ? `Chapter ${ch.number} of ${chapters.length}` : `Glava ${ch.number} od ${chapters.length}`}</span>
+            <Link className="btn btn-ghost" href={`/${l}/work/${ch.work_slug}`}>{l === 'ru' ? 'Страница произведения' : l === 'en' ? 'Work details' : 'Stranica dela'} ↗</Link>
+          </section>
+          <section className="tlp-reader-context-card tlp-reader-shortcuts">
+            <strong>{l === 'ru' ? 'Управление чтением' : l === 'en' ? 'Reading controls' : 'Kontrole čitanja'}</strong>
+            <p>{l === 'ru' ? 'Настройки шрифта, интервала и темы доступны через кнопку Aa.' : l === 'en' ? 'Font, line spacing and theme are available from the Aa control.' : 'Font, prored i tema dostupni su preko dugmeta Aa.'}</p>
+            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> <small>{l === 'ru' ? 'Поиск' : l === 'en' ? 'Search' : 'Pretraga'}</small></span>
+          </section>
+        </aside>
+      </div>
+      <ReaderSettings lang={l} />
     </main>
   );
 }

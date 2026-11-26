@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import type { Lang } from '@/lib/i18n';
 
 type Theme = 'dark' | 'light' | 'sepia';
 
@@ -18,7 +19,14 @@ const FONTS = [
 
 type Prefs = { size: number; lh: number; theme: Theme; font: string };
 
-export default function ReaderSettings() {
+const COPY: Record<Lang, { title: string; size: string; spacing: string; font: string; theme: string; light: string; dark: string; sepia: string; settings: string }> = {
+  sr: { title: 'Podešavanja čitanja', size: 'Veličina teksta', spacing: 'Prored', font: 'Font', theme: 'Tema', light: 'Svetla', dark: 'Tamna', sepia: 'Sepija', settings: 'Podešavanja čitanja' },
+  ru: { title: 'Настройки чтения', size: 'Размер текста', spacing: 'Интервал', font: 'Шрифт', theme: 'Тема', light: 'Светлая', dark: 'Тёмная', sepia: 'Сепия', settings: 'Настройки чтения' },
+  en: { title: 'Reading settings', size: 'Text size', spacing: 'Line spacing', font: 'Font', theme: 'Theme', light: 'Light', dark: 'Dark', sepia: 'Sepia', settings: 'Reading settings' },
+};
+
+export default function ReaderSettings({ lang = 'sr' }: { lang?: Lang }) {
+  const c = COPY[lang];
   const [open, setOpen] = useState(false);
   const [prefs, setPrefs] = useState<Prefs>({ size: 18, lh: 1.9, theme: 'dark', font: FONTS[0].value });
 
@@ -78,10 +86,10 @@ export default function ReaderSettings() {
     <div className="tlp-reader-settings fixed bottom-5 right-5 z-40">
       {open ? (
         <div className="tlp-reader-settings-panel card mb-2 w-64 p-4 shadow-lg">
-          <div className="tlp-reader-settings-title mb-3 text-sm font-semibold">Čitanje</div>
+          <div className="tlp-reader-settings-title mb-3 text-sm font-semibold">{c.title}</div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="muted">Font</span>
+            <span className="muted">{c.size}</span>
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost px-2 py-0.5" onClick={() => update({ size: Math.max(14, prefs.size - 1) })}>A−</button>
               <span className="w-8 text-center">{prefs.size}</span>
@@ -90,7 +98,7 @@ export default function ReaderSettings() {
           </div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="muted">Prored</span>
+            <span className="muted">{c.spacing}</span>
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost px-2 py-0.5" onClick={() => update({ lh: Math.max(1.4, +(prefs.lh - 0.1).toFixed(1)) })}>−</button>
               <span className="w-8 text-center">{prefs.lh}</span>
@@ -98,7 +106,7 @@ export default function ReaderSettings() {
             </div>
           </div>
 
-          <div className="mb-1 text-sm muted">Font</div>
+          <div className="mb-1 text-sm muted">{c.font}</div>
           <div className="mb-3 flex flex-wrap gap-1">
             {FONTS.map((f) => (
               <button key={f.label} onClick={() => update({ font: f.value })}
@@ -109,19 +117,19 @@ export default function ReaderSettings() {
             ))}
           </div>
 
-          <div className="mb-1 text-sm muted">Tema</div>
+          <div className="mb-1 text-sm muted">{c.theme}</div>
           <div className="flex gap-1">
             {(Object.keys(THEMES) as Theme[]).map((k) => (
               <button key={k} onClick={() => update({ theme: k })}
                 className={`flex-1 rounded px-2 py-1 text-xs font-semibold ${prefs.theme === k ? 'bg-brand text-white' : 'border border-line text-mist'}`}>
-                {THEMES[k].label}
+                {k === 'light' ? c.light : k === 'dark' ? c.dark : c.sepia}
               </button>
             ))}
           </div>
         </div>
       ) : null}
 
-      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title="Podešavanja čitanja">
+      <button onClick={() => setOpen(!open)} className="btn btn-primary rounded-full px-4 py-2 shadow-lg" title={c.settings} aria-label={c.settings}>
         Aa
       </button>
     </div>

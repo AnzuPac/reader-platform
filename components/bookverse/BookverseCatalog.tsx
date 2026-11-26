@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import BookCoverCard from '@/components/bookverse/BookCoverCard';
+import CatalogSavedSearches from '@/components/CatalogSavedSearches';
 
 export type SectionId = 'books' | 'selfpub' | 'fanfics' | 'comics' | 'top';
 export type CatalogFilter = 'forYou' | 'popular' | 'fresh' | 'completed';
+export type TopRank = 'views' | 'rating' | 'saved' | 'discussed' | 'fresh';
 
 export type CatalogWork = {
   id: number;
@@ -107,7 +109,7 @@ function Card({ w, lang, t }: { w: CatalogWork; lang: Lang; t: (typeof TXT)[Lang
 
 export default function BookverseCatalog({
   works, lang, initialQuery = '', initialSection = 'books', initialFilter = 'forYou',
-  page = 1, hasMore = false, tops = {}, period = 'all', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [], language = '',
+  page = 1, hasMore = false, tops = {}, period = 'all', rank = 'views', genre = '', source = '', tag = '', fandom = '', aiUsage = '', genres = [], language = '',
   aiUsages = [], includeTags = [], excludeTags = [], includeMode = 'all', tags = [],
   comicFormat = '', colorMode = '', readingDirection = '', demographic = '', free = false,
 }: {
@@ -118,8 +120,9 @@ export default function BookverseCatalog({
   initialFilter?: CatalogFilter;
   page?: number;
   hasMore?: boolean;
-  tops?: Partial<Record<'publisher' | 'selfpub' | 'fanfic' | 'graphic', CatalogWork[]>>;
+  tops?: Partial<Record<'books' | 'publisher' | 'selfpub' | 'fanfic' | 'graphic', CatalogWork[]>>;
   period?: string;
+  rank?: TopRank;
   genre?: string;
   source?: string;
   language?: string;
@@ -173,7 +176,7 @@ export default function BookverseCatalog({
   }
 
   function go(next: {
-    q?: string; kind?: string; filter?: CatalogFilter; page?: number;
+    q?: string; kind?: string; filter?: CatalogFilter; page?: number; rank?: TopRank;
     genre?: string; tag?: string; fandom?: string; source?: string; ai?: string; period?: string;
     aiList?: string[]; include?: string[]; exclude?: string[]; includeMode?: 'all' | 'any';
     gfmt?: string; gcolor?: string; gdir?: string; gdemo?: string; free?: boolean;
@@ -193,6 +196,7 @@ export default function BookverseCatalog({
     const exc = next.exclude !== undefined ? next.exclude : draftExclude;
     const incMode = next.includeMode !== undefined ? next.includeMode : draftIncludeMode;
     const per = next.period !== undefined ? next.period : period;
+    const rk = next.rank !== undefined ? next.rank : rank;
     const p = next.page !== undefined ? next.page : 1;
     if (q.trim()) params.set('q', q.trim());
     if (kind) params.set('kind', kind);
@@ -219,6 +223,7 @@ export default function BookverseCatalog({
     if (lng === 'sr' || lng === 'ru' || lng === 'en') params.set('language', lng);
     if (isFree) params.set('free', '1');
     if (per && per !== 'all') params.set('period', per);
+    if (rk && rk !== 'views') params.set('rank', rk);
     if (p > 1) params.set('page', String(p));
     const qs = params.toString();
     router.push(`/${lang}/catalog${qs ? `?${qs}` : ''}`);
@@ -258,9 +263,8 @@ export default function BookverseCatalog({
   const kindFor = (s: SectionId) => SECTION_KIND[s];
 
   if (initialSection === 'top') {
-    const cats: { key: 'publisher' | 'selfpub' | 'fanfic' | 'graphic'; label: string; color: string; href: string }[] = [
-      { key: 'publisher', label: t.books, color: '#5b6779', href: `/${lang}/catalog?source=publisher` },
-      { key: 'selfpub', label: t.selfpub, color: '#2f6fb7', href: `/${lang}/catalog?source=selfpub` },
+    const cats: { key: 'books' | 'fanfic' | 'graphic'; label: string; color: string; href: string }[] = [
+      { key: 'books', label: t.books, color: '#5b6779', href: `/${lang}/catalog?kind=books` },
       { key: 'fanfic', label: t.fanfics, color: '#9061c4', href: `/${lang}/catalog?kind=fanfic` },
       { key: 'graphic', label: t.manga, color: '#df843b', href: `/${lang}/catalog?kind=comic` },
     ];
@@ -269,7 +273,7 @@ export default function BookverseCatalog({
     ];
     return (
       <main id="main" className="shell">
-        <nav className="subnav" aria-label="Categories">
+        <nav className="subnav" aria-label={lang === 'ru' ? 'Категории' : lang === 'en' ? 'Categories' : 'Kategorije'}>
           {(['books', 'fanfics', 'comics'] as SectionId[]).map((sec) => (
             <button
               key={sec}
@@ -286,6 +290,17 @@ export default function BookverseCatalog({
             <h1>{t.topTab}</h1>
             <p className="muted">{t.topDesc}</p>
           </div>
+        </div>
+        <div className="tlp-top-ranking-controls" aria-label={lang === 'ru' ? 'Способ сортировки рейтинга' : lang === 'en' ? 'Ranking method' : 'Način rangiranja'}>
+          {([
+            ['views', lang === 'ru' ? 'Читают' : lang === 'en' ? 'Most read' : 'Najčitanije'],
+            ['rating', lang === 'ru' ? 'Лучшие оценки' : lang === 'en' ? 'Top rated' : 'Najbolje ocenjeno'],
+            ['saved', lang === 'ru' ? 'В библиотеках' : lang === 'en' ? 'Most saved' : 'Najviše sačuvano'],
+            ['discussed', lang === 'ru' ? 'Обсуждают' : lang === 'en' ? 'Most discussed' : 'Najviše komentarisano'],
+            ['fresh', lang === 'ru' ? 'Новинки' : lang === 'en' ? 'Recently published' : 'Najnovije'],
+          ] as [TopRank, string][]).map(([key, label]) => (
+            <button key={key} type="button" className={`chip ${rank === key ? 'selected' : ''}`} onClick={() => go({ rank: key, page: 1 })}>{label}</button>
+          ))}
         </div>
         <div className="catalog-controls">
           {periodList.map(([key, label]) => (
@@ -311,8 +326,83 @@ export default function BookverseCatalog({
 
   return (
     <main id="main" className="shell">
+      <div className="tlp-catalog-layout">
+        <aside className="tlp-catalog-desktop-sidebar" aria-label={lang === 'ru' ? 'Фильтры каталога' : lang === 'en' ? 'Catalog filters' : 'Filteri kataloga'}>
+          <div className="tlp-catalog-sidebar-panel">
+            <div className="tlp-catalog-sidebar-heading">
+              <div><span className="eyebrow">DISCOVERY</span><h2>{t.filters}</h2></div>
+              <button type="button" className="tlp-sidebar-reset" onClick={() => {
+                setDraftGenre(''); setDraftTag(''); setDraftFandom(''); setDraftSource(''); setDraftAi('');
+                setDraftAiList([]); setDraftInclude([]); setDraftExclude([]); setDraftIncludeMode('all');
+                setDraftComicFormat(''); setDraftColorMode(''); setDraftDirection(''); setDraftDemographic(''); setDraftFree(false);
+                go({ genre: '', tag: '', fandom: '', source: '', ai: '', aiList: [], include: [], exclude: [], includeMode: 'all', gfmt: '', gcolor: '', gdir: '', gdemo: '', free: false, page: 1 });
+              }}>{t.reset}</button>
+            </div>
+
+            <label className="tlp-sidebar-field">
+              <span>{t.genre}</span>
+              <select value={draftGenre} onChange={(event) => setDraftGenre(event.target.value)}>
+                <option value="">{lang === 'ru' ? 'Все жанры' : lang === 'en' ? 'All genres' : 'Svi žanrovi'}</option>
+                {genres.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}
+              </select>
+            </label>
+
+            {initialSection === 'books' ? (
+              <div className="tlp-sidebar-field">
+                <span>{t.source}</span>
+                <div className="tlp-sidebar-choice-list">
+                  {([
+                    ['', lang === 'ru' ? 'Все книги' : lang === 'en' ? 'All books' : 'Sve knjige'],
+                    ['publisher', t.sourcePublisher], ['selfpub', t.sourceSelf],
+                  ] as [string, string][]).map(([value, label]) => (
+                    <button type="button" key={value || 'all'} className={draftSource === value ? 'is-selected' : ''} onClick={() => setDraftSource(value)}>
+                      <span className="tlp-sidebar-radio" />{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <label className="tlp-sidebar-field">
+              <span>{lang === 'ru' ? 'Язык произведения' : lang === 'en' ? 'Work language' : 'Jezik dela'}</span>
+              <select value={language} onChange={(event) => go({ language: event.target.value, page: 1 })}>
+                <option value="">{lang === 'ru' ? 'Любой язык' : lang === 'en' ? 'Any language' : 'Bilo koji jezik'}</option>
+                <option value="sr">Srpski</option><option value="ru">Русский</option><option value="en">English</option>
+              </select>
+            </label>
+
+            {initialSection === 'fanfics' ? (
+              <label className="tlp-sidebar-field">
+                <span>{t.fandom}</span>
+                <input value={draftFandom} onChange={(event) => setDraftFandom(event.target.value)} placeholder={t.fandomPlaceholder} />
+              </label>
+            ) : null}
+
+            <label className="tlp-sidebar-check">
+              <input type="checkbox" checked={draftFree} onChange={(event) => setDraftFree(event.target.checked)} />
+              <span>{lang === 'ru' ? 'Только бесплатные' : lang === 'en' ? 'Free works only' : 'Samo besplatna dela'}</span>
+            </label>
+
+            <div className="tlp-sidebar-field">
+              <span>{t.ai}</span>
+              <div className="tlp-sidebar-choice-list">
+                {([['used', t.aiYes], ['no_ai', t.noAiShort], ['not_declared', t.aiUnknown]] as [string, string][]).map(([value, label]) => (
+                  <button type="button" key={value} className={draftAiList.includes(value) ? 'is-selected' : ''} onClick={() => setDraftAiList((prev) => prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value])}>
+                    <span className="tlp-sidebar-radio" />{label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button type="button" className="btn tlp-sidebar-advanced" onClick={() => setFiltersOpen(true)}>
+              {lang === 'ru' ? 'Все фильтры и метки' : lang === 'en' ? 'All filters and tags' : 'Svi filteri i oznake'} <span>→</span>
+            </button>
+            <button type="button" className="btn primary tlp-sidebar-apply" onClick={() => go({ genre: draftGenre, fandom: draftFandom, source: draftSource, aiList: draftAiList, free: draftFree, page: 1 })}>{t.apply}</button>
+          </div>
+        </aside>
+        <div className="tlp-catalog-primary-column">
       <div className={`tlp-cat-category tlp-catalog ${initialSection}`}>
-        <nav className="subnav" aria-label="Categories">
+        <nav className="subnav" aria-label={lang === 'ru' ? 'Категории' : lang === 'en' ? 'Categories' : 'Kategorije'}>
           {(['books', 'fanfics', 'comics'] as SectionId[]).map((s) => (
             <button
               key={s}
@@ -365,9 +455,11 @@ export default function BookverseCatalog({
             <option value="fresh">{t.sortNew}</option>
             <option value="completed">{t.completed}</option>
           </select>
-          <button className="iconbtn" onClick={() => setView('grid')} aria-label="Grid">▦</button>
-          <button className="iconbtn" onClick={() => setView('list')} aria-label="List">☰</button>
+          <button className="iconbtn" onClick={() => setView('grid')} aria-label={lang === 'ru' ? 'Сетка' : lang === 'en' ? 'Grid view' : 'Mrežni prikaz'} aria-pressed={view === 'grid'}>▦</button>
+          <button className="iconbtn" onClick={() => setView('list')} aria-label={lang === 'ru' ? 'Список' : lang === 'en' ? 'List view' : 'Prikaz liste'} aria-pressed={view === 'list'}>☰</button>
         </div>
+
+        <CatalogSavedSearches lang={lang} />
 
         {active.length ? (
           <div className="filters-active">
@@ -391,6 +483,8 @@ export default function BookverseCatalog({
         <div className="row" style={{ marginTop: 20 }}>
           <button className="btn" disabled={page <= 1} onClick={() => go({ page: Math.max(1, page - 1) })}>← {t.prev}</button>
           <button className="btn" disabled={!hasMore} onClick={() => go({ page: page + 1 })}>{t.next} →</button>
+        </div>
+      </div>
         </div>
       </div>
 

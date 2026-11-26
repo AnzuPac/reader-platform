@@ -1,5 +1,5 @@
 import { isLang, type Lang } from '@/lib/i18n';
-import { listWorks, listGenres, listTopWorks, listTags, progressByWork, countLibraryUpdates, type ListWorksOpts } from '@/lib/repo';
+import { listWorks, listGenres, listTopWorks, listTags, progressByWork, countLibraryUpdates, type ListWorksOpts, type TopRank } from '@/lib/repo';
 import { countFollowUpdates } from '@/lib/follows';
 import { readSession } from '@/lib/auth';
 import BookverseCatalog, { type CatalogWork, type SectionId, type CatalogFilter } from '@/components/bookverse/BookverseCatalog';
@@ -65,6 +65,8 @@ export default async function CatalogPage({
 
   const periodRaw = str(sp.period);
   const period = periodRaw === 'year' || periodRaw === 'month' || periodRaw === 'week' ? periodRaw : 'all';
+  const rankRaw = str(sp.rank);
+  const rank: TopRank = rankRaw === 'rating' || rankRaw === 'saved' || rankRaw === 'discussed' || rankRaw === 'fresh' ? rankRaw : 'views';
 
   // Сортировка и фильтры выполняются на сервере, а не по обрезанной выборке.
   const opts: ListWorksOpts = {
@@ -162,10 +164,9 @@ export default async function CatalogPage({
 
   const tops = section === 'top'
     ? {
-        publisher: toCards(await listTopWorks({ period, category: 'publisher', limit: 10 }).catch(() => [])),
-        selfpub: toCards(await listTopWorks({ period, category: 'selfpub', limit: 10 }).catch(() => [])),
-        fanfic: toCards(await listTopWorks({ period, category: 'fanfic', limit: 10 }).catch(() => [])),
-        graphic: toCards(await listTopWorks({ period, category: 'graphic', limit: 10 }).catch(() => [])),
+        books: toCards(await listTopWorks({ period, category: 'books', rank, limit: 14 }).catch(() => [])),
+        fanfic: toCards(await listTopWorks({ period, category: 'fanfic', rank, limit: 10 }).catch(() => [])),
+        graphic: toCards(await listTopWorks({ period, category: 'graphic', rank, limit: 10 }).catch(() => [])),
       }
     : undefined;
 
@@ -200,6 +201,7 @@ export default async function CatalogPage({
       tags={tags}
       tops={tops}
       period={period}
+      rank={rank}
     />
   );
 }
