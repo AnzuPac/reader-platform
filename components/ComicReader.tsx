@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import ChapterBuyButton from './ChapterBuyButton';
 import { coinsWithRsd } from '@/lib/money';
 
-type Page = { page_no: number; file_path: string };
+type Page = { page_no: number; url?: string; file_path?: string };
 
 export default function ComicReader({
   chapterId,
@@ -181,7 +181,7 @@ export default function ComicReader({
           onTouchEnd={onTouchEnd}
         >
           {pages.map((p) => (
-            <img key={p.page_no} src={p.file_path} alt={`Strana ${p.page_no}`} loading="lazy"
+            <img key={p.page_no} src={(p.url || p.file_path)} alt={`Strana ${p.page_no}`} loading="lazy"
                  onClick={handleTap} style={style}
                  className="w-full cursor-zoom-in rounded-lg border border-line bg-black/20" />
           ))}
@@ -194,7 +194,7 @@ export default function ComicReader({
           onTouchMove={onTouchMove}
           onTouchEnd={onPageTouchEnd}
         >
-          <img src={pages[idx].file_path} alt={`Strana ${pages[idx].page_no}`}
+          <img src={(pages[idx].url || pages[idx].file_path)} alt={`Strana ${pages[idx].page_no}`}
                onClick={handleTap} style={style}
                className="w-full cursor-zoom-in rounded-lg border border-line bg-black/20" />
           <div className="mt-3 flex items-center justify-between">

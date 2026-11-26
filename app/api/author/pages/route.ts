@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { initSchema, query, one } from '@/lib/db';
 import { requireAuthor } from '@/lib/author';
+import { comicDir, comicPageUrl, comicRelPath, resolveComicPath } from '@/lib/comic-storage';
 
 export const runtime = 'nodejs';
 
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   );
   const chapterId = chapter[0].id;
 
-  const dir = path.join(process.cwd(), 'public', 'uploads', 'comics', slug, String(number));
+  const dir = comicDir(slug, number);
   await mkdir(dir, { recursive: true });
 
   let startPage = 1;
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
     const name = `${String(i).padStart(3, '0')}.${ext}`;
     await writeFile(path.join(dir, name), Buffer.from(await file.arrayBuffer()));
-    const rel = `/uploads/comics/${slug}/${number}/${name}`;
+    const rel = comicRelPath(slug, number, name);
     await query('INSERT INTO chapter_pages (chapter_id, page_no, file_path) VALUES ($1,$2,$3)', [chapterId, i, rel]);
     saved.push(rel);
     i += 1;
@@ -71,8 +72,11 @@ export async function GET(req: Request) {
   if (!work || Number(work.author_id) !== Number(s.uid)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   const ch = await one<{ id: number }>('SELECT id FROM chapters WHERE work_id = $1 AND number = $2', [work.id, number]);
   if (!ch) return NextResponse.json({ pages: [] });
-  const pages = await query('SELECT id, page_no, file_path FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [ch.id]);
-  return NextResponse.json({ pages, chapterId: ch.id });
+  const pages = await query<{ id: number; page_no: number }>('SELECT id, page_no FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [ch.id]);
+  return NextResponse.json({
+    pages: pages.map((p) => ({ ...p, url: comicPageUrl(ch.id, p.page_no) })),
+    chapterId: ch.id,
+  });
 }
 
 /** Удаление страницы с перенумерацией. */
@@ -83,13 +87,14 @@ export async function DELETE(req: Request) {
   const id = Number(url.searchParams.get('id'));
   if (!id) return NextResponse.json({ error: 'bad_input' }, { status: 400 });
   await initSchema();
-  const row = await one<{ chapter_id: number; page_no: number }>(
-    `SELECT p.chapter_id, p.page_no FROM chapter_pages p
+  const row = await one<{ chapter_id: number; page_no: number; file_path: string }>(
+    `SELECT p.chapter_id, p.page_no, p.file_path FROM chapter_pages p
        JOIN chapters c ON c.id = p.chapter_id
        JOIN works w ON w.id = c.work_id
       WHERE p.id = $1 AND w.author_id = $2`, [id, s.uid]
   );
   if (!row) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  try { await (await import('node:fs/promises')).unlink(resolveComicPath(row.file_path)); } catch { /* файла может уже не быть */ }
   await query('DELETE FROM chapter_pages WHERE id = $1', [id]);
   await query('UPDATE chapter_pages SET page_no = page_no - 1 WHERE chapter_id = $1 AND page_no > $2', [row.chapter_id, row.page_no]);
   const cnt = await one<{ n: number }>('SELECT CAST(COUNT(*) AS INTEGER) AS n FROM chapter_pages WHERE chapter_id = $1', [row.chapter_id]);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initSchema, query, one } from '@/lib/db';
 import { readSession } from '@/lib/auth';
 import { chapterGate } from '@/lib/purchases';
+import { comicPageUrl } from '@/lib/comic-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,12 @@ export async function GET(req: Request) {
     );
   }
 
-  const pages = await query<{ page_no: number; file_path: string }>(
-    'SELECT page_no, file_path FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [chapterId]
+  const pages = await query<{ page_no: number }>(
+    'SELECT page_no FROM chapter_pages WHERE chapter_id = $1 ORDER BY page_no', [chapterId]
   );
-  return NextResponse.json({ pages, title: ch.title, number: ch.number });
+  return NextResponse.json({
+    pages: pages.map((p) => ({ page_no: p.page_no, url: comicPageUrl(chapterId, p.page_no) })),
+    title: ch.title,
+    number: ch.number,
+  });
 }
